@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Jobs\PurgeOrganizationAttribution;
+use App\Support\CacheVersion;
 use App\Support\Settings;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Organization extends Model
 {
@@ -30,6 +32,7 @@ class Organization extends Model
     protected static function booted(): void
     {
         static::saved(function (Organization $org) {
+            DB::afterCommit(fn () => CacheVersion::bumpSitemap());
             if ($org->wasChanged(['status', 'owner_user_id', 'name', 'logo_path', 'slug'])) {
                 PurgeOrganizationAttribution::dispatch($org->id);
             }
@@ -57,7 +60,7 @@ class Organization extends Model
         return $query->addSelect(['signatures_total' => Petition::visible()
             ->selectRaw('COALESCE(SUM(signature_count), 0)')
             ->whereColumn('organization_id', 'organizations.id')])
-            ->withCount(['petitions as public_petitions_count' => fn ($q) => $q->visible()]);
+            ->withCount(['petitions as public_petitions_count' => fn ($q) => $q->visible(), 'petitions as victories_count' => fn ($q) => $q->visible()->where('outcome', 'victory')]);
     }
 
     public function events()
