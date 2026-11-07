@@ -9,6 +9,7 @@ use App\Rules\SafeExternalImageUrl;
 use App\Rules\TagList;
 use App\Rules\YoutubeVideo;
 use App\Support\Countries;
+use Database\Seeders\OrganizationCauseSeeder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -62,6 +63,9 @@ class PetitionRequest extends FormRequest
         }
 
         return [
+            'organization_id' => $creating ? ['nullable', 'integer', Rule::exists('organizations', 'id')->where('status', 'verified')->where('owner_user_id', auth()->id())] : ['prohibited'],
+            'causes' => ['sometimes', 'array', 'max:3'],
+            'causes.*' => ['integer', 'distinct', Rule::exists('causes', 'id')->whereIn('slug', array_keys(OrganizationCauseSeeder::CAUSES))],
             'title' => ['required', 'string', 'max:255', new MinWords(3, 'Title')],
             // 65535 = the legacy MySQL TEXT limit, so the longest legacy descriptions still pass unrelated edits.
             'description' => ['bail', 'required', 'string', 'max:65535', new MinCharacters(30, 'Text')],
@@ -78,6 +82,13 @@ class PetitionRequest extends FormRequest
         ] + ($creating
             ? ['goal_signatures' => ['required', 'integer', Rule::in(Petition::GOALS)]]
             : ['remove_image' => ['nullable', 'boolean']]);
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('causes_present') === '1' && ! $this->has('causes')) {
+            $this->merge(['causes' => []]);
+        }
     }
 
     public function after(): array
