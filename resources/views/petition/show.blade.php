@@ -123,6 +123,7 @@
                     <h1 class="mb-0 text-xl font-bold break-words [overflow-wrap:anywhere]">
                         {{ $petitionTitle }}
                     </h1>
+                    @include('petition.partials.organization-attribution')
 
                 </div>
 
