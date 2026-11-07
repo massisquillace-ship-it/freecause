@@ -23,6 +23,8 @@
     <h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>
     <p class="mb-3">{{ trans_choice('organizations.petition_count', (int)$org->public_petitions_count, ['count'=>(int)$org->public_petitions_count]) }} · {{ trans_choice('organizations.signature_count', (int)$org->signatures_total, ['count'=>(int)$org->signatures_total]) }}</p>
     <a class="underline" href="{{ lroute('organizations.campaigns', ['slug'=>$org->slug]) }}">{{ __('organizations.manage_campaigns') }}</a>
+    <p class="mt-3">{{ trans_choice('organizations.victory_count', (int)$org->victories_count, ['count'=>(int)$org->victories_count]) }}</p>
+    @if($org->status === 'verified') @include('organizations.embed') @endif
     <h2 class="text-2xl font-bold mt-8 mb-3">{{ __('organizations.consent_totals') }}</h2>
     <p>{{ __('organizations.consents_total', ['count'=>$consentTotal]) }} · {{ __('organizations.consents_recent', ['count'=>$consentRecent]) }}</p>
 </section>
