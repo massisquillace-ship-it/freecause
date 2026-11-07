@@ -124,6 +124,7 @@
                         {{ $petitionTitle }}
                     </h1>
                     @include('petition.partials.organization-attribution')
+                    @include('petition.partials.outcome')
 
                 </div>
 
