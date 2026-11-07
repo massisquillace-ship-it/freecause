@@ -66,13 +66,9 @@ class PetitionSigning
             return back()->withInput();
         }
 
-        $spamText = implode(' ', [
-            $data['name'] ?? '',
-            $data['email'] ?? '',
-            $data['comment'] ?? '',
-        ]);
+        $identity = ($data['name'] ?? '').' '.($data['email'] ?? '');
 
-        if (Spam::isSpam($spamText, Spam::reviewOwned())) {
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned()) || Spam::isSpam($identity, Spam::reviewOwned(), true)) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
@@ -247,7 +243,9 @@ class PetitionSigning
     {
         $data = $request->validate(self::authedRules());
 
-        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned())) {
+        $identity = ($data['name'] ?? '').' '.($data['email'] ?? '');
+
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned()) || Spam::isSpam($identity, Spam::reviewOwned(), true)) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
