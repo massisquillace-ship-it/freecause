@@ -28,7 +28,7 @@ class AdminOrganizationsController extends Controller
 
     public function show(int $organization)
     {
-        return view('admin.organizations.show', ['org' => Organization::with(['owner', 'causes', 'events' => fn ($q) => $q->orderByDesc('id')->limit(100)])->findOrFail($organization)]);
+        return view('admin.organizations.show', ['org' => Organization::withCount('petitions')->with(['owner', 'causes', 'events' => fn ($q) => $q->orderByDesc('id')->limit(100)])->findOrFail($organization)]);
     }
 
     public function action(Request $request, int $organization, string $action, OrganizationLifecycle $lifecycle)

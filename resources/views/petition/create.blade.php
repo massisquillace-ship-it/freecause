@@ -36,6 +36,10 @@
         <x-ui.container class="max-md:px-3">
 
             @auth
+                @php
+                    $publishOrganizations = \App\Models\Organization::public()->where('owner_user_id', auth()->id())->orderByDesc('verified_at')->orderByDesc('id')->get();
+                    $petitionCauses = \App\Models\Cause::orderBy('sort_order')->get();
+                @endphp
                 @if ($errors->any())
                     <div class="mb-4">
                         <ul class="mb-0 space-y-1 text-sm">
@@ -144,7 +148,7 @@
                 <div class="relative flex flex-col min-w-0 bg-white bg-clip-border rounded-md border-0 shadow-elev-1">
                     <div class="grow shrink basis-auto p-6 max-md:p-4">
 
-                        <form data-petition-form data-draft-locale="{{ app()->getLocale() }}" data-draft-user="{{ auth()->id() }}" data-draft-id="{{ $isEdit ? $petition->id : 'new' }}" data-msg-type="{{ __('create.err_file_type') }}" data-msg-size="{{ __('create.err_file_size') }}" data-msg-conflict="{{ __('create.err_image_conflict') }}" data-step-label="{{ __('create.step_of') }}" data-next-label="{{ __('create.next') }}" data-back-label="{{ __('create.back') }}" data-draft-saved="{{ __('create.draft_saved') }}" class="max-md:[&_.row]:[--bs-gutter-y:0.75rem] max-md:[&_.mb-3]:mb-3 max-md:[&_.form-control]:w-full max-md:[&_.form-select]:w-full" method="POST" action="{{ $isEdit
+                        <form data-petition-form data-organization-unavailable="{{ __('organizations.invalid_attribution') }}" data-draft-locale="{{ app()->getLocale() }}" data-draft-user="{{ auth()->id() }}" data-draft-id="{{ $isEdit ? $petition->id : 'new' }}" data-msg-type="{{ __('create.err_file_type') }}" data-msg-size="{{ __('create.err_file_size') }}" data-msg-conflict="{{ __('create.err_image_conflict') }}" data-step-label="{{ __('create.step_of') }}" data-next-label="{{ __('create.next') }}" data-back-label="{{ __('create.back') }}" data-draft-saved="{{ __('create.draft_saved') }}" class="max-md:[&_.row]:[--bs-gutter-y:0.75rem] max-md:[&_.mb-3]:mb-3 max-md:[&_.form-control]:w-full max-md:[&_.form-select]:w-full" method="POST" action="{{ $isEdit
                             ? lroute('petition.update', ['slug' => $tr->slug, 'id' => $petition->id])
                             : lroute('petition.store') }}" enctype="multipart/form-data">
                             @csrf
@@ -342,6 +346,18 @@
                                         <div id="field-city-error" class="invalid-feedback block">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                @if(!$isEdit && $publishOrganizations->isNotEmpty())
+                                    <label class="block mb-4" for="field-organization_id">{{ __('organizations.publish_as') }}
+                                        <select class="form-control block w-full" id="field-organization_id" name="organization_id" aria-label="{{ __('organizations.publish_as') }}">
+                                            <option value="" @selected((string)old('organization_id', $publishOrganizations->first()->id) === '')>{{ __('organizations.myself') }}</option>
+                                            @foreach($publishOrganizations as $publishOrg)<option value="{{ $publishOrg->id }}" @selected((string)old('organization_id', $publishOrganizations->first()->id) === (string)$publishOrg->id)>{{ $publishOrg->name }}</option>@endforeach
+                                        </select>
+                                    </label>
+                                @endif
+                                <details id="field-causes" class="mb-4" @if($errors->has('causes') || $errors->has('causes.*')) open @endif><summary>{{ __('organizations.petition_causes') }}</summary><fieldset class="mt-3"><legend class="sr-only">{{ __('organizations.petition_causes') }}</legend>
+                                    @foreach($petitionCauses as $cause)<label class="inline-flex items-center gap-2 mr-4 mb-2"><input type="checkbox" name="causes[]" value="{{ $cause->id }}" @checked(in_array($cause->id, old('causes', isset($petition) ? $petition->causes->pluck('id')->all() : [])))>{{ $cause->label() }}</label>@endforeach
+                                    <input type="hidden" name="causes_present" value="1">
+                                </fieldset></details>
                             </fieldset>
 
                             <div class="text-center max-md:[&_.fcui-btn]:w-full">

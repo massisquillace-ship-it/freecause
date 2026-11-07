@@ -52,6 +52,8 @@
                     <input type="hidden" name="agree2" value="{{ data_get($signData, 'agree2', 'agree') }}">
                     <input type="hidden" name="agree3" value="{{ data_get($signData, 'agree3', 'agree') }}">
 
+                    @include('petition.partials.organization-consent', ['previousOrganizationConsent'=>$signData])
+
                     <input type="hidden" name="comment" value="{{ data_get($signData, 'comment', __('sign.default_comment')) }}">
 
                     @if (! auth()->check() && \App\Support\Spam::turnstileEnabled())

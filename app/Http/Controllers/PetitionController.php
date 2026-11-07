@@ -6,6 +6,7 @@ use App\Http\Middleware\ConditionalLogging;
 use App\Http\Requests\PetitionRequest;
 use App\Models\Category;
 use App\Models\Language;
+use App\Models\Organization;
 use App\Models\Petition;
 use App\Models\PetitionTranslation;
 use App\Models\Signature;
@@ -263,7 +264,7 @@ class PetitionController extends Controller
         $defaultLocale = default_locale();
 
         $petition = Petition::query()
-            ->with(['category', 'user', 'translations'])
+            ->with(['category', 'user', 'translations', 'organization', 'causes'])
             ->where('id', $id)
             ->where(function ($q) {
                 $q->where(function ($q2) {
@@ -536,7 +537,15 @@ class PetitionController extends Controller
                     $petition->cover_image = $newCoverImage;
                 }
 
+                if (filled($data['organization_id'] ?? null)) {
+                    $org = Organization::public()->where('owner_user_id', auth()->id())->whereKey($data['organization_id'])->lockForUpdate()->first();
+                    if (! $org) {
+                        throw ValidationException::withMessages(['organization_id' => __('organizations.invalid_attribution')]);
+                    }
+                    $petition->organization_id = $org->id;
+                }
                 $petition->save();
+                $petition->causes()->sync($data['causes'] ?? []);
 
                 $slug = $this->makeUniqueSlug($data['title'], $locale);
 
@@ -843,6 +852,9 @@ class PetitionController extends Controller
 
                 $tags = $this->normalizeTags($data['tags'] ?? null);
 
+                if (array_key_exists('causes', $data)) {
+                    $petition->causes()->sync($data['causes']);
+                }
                 $petition->category_id = $data['category_id'];
                 $petition->target = $data['target'] ?? null;
                 $petition->tags = $tags;

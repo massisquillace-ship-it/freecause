@@ -136,6 +136,8 @@
                     </div>
                 </div>
 
+                @include('petition.partials.organization-consent')
+
                 <p class="text-sm text-muted mb-3">
                     <a class="text-brand underline" href="{{ lroute('page.show', ['slug' => 'ethical-code']) }}">{{ __('sign.guidelines_link') }}</a>
                 </p>
@@ -226,6 +228,8 @@
                         <label class="form-check-label text-sm leading-snug" for="agree3_{{ $variant }}">{!! $agree3Title !!}</label>
                     </div>
                 </div>
+
+                @include('petition.partials.organization-consent')
 
                 <button class="{{ $submitClass }}@if ($stickySubmit) max-md:hidden @endif" type="submit">{{ $tBtnSign }}</button>
             </div>

@@ -12,7 +12,7 @@
     <p class="whitespace-pre-line break-words">{{ __('organizations.verification_reference') }}: {{ $org->verification_reference }}</p>
     <p class="whitespace-pre-line break-words">{{ __('organizations.review_note') }}: {{ $org->verification_note }}</p>
     <p>{{ __('organizations.terms_accepted') }}: {{ $org->terms_accepted_at }} · {{ $org->terms_version }}</p>
-    <p>{{ __('organizations.campaigns') }}: 0</p>
+    <p>{{ __('organizations.campaigns') }}: {{ $org->petitions_count }}</p>
     <p>{{ __('organizations.donation_url') }}: <span class="break-all">{{ $org->donation_url ?: '—' }}</span></p>
     <p>{{ $org->donation_url_approved_at ? __('organizations.donation_approved') : __('organizations.donation_pending') }}</p>
     @if($org->status === 'verified')<a class="underline" href="{{ lroute('organizations.show', ['slug'=>$org->slug]) }}" target="_blank" rel="noopener">{{ __('organizations.public_profile') }}</a>@endif

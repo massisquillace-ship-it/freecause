@@ -15,6 +15,7 @@
         @else
             <p class="p-4 bg-surface-muted border border-border rounded-lg">{{ __('organizations.applications_closed') }}</p>
         @endif
+        <a class="block underline mt-4" href="{{ lroute('organizations.explore') }}">{{ __('organizations.explore') }}</a>
         <a class="block underline mt-4" href="{{ lroute('organizations.terms') }}">{{ __('organizations.terms') }}</a>
         @if($owned->isNotEmpty())
             <h2 class="text-2xl font-bold mt-10 mb-4">{{ __('organizations.my_organizations') }}</h2>

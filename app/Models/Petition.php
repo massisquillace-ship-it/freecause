@@ -36,6 +36,16 @@ class Petition extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function causes()
+    {
+        return $this->belongsToMany(Cause::class, 'cause_petition');
+    }
+
     public function signatures()
     {
         return $this->hasMany(Signature::class);

@@ -53,7 +53,7 @@
     <div class="grid md:grid-cols-3 gap-8">
         <div class="md:col-span-2 min-w-0">
             @if($org->localized('description'))<section class="mb-8"><h2 class="text-2xl font-bold mb-4">{{ __('organizations.description') }}</h2><p class="whitespace-pre-line break-words">{{ $org->localized('description') }}</p></section>@endif
-            <section class="border-t border-border pt-6"><p class="mb-4">{{ trans_choice('organizations.petition_count', 0, ['count'=>0]) }} · {{ trans_choice('organizations.signature_count', 0, ['count'=>0]) }}</p><h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2><p>{{ __('organizations.empty_campaigns') }}</p></section>
+            <section class="border-t border-border pt-6"><p class="mb-4">{{ trans_choice('organizations.petition_count', (int)$org->public_petitions_count, ['count'=>(int)$org->public_petitions_count]) }} · {{ trans_choice('organizations.signature_count', (int)$org->signatures_total, ['count'=>(int)$org->signatures_total]) }}</p><h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>@include('organizations._campaigns')</section>
         </div>
         <aside class="space-y-6 min-w-0">
             @if($org->country === 'IT' && $org->tax_code)

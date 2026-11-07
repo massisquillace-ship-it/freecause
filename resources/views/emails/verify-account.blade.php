@@ -28,4 +28,7 @@
     <span style="word-break:break-all;">{{ $verifyUrl }}</span>
     <br><br>
     {{ $noteIgnore }}
+    @foreach($organizationConsentLinks ?? [] as $consentLink)
+        <br><br><a href="{{ $consentLink['url'] }}">{{ trans('organizations.revoke_named', ['name'=>$consentLink['name']], $locale) }}</a>
+    @endforeach
 @endsection
