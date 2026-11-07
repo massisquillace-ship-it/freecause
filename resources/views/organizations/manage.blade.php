@@ -21,7 +21,9 @@
     </div>
     @if($org->donation_url)<p class="mb-6">{{ $org->donation_url_approved_at ? __('organizations.donation_approved') : __('organizations.donation_pending') }}</p>@endif
     <h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>
-    <p class="mb-3">{{ trans_choice('organizations.petition_count', 0, ['count'=>0]) }} · {{ trans_choice('organizations.signature_count', 0, ['count'=>0]) }}</p>
-    <p>{{ __('organizations.empty_campaigns') }}</p>
+    <p class="mb-3">{{ trans_choice('organizations.petition_count', (int)$org->public_petitions_count, ['count'=>(int)$org->public_petitions_count]) }} · {{ trans_choice('organizations.signature_count', (int)$org->signatures_total, ['count'=>(int)$org->signatures_total]) }}</p>
+    <a class="underline" href="{{ lroute('organizations.campaigns', ['slug'=>$org->slug]) }}">{{ __('organizations.manage_campaigns') }}</a>
+    <h2 class="text-2xl font-bold mt-8 mb-3">{{ __('organizations.consent_totals') }}</h2>
+    <p>{{ __('organizations.consents_total', ['count'=>$consentTotal]) }} · {{ __('organizations.consents_recent', ['count'=>$consentRecent]) }}</p>
 </section>
 @endsection
