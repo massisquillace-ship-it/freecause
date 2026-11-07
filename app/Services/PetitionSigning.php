@@ -31,6 +31,8 @@ class PetitionSigning
         return [
             'name' => ['required', 'string', 'max:60'],
             'email' => ['required', 'email', 'max:190'],
+            'organization_consent_proof' => ['nullable', 'string', 'max:4096'],
+            'organization_optin' => ['nullable', 'boolean'],
             'comment' => ['nullable', 'string', 'max:500'],
             'agree1' => ['required', 'in:on,1'],
             'agree2' => ['required', 'in:on,1'],
@@ -47,6 +49,8 @@ class PetitionSigning
     public static function authedRules(): array
     {
         return [
+            'organization_consent_proof' => ['nullable', 'string', 'max:4096'],
+            'organization_optin' => ['nullable', 'boolean'],
             'comment' => ['nullable', 'string', 'max:500'],
             'agree1' => ['required', 'in:agree'],
             'agree2' => ['required', 'in:agree'],
@@ -66,13 +70,9 @@ class PetitionSigning
             return back()->withInput();
         }
 
-        $spamText = implode(' ', [
-            $data['name'] ?? '',
-            $data['email'] ?? '',
-            $data['comment'] ?? '',
-        ]);
+        $identity = ($data['name'] ?? '').' '.($data['email'] ?? '');
 
-        if (Spam::isSpam($spamText, Spam::reviewOwned())) {
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned()) || Spam::isSpam($identity, Spam::reviewOwned(), true)) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
@@ -105,7 +105,7 @@ class PetitionSigning
 
             if (! $existingUser->verified && $needsVerification && ! $alreadySigned) {
                 try {
-                    Signature::create([
+                    $sig = Signature::create([
                         'petition_id' => $petition->id,
                         'email' => $email,
                         'user_id' => $existingUser->id,
@@ -115,6 +115,7 @@ class PetitionSigning
                         'confirmed' => false,
                         'ip_address' => request()->ip(),
                     ]);
+                    OrganizationConsent::record($sig, $request, $petition, $locale);
                 } catch (QueryException $e) {
                     if (($e->errorInfo[0] ?? null) !== '23000') {
                         throw $e;
@@ -132,7 +133,7 @@ class PetitionSigning
                         'verification_token' => Str::random(64),
                         'verification_token_sent_at' => now(),
                     ])->save();
-                    Mail::to($existingUser->email)->queue(new VerifyAccountMail($existingUser, $locale));
+                    Mail::to($existingUser->email)->queue(new VerifyAccountMail($existingUser, $locale, $request->attributes->get('organization_consent_links', [])));
                 } catch (\Throwable $e) {
                     AppLog::error('Verification email failed', $e->getMessage(), 'petition.sign');
                 }
@@ -154,7 +155,7 @@ class PetitionSigning
             $previousCount = null;
             $mailUser = null;
 
-            $response = DB::transaction(function () use ($data, $email, $locale, $petition, $tr, $needsVerification, &$counted, &$previousCount, &$mailUser) {
+            $response = DB::transaction(function () use ($request, $data, $email, $locale, $petition, $tr, $needsVerification, &$counted, &$previousCount, &$mailUser) {
                 $userLevel = UserLevel::where('name', 'user')->first();
 
                 $user = User::create([
@@ -185,6 +186,10 @@ class PetitionSigning
                         'ip_address' => request()->ip(),
                     ]
                 );
+
+                if ($sig->wasRecentlyCreated) {
+                    OrganizationConsent::record($sig, $request, $petition, $locale);
+                }
 
                 if ($sig->wasRecentlyCreated && $sig->confirmed) {
                     $counted = true;
@@ -234,7 +239,7 @@ class PetitionSigning
             }
 
             try {
-                Mail::to($mailUser->email)->queue(new VerifyAccountMail($mailUser, $locale));
+                Mail::to($mailUser->email)->queue(new VerifyAccountMail($mailUser, $locale, $request->attributes->get('organization_consent_links', [])));
             } catch (\Throwable $e) {
                 AppLog::error('Verification email failed', $e->getMessage(), 'petition.sign');
             }
@@ -247,7 +252,9 @@ class PetitionSigning
     {
         $data = $request->validate(self::authedRules());
 
-        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned())) {
+        $identity = ($data['name'] ?? '').' '.($data['email'] ?? '');
+
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned()) || Spam::isSpam($identity, Spam::reviewOwned(), true)) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
@@ -261,7 +268,7 @@ class PetitionSigning
             $counted = false;
             $previousCount = null;
 
-            $response = DB::transaction(function () use ($data, $locale, $petition, $u, &$counted, &$previousCount) {
+            $response = DB::transaction(function () use ($request, $data, $locale, $petition, $u, &$counted, &$previousCount) {
                 $dup = Signature::where('petition_id', $petition->id)->where(fn ($q) => $q->where('email', $u->email)->orWhere('user_id', $u->id))->exists();
                 if ($dup) {
                     $tr = $petition->translationOrFallback($locale);
@@ -281,6 +288,8 @@ class PetitionSigning
                         'ip_address' => request()->ip(),
                     ]
                 );
+
+                OrganizationConsent::record($sig, $request, $petition, $locale);
 
                 $counted = true;
                 $previousCount = PetitionStats::incrementMany([$petition->id => 1])[$petition->id];
