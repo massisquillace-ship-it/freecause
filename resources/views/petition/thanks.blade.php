@@ -31,6 +31,7 @@
 @section('title', $pageTitle)
 
 @section('content')
+    @if(session('organization_consent_links'))<div class="container py-4">@foreach(session('organization_consent_links') as $consentLink)<a class="underline block" href="{{ $consentLink['url'] }}">{{ __('organizations.revoke_named', ['name'=>$consentLink['name']]) }}</a>@endforeach</div>@endif
     <section class="py-14 md:py-24">
         <x-ui.container>
             <div class="bg-white shadow-elev-1 rounded-md p-4 sm:p-6 max-w-[820px] mx-auto">
