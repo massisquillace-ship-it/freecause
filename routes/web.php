@@ -31,10 +31,12 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegacyShortLinkController;
+use App\Http\Controllers\OrganizationBadgeController;
 use App\Http\Controllers\OrganizationConsentController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetitionController;
+use App\Http\Controllers\PetitionOutcomeController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\VersionController;
@@ -166,8 +168,11 @@ Route::withoutMiddleware($withoutSession)->group(function () {
     Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
     Route::get('/sitemap-petitions-{page}.xml', [SitemapController::class, 'petitions'])->where('page', '[0-9]{1,9}')->name('sitemap.petitions');
     Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
+    Route::get('/sitemap-organizations.xml', [SitemapController::class, 'organizations'])->name('sitemap.organizations');
     Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
 });
+
+Route::get('/{locale}/org/{slug}/badge.svg', OrganizationBadgeController::class)->withoutMiddleware([...$withoutSession, SetLocale::class])->name('organizations.badge');
 
 Route::prefix('admin')->name('admin.')->middleware('no.cache')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'show'])->name('login');
@@ -206,6 +211,8 @@ Route::prefix('admin')->name('admin.')->middleware('no.cache')->group(function (
         Route::post('/reports/status', [AdminReportsController::class, 'updateStatus'])->middleware('permission:reports,edit')->name('reports.status');
 
         Route::get('/petitions', [AdminPetitionsController::class, 'index'])->middleware('permission:petitions,view')->name('petitions');
+        Route::get('/petitions/{petition}/outcome', [PetitionOutcomeController::class, 'adminEdit'])->whereNumber('petition')->middleware('permission:petitions,edit')->name('petitions.outcome');
+        Route::post('/petitions/{petition}/outcome', [PetitionOutcomeController::class, 'adminUpdate'])->whereNumber('petition')->middleware('permission:petitions,edit')->name('petitions.outcome.update');
         Route::post('/petitions/save', [AdminPetitionsController::class, 'save'])->middleware('permission:petitions,edit')->name('petitions.save');
         Route::post('/petitions/create', [AdminPetitionsController::class, 'create'])->middleware('permission:petitions,edit')->name('petitions.create');
         Route::post('/petitions/translate-missing', [AdminPetitionsController::class, 'translateMissing'])->middleware('permission:petitions,edit')->name('petitions.translateMissing');
@@ -344,6 +351,8 @@ Route::prefix('{locale}')
 
             Route::post('/create-petition', [PetitionController::class, 'store'])->name('petition.store')->middleware('throttle:5,1');
 
+            Route::get('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'edit'])->name('petition.outcome');
+            Route::post('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'update'])->name('petition.outcome.update');
             Route::get('/petition/{slug}/{id}/edit', [PetitionController::class, 'edit'])->name('petition.edit');
             Route::post('/petition/{slug}/{id}/edit', [PetitionController::class, 'update'])->name('petition.update')->middleware('throttle:10,1');
             Route::post('/petition/{slug}/{id}/withdraw', [PetitionController::class, 'withdraw'])->name('petition.withdraw')->middleware('throttle:10,1');

@@ -83,6 +83,7 @@ class OrganizationLifecycle
 
     public function record(Organization $organization, ?int $actor, string $event, array $details = []): void
     {
+        OrganizationNotifications::record($organization, $event, $details);
         OrganizationEvent::create(['organization_id' => $organization->id, 'actor_user_id' => $actor, 'event' => $event, 'details' => $details, 'created_at' => now()]);
     }
 }

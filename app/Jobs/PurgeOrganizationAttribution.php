@@ -26,6 +26,11 @@ class PurgeOrganizationAttribution implements ShouldQueue
         if (! config('edge-cache.purge_enabled')) {
             return;
         }
+        $urls = [canonical_url('sitemap.xml'), canonical_url('sitemap-organizations.xml')];
+        foreach (active_locales() as $locale) {
+            $urls[] = canonical_url($locale);
+        }
+        EdgeCachePurge::urls($urls);
         Petition::where('organization_id', $this->organizationId)
             ->when($this->detachedPetitionId, fn ($q) => $q->orWhere('id', $this->detachedPetitionId))
             ->select('id')->chunkById(50, fn ($petitions) => EdgeCachePurge::urls(EdgeCachePurge::petitionUrls($petitions->pluck('id')->all())));

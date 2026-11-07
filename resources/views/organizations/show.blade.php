@@ -40,7 +40,7 @@
         <ul class="flex flex-wrap gap-2 mt-4">@foreach($org->causes as $cause)<li class="border border-border rounded-sm px-3 py-1">{{ $cause->label() }}</li>@endforeach</ul>
         <div class="flex flex-wrap items-start gap-4 mt-6">
             @if($org->hasApprovedDonation())
-                <div class="border border-border rounded-lg p-4"><x-ui.button :href="$org->donation_url" target="_blank" rel="noopener noreferrer nofollow sponsored">{{ __('organizations.donate') }}</x-ui.button><p class="text-sm mt-3">{{ __('organizations.donation_disclosure') }}</p></div>
+                <div class="border border-border rounded-lg p-4"><x-ui.button :href="$org->donation_url" target="_blank" rel="noopener noreferrer nofollow sponsored" data-organization-donation="{{ $org->slug }}">{{ __('organizations.donate') }}</x-ui.button><p class="text-sm mt-3">{{ __('organizations.donation_disclosure') }}</p></div>
             @endif
             <div class="space-y-3">
                 <x-ui.button type="button" data-share-url="{{ $profileUrl }}" data-share-title="{{ $org->name }}">{{ __('organizations.share') }}</x-ui.button>
@@ -53,7 +53,7 @@
     <div class="grid md:grid-cols-3 gap-8">
         <div class="md:col-span-2 min-w-0">
             @if($org->localized('description'))<section class="mb-8"><h2 class="text-2xl font-bold mb-4">{{ __('organizations.description') }}</h2><p class="whitespace-pre-line break-words">{{ $org->localized('description') }}</p></section>@endif
-            <section class="border-t border-border pt-6"><p class="mb-4">{{ trans_choice('organizations.petition_count', (int)$org->public_petitions_count, ['count'=>(int)$org->public_petitions_count]) }} · {{ trans_choice('organizations.signature_count', (int)$org->signatures_total, ['count'=>(int)$org->signatures_total]) }}</p><h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>@include('organizations._campaigns')</section>
+            <section class="border-t border-border pt-6"><p class="mb-4">{{ trans_choice('organizations.petition_count', (int)$org->public_petitions_count, ['count'=>(int)$org->public_petitions_count]) }} · {{ trans_choice('organizations.signature_count', (int)$org->signatures_total, ['count'=>(int)$org->signatures_total]) }}</p><span>{{ trans_choice('organizations.victory_count', (int)$org->victories_count, ['count'=>(int)$org->victories_count]) }}</span><h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>@include('organizations._campaigns')</section>
         </div>
         <aside class="space-y-6 min-w-0">
             @if($org->country === 'IT' && $org->tax_code)

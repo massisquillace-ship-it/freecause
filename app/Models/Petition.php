@@ -11,6 +11,8 @@ class Petition extends Model
 {
     use HasFactory, HasTranslations;
 
+    public const OUTCOMES = ['open', 'delivered', 'victory', 'closed'];
+
     public const GOALS = [50, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 10000000];
 
     protected $fillable = [
@@ -28,8 +30,21 @@ class Petition extends Model
     ];
 
     protected $casts = [
+        'outcome_at' => 'date', 'outcome_updated_at' => 'datetime',
         'last_notified_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Petition $petition) {
+            if ($petition->organization_id) {
+                OrganizationEvent::create([
+                    'organization_id' => $petition->organization_id, 'actor_user_id' => $petition->user_id,
+                    'event' => 'campaign_created', 'details' => ['petition_id' => $petition->id], 'created_at' => now(),
+                ]);
+            }
+        });
+    }
 
     public function user()
     {

@@ -20,6 +20,10 @@ class MailText
             $values['welcome_'.$key] = trans('profile.welcome_'.$key, [], $locale);
         }
 
+        foreach (trans('organizations.mail', [], $locale) as $key => $value) {
+            $values['organization_'.$key] = $value;
+        }
+
         $values['verify_heading'] = $values['verify_subject'];
         $values['verify_footer'] = trans('profile.welcome_footer', [], $locale);
         $values['common_petition'] = trans('common.petition', [], $locale);

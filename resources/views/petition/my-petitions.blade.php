@@ -54,6 +54,7 @@
                                         <div class="text-sm leading-[1.2] flex-1">{{ $p->tr_title }}</div>
                                         <div class="text-sm text-ink whitespace-nowrap fc-tabular">{{ optional($p->created_at)->format('j F Y') }}</div>
                                     </a>
+                                    <a class="underline text-sm" href="{{ lroute('petition.outcome', ['locale'=>$locale,'slug'=>$p->tr_slug,'id'=>$p->id]) }}">{{ __('organizations.update_outcome') }}</a>
                                     @if ($p->status === 'published' && $p->is_active)
                                         @include('partials.petition-withdraw', ['slug' => $p->tr_slug, 'id' => $p->id])
                                     @endif

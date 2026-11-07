@@ -146,6 +146,7 @@
                         <a href="{{ route('admin.petitions', array_merge(request()->query(), ['select' => $p->id])) }}">
                             {{ $p->id }}
                         </a>
+                        @if(admin_can('petitions','edit'))<a class="underline text-sm block" href="{{ route('admin.petitions.outcome', ['petition'=>$p->id]) }}">{{ __('organizations.update_outcome') }}</a>@endif
                     </td>
 
                     <td>

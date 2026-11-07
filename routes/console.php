@@ -20,6 +20,8 @@ Schedule::call(fn () => DB::table('aggregate_traffic')->where('hour', '<', now('
     ->name('aggregate-traffic:prune')->daily();
 
 Schedule::call(fn () => app(DashboardController::class)->warm())->name('dashboard:warm')->withoutOverlapping(30)->everyFiveMinutes();
+Schedule::command('organizations:retry-notifications')->everyTenMinutes()->withoutOverlapping();
+
 Schedule::command('queue:monitor', [
     '--alert-email' => Settings::get('email_to_staff', '') ?: config('mail.from.address'),
 ])->everyFiveMinutes();

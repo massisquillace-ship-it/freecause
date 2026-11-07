@@ -7,5 +7,8 @@ return [
     'applications_open' => env('ORGANIZATIONS_APPLICATIONS_OPEN', false),
     'terms_version' => env('ORGANIZATIONS_TERMS_VERSION', ''),
     'terms' => [],
+    'notifications_enabled' => env('ORGANIZATIONS_NOTIFICATIONS_ENABLED', false),
+    'admin_email' => env('ORGANIZATIONS_ADMIN_EMAIL'),
+    'admin_locale' => env('ORGANIZATIONS_ADMIN_LOCALE', 'en'),
     'support_email' => env('ORGANIZATIONS_SUPPORT_EMAIL'),
 ];
