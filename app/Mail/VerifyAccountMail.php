@@ -21,7 +21,7 @@ class VerifyAccountMail extends Mailable implements ShouldQueue
 
     public bool $isEmailChange;
 
-    public function __construct($user, string $locale)
+    public function __construct($user, string $locale, public array $organizationConsentLinks = [])
     {
         $this->firstName = $user->first_name ?? '';
         $this->verificationToken = $user->verification_token ?? '';
@@ -39,6 +39,7 @@ class VerifyAccountMail extends Mailable implements ShouldQueue
         return $this->subject($subject)
             ->view('emails.verify-account')
             ->with([
+                'organizationConsentLinks' => $this->organizationConsentLinks,
                 'locale' => $this->locale,
                 'emailLocale' => $this->locale,
                 'token' => $this->verificationToken,
