@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\OrganizationProfileRequest;
+use App\Jobs\PurgeOrganizationAttribution;
 use App\Models\Cause;
 use App\Models\Organization;
+use App\Models\Petition;
+use App\Models\Signature;
 use App\Models\User;
 use App\Services\OrganizationImages;
 use App\Services\OrganizationLifecycle;
@@ -16,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class OrganizationController extends Controller
@@ -28,6 +32,78 @@ class OrganizationController extends Controller
         $view = view('organizations.landing', ['owned' => $owned, 'applicationsOpen' => $this->applicationsOpen()]);
 
         return auth('web')->check() ? $this->privateResponse($view) : $view;
+    }
+
+    public function explore(Request $request)
+    {
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'cause' => ['nullable', 'string', Rule::exists('causes', 'slug')],
+            'country' => ['nullable', Rule::in(Countries::codes())],
+            'sort' => ['nullable', Rule::in(['name', 'signatures', 'newest'])],
+        ]);
+        $query = Organization::public()->withCampaignTotals()->with('causes');
+        if (filled($filters['q'] ?? null)) {
+            $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], trim($filters['q']));
+            $query->whereRaw("organizations.name LIKE ? ESCAPE '!'", ['%'.$literal.'%']);
+        }
+        if (filled($filters['cause'] ?? null)) {
+            $query->whereHas('causes', fn ($q) => $q->where('slug', $filters['cause']));
+        }
+        if (filled($filters['country'] ?? null)) {
+            $query->where('country', $filters['country']);
+        }
+        match ($filters['sort'] ?? 'name') {
+            'newest' => $query->orderByDesc('verified_at')->orderByDesc('id'),
+            'signatures' => $query->orderByDesc('signatures_total')->orderBy('name')->orderBy('id'),
+            default => $query->orderBy('name')->orderBy('id'),
+        };
+
+        return view('organizations.explore', [
+            'organizations' => $query->paginate(12)->withQueryString(), 'filters' => $filters,
+            'countries' => Countries::all(), 'causes' => Cause::orderBy('sort_order')->get(),
+        ]);
+    }
+
+    public function campaigns(string $locale, string $slug)
+    {
+        $org = $this->owned($slug);
+        $campaigns = $org->petitions()->where(fn ($q) => $q->where('user_id', auth()->id())->orWhere(fn ($public) => $public->visible()))->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
+        $available = Petition::where('user_id', auth()->id())->whereNull('organization_id')
+            ->with('translations')->orderByDesc('id')->paginate(12, ['*'], 'available_page');
+
+        return $this->privateResponse(view('organizations.campaigns', compact('org', 'campaigns', 'available')));
+    }
+
+    public function attach(Request $request, string $locale, string $slug)
+    {
+        $data = $request->validate(['petition_id' => ['required', 'integer'], 'confirm' => ['accepted']]);
+        $this->changeAttribution($slug, (int) $data['petition_id'], true);
+
+        return back()->with('success', __('organizations.saved'));
+    }
+
+    public function detach(Request $request, string $locale, string $slug, int $petition)
+    {
+        $request->validate(['confirm' => ['accepted']]);
+        $this->changeAttribution($slug, $petition, false);
+
+        return back()->with('success', __('organizations.saved'));
+    }
+
+    private function changeAttribution(string $slug, int $petitionId, bool $attach): void
+    {
+        DB::transaction(function () use ($slug, $petitionId, $attach) {
+            $org = Organization::where('slug', $slug)->lockForUpdate()->firstOrFail();
+            abort_unless((int) $org->owner_user_id === (int) auth()->id() && $org->status === 'verified', 403);
+            $petition = Petition::whereKey($petitionId)->lockForUpdate()->firstOrFail();
+            abort_unless((int) $petition->user_id === (int) auth()->id(), 403);
+            abort_unless($attach ? $petition->organization_id === null : (int) $petition->organization_id === (int) $org->id, 409);
+            $petition->organization_id = $attach ? $org->id : null;
+            $petition->save();
+            $this->lifecycle->record($org, auth()->id(), $attach ? 'petition_attached' : 'petition_detached', ['petition_id' => $petition->id]);
+            PurgeOrganizationAttribution::dispatch($org->id, $petition->id);
+        }, 3);
     }
 
     public function terms()
@@ -71,16 +147,24 @@ class OrganizationController extends Controller
 
     public function show(string $locale, string $slug)
     {
-        $org = Organization::public()->with('causes')->where('slug', $slug)->firstOrFail();
+        $org = Organization::public()->withCampaignTotals()->with('causes')->where('slug', $slug)->firstOrFail();
 
-        return view('organizations.show', ['org' => $org, 'profileUrl' => canonical_url($locale.'/org/'.$org->slug)]);
+        $campaigns = $org->petitions()->visible()->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
+
+        return view('organizations.show', ['campaigns' => $campaigns, 'org' => $org, 'profileUrl' => canonical_url($locale.'/org/'.$org->slug)]);
     }
 
     public function manage(string $locale, string $slug)
     {
         $org = $this->owned($slug);
+        $org->loadCount(['petitions as public_petitions_count' => fn ($q) => $q->visible()]);
+        $org->signatures_total = $org->petitions()->visible()->sum('signature_count');
+        $consents = Signature::where('org_optin_organization_id', $org->id)
+            ->where('org_optin', true)->whereNull('org_optin_revoked_at')->where('confirmed', true)->where('is_spam', false);
+        $consentTotal = (clone $consents)->count();
+        $consentRecent = $consents->where('org_optin_at', '>=', now()->subDays(30))->count();
 
-        return $this->privateResponse(view('organizations.manage', compact('org')));
+        return $this->privateResponse(view('organizations.manage', compact('org', 'consentTotal', 'consentRecent')));
     }
 
     public function edit(string $locale, string $slug)
