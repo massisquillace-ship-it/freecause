@@ -149,7 +149,7 @@ class OrganizationController extends Controller
     {
         $org = Organization::public()->withCampaignTotals()->with('causes')->where('slug', $slug)->firstOrFail();
 
-        $campaigns = $org->petitions()->visible()->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
+        $campaigns = $org->petitions()->visible()->with('translations')->orderByRaw("CASE WHEN outcome = 'victory' THEN 0 ELSE 1 END")->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
 
         return view('organizations.show', ['campaigns' => $campaigns, 'org' => $org, 'profileUrl' => canonical_url($locale.'/org/'.$org->slug)]);
     }
@@ -157,7 +157,7 @@ class OrganizationController extends Controller
     public function manage(string $locale, string $slug)
     {
         $org = $this->owned($slug);
-        $org->loadCount(['petitions as public_petitions_count' => fn ($q) => $q->visible()]);
+        $org->loadCount(['petitions as public_petitions_count' => fn ($q) => $q->visible(), 'petitions as victories_count' => fn ($q) => $q->visible()->where('outcome', 'victory')]);
         $org->signatures_total = $org->petitions()->visible()->sum('signature_count');
         $consents = Signature::where('org_optin_organization_id', $org->id)
             ->where('org_optin', true)->whereNull('org_optin_revoked_at')->where('confirmed', true)->where('is_spam', false);
