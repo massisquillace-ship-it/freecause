@@ -25,7 +25,7 @@ class Seo
     public static function canonical(): string
     {
         $params = [];
-        if (self::isListing()) {
+        if (self::isListing() || request()->routeIs('organizations.explore')) {
             $search = request()->query('q');
             if (is_string($search) && trim($search) !== '') {
                 $params['q'] = trim($search);
@@ -69,16 +69,17 @@ class Seo
     public static function robots(array $data): string
     {
         $public = request()->routeIs(
-            'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show',
+            'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show', 'organizations.explore',
             'page.show', 'faqs', 'how-to-write-a-petition', 'donations',
             'personal-data-processing', 'contacts'
         );
         $petition = $data['petition'] ?? null;
+        $organizationFiltered = request()->routeIs('organizations.explore') && (filled(request()->query('q')) || filled(request()->query('cause')) || filled(request()->query('country')) || request()->query('sort'));
         $filtered = self::isListing() && (
             filled(request()->query('q')) || in_array(request()->query('sort'), ['signed', 'trending'], true)
         );
         $emptyListing = self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty();
-        if (! $public || isset($data['exception']) || $filtered || $emptyListing
+        if (! $public || isset($data['exception']) || $organizationFiltered || $filtered || $emptyListing
             || (request()->routeIs('petition.show') && $petition && $petition->status !== 'published')
             || request()->has('status') || request()->query('view') === 'pages') {
             return 'noindex, follow';
@@ -89,7 +90,7 @@ class Seo
 
     public static function alternates(array $data): array
     {
-        if (str_starts_with(self::robots($data), 'noindex') || (self::isListing() && (int) request()->query('page', 1) > 1)) {
+        if (str_starts_with(self::robots($data), 'noindex') || ((self::isListing() || request()->routeIs('organizations.explore')) && (int) request()->query('page', 1) > 1)) {
             return [];
         }
         $active = Locale::supported();
@@ -112,6 +113,11 @@ class Seo
                 ->where('p.is_active', 1)
                 ->whereNotNull('pt.title'))->get(['locale', 'slug']) as $tr) {
                 $links[$tr->locale] = canonical_url($tr->locale.'/petitions/category-'.rawurlencode($tr->slug).'-'.$data['category']->id);
+            }
+        } elseif (request()->routeIs('organizations.show', 'organizations', 'organizations.explore')) {
+            $suffix = request()->routeIs('organizations.show') ? '/org/'.rawurlencode($data['org']->slug) : (request()->routeIs('organizations.explore') ? '/organizations/explore' : '/organizations');
+            foreach ($active as $locale) {
+                $links[$locale] = canonical_url($locale.$suffix);
             }
         } elseif (request()->routeIs('home', 'petitions.index', 'contacts')) {
             $suffix = request()->routeIs('petitions.index') ? '/petitions' : (request()->routeIs('contacts') ? '/contacts' : '');
