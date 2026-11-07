@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
 use App\Models\PageTranslation;
 use App\Support\CacheVersion;
 use Closure;
@@ -21,11 +22,12 @@ class SitemapController extends Controller
 
     public function index()
     {
-        return $this->xml($this->cached('index.v3', function () {
+        return $this->xml($this->cached('index.v4', function () {
             return '<?xml version="1.0" encoding="UTF-8"?>'."\n".
                 '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n".
                 $this->indexEntry('sitemap-pages.xml').
                 $this->indexEntry('sitemap-categories.xml').
+                $this->indexEntry('sitemap-organizations.xml').
                 $this->petitionIndexEntries().
                 '</sitemapindex>';
         }));
@@ -63,12 +65,14 @@ class SitemapController extends Controller
 
     public function pages()
     {
-        return $this->xml($this->cached('pages.v2', function () {
+        return $this->xml($this->cached('pages.v3', function () {
             $pagesByLocale = [];
 
             foreach (active_locales() as $locale) {
                 $pagesByLocale[$locale] = [$this->pageEntry(canonical_url($locale))];
                 $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/petitions'));
+                $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations'));
+                $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
 
                 foreach (self::STATIC_PAGE_SLUGS as $slug) {
                     $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/'.$slug));
@@ -198,6 +202,26 @@ class SitemapController extends Controller
 
                     $out .= $this->urlEntry($this->pageEntry($loc, $dates ? $this->dateOnly(max($dates)) : null, $alternates));
                 }
+            }
+
+            return $out.'</urlset>';
+        }));
+    }
+
+    public function organizations()
+    {
+        return $this->xml($this->cached('organizations.v1', function () {
+            $out = $this->urlsetHeader();
+            $locales = active_locales();
+            $default = default_locale();
+            foreach (Organization::public()->orderBy('id')->cursor() as $org) {
+                $alternates = [];
+                foreach ($locales as $locale) {
+                    $alternates[] = ['hreflang' => $locale, 'href' => canonical_url($locale.'/org/'.rawurlencode($org->slug))];
+                }
+                $url = canonical_url($default.'/org/'.rawurlencode($org->slug));
+                $alternates[] = ['hreflang' => 'x-default', 'href' => $url];
+                $out .= $this->urlEntry($this->pageEntry($url, $org->updated_at?->toDateString(), $alternates));
             }
 
             return $out.'</urlset>';
