@@ -47,6 +47,7 @@ class AdminOrganizationsController extends Controller
                 if ($action === 'founding') {
                     $org->founding_partner = ! $org->founding_partner;
                 } elseif ($action === 'donation') {
+                    abort_if($org->donation_url_approved_at !== null, 409);
                     abort_unless($org->status === 'verified' && $org->owner_user_id && filled($org->donation_url), 409);
                     // Bind approval to the exact URL the administrator reviewed.
                     $request->validate(['reviewed_donation_url' => ['required', 'string', Rule::in([$org->donation_url])]]);
