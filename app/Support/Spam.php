@@ -54,14 +54,14 @@ class Spam
     /**
      * @param  array<int, string>  $ignore
      */
-    public static function isSpam(string $text, array $ignore = []): bool
+    public static function isSpam(string $text, array $ignore = [], bool $ignoreDerived = false): bool
     {
         $text = strtr(strtolower($text), ['1' => 'i']);
 
         $ignored = array_map(fn ($term) => mb_strtolower(trim((string) $term)), $ignore);
 
         foreach (self::$badKeywords as $word) {
-            if (in_array($word, $ignored, true) && ! self::hasDerivedOccurrence($word, $text)) {
+            if (in_array($word, $ignored, true) && ($ignoreDerived || ! self::hasDerivedOccurrence($word, $text))) {
                 continue;
             }
 
