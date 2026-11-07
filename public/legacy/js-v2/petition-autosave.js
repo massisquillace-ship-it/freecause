@@ -117,6 +117,19 @@
             if (!Object.prototype.hasOwnProperty.call(draft, f.name)) {
                 continue;
             }
+            // Attribution is an explicit saved choice, including an empty 'Myself'.
+            // Never replace it with the newest organization on a later visit.
+            if (f.name === 'organization_id' && editId === 'new' && typeof draft[f.name] === 'string') {
+                var choice = draft[f.name];
+                if (!Array.prototype.some.call(f.options, function (option) { return option.value === choice; })) {
+                    var unavailable = document.createElement('option');
+                    unavailable.value = choice;
+                    unavailable.textContent = form.getAttribute('data-organization-unavailable');
+                    f.appendChild(unavailable);
+                }
+                f.value = choice;
+                continue;
+            }
             var current = f.value;
             var stored = draft[f.name];
             if ((current === '' || current == null) && stored) {
