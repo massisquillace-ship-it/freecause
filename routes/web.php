@@ -31,6 +31,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegacyShortLinkController;
+use App\Http\Controllers\OrganizationConsentController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetitionController;
@@ -289,12 +290,18 @@ Route::prefix('{locale}')
     ->middleware(['setLocale', 'block.banned.user'])
     ->group(function () use ($withoutSession) {
         Route::get('/organizations', [OrganizationController::class, 'landing'])->name('organizations');
+        Route::get('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'show'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke');
+        Route::post('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'revoke'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke.post');
+        Route::get('/organizations/explore', [OrganizationController::class, 'explore'])->name('organizations.explore');
         Route::get('/organizations/terms', [OrganizationController::class, 'terms'])->name('organizations.terms');
         Route::get('/org/{slug}', [OrganizationController::class, 'show'])->name('organizations.show');
         Route::middleware(['auth', 'profile.complete', 'no.cache'])->group(function () {
             Route::get('/organizations/apply', [OrganizationController::class, 'apply'])->name('organizations.apply');
             Route::post('/organizations/apply', [OrganizationController::class, 'store'])->middleware('throttle:5,1')->name('organizations.store');
             Route::get('/org/{slug}/manage', [OrganizationController::class, 'manage'])->name('organizations.manage');
+            Route::get('/org/{slug}/manage/petitions', [OrganizationController::class, 'campaigns'])->name('organizations.campaigns');
+            Route::post('/org/{slug}/manage/petitions/attach', [OrganizationController::class, 'attach'])->middleware('throttle:20,1')->name('organizations.attach');
+            Route::post('/org/{slug}/manage/petitions/{petition}/detach', [OrganizationController::class, 'detach'])->whereNumber('petition')->middleware('throttle:20,1')->name('organizations.detach');
             Route::get('/org/{slug}/manage/profile', [OrganizationController::class, 'edit'])->name('organizations.edit');
             Route::post('/org/{slug}/manage/profile', [OrganizationController::class, 'update'])->middleware('throttle:10,1')->name('organizations.update');
             Route::post('/org/{slug}/manage/resubmit', [OrganizationController::class, 'resubmit'])->middleware('throttle:5,1')->name('organizations.resubmit');
