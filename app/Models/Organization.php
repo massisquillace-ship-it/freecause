@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\PurgeOrganizationAttribution;
 use App\Support\Settings;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,6 +27,15 @@ class Organization extends Model
         'representation_confirmed_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Organization $org) {
+            if ($org->wasChanged(['status', 'owner_user_id', 'name', 'logo_path', 'slug'])) {
+                PurgeOrganizationAttribution::dispatch($org->id);
+            }
+        });
+    }
+
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_user_id');
@@ -34,6 +44,20 @@ class Organization extends Model
     public function causes()
     {
         return $this->belongsToMany(Cause::class, 'cause_organization');
+    }
+
+    public function petitions()
+    {
+        return $this->hasMany(Petition::class);
+    }
+
+    // Read only denormalized counters; never scan raw signatures on public pages.
+    public function scopeWithCampaignTotals($query)
+    {
+        return $query->addSelect(['signatures_total' => Petition::visible()
+            ->selectRaw('COALESCE(SUM(signature_count), 0)')
+            ->whereColumn('organization_id', 'organizations.id')])
+            ->withCount(['petitions as public_petitions_count' => fn ($q) => $q->visible()]);
     }
 
     public function events()
