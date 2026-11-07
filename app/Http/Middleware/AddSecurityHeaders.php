@@ -24,11 +24,13 @@ class AddSecurityHeaders
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Referrer-Policy', $request->routeIs('organizations.badge', 'organizations.consent.revoke', 'organizations.consent.revoke.post') ? 'no-referrer' : 'strict-origin-when-cross-origin');
 
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 
-        if ($request->is('admin') || $request->is('admin/*')) {
+        if ($request->routeIs('organizations.badge')) {
+            $csp = "default-src 'none'; style-src 'unsafe-inline'; sandbox; frame-ancestors 'none'";
+        } elseif ($request->is('admin') || $request->is('admin/*')) {
             $csp =
                 "default-src 'self'; ".
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' ".
