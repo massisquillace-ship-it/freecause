@@ -82,5 +82,6 @@ class E2eSeeder extends Seeder
                 ]);
             }
         }
+        $this->call(OrganizationE2eSeeder::class);
     }
 }

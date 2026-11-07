@@ -20,6 +20,7 @@
                 ['route' => 'admin.spam', 'label' => 'spam', 'is' => 'admin.spam', 'module' => 'spam'],
                 ['route' => 'admin.keywords', 'label' => 'review keywords', 'is' => 'admin.keywords', 'module' => 'spam'],
                 ['route' => 'admin.reports', 'label' => 'reports', 'is' => 'admin.reports', 'module' => 'reports'],
+                ['route' => 'admin.organizations', 'label' => __('organizations.title'), 'is' => 'admin.organizations*', 'module' => 'organizations'],
                 ['route' => 'admin.stats', 'label' => 'statistics', 'is' => 'admin.stats', 'module' => 'stats'],
                 ['route' => 'admin.logs', 'label' => 'logs', 'is' => 'admin.logs', 'module' => 'logs'],
                 ['route' => 'admin.languages.index', 'label' => 'languages', 'is' => 'admin.languages.index', 'module' => 'languages'],

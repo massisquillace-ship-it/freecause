@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminCategoriesController;
 use App\Http\Controllers\Admin\AdminLanguagesController;
 use App\Http\Controllers\Admin\AdminLogsController;
+use App\Http\Controllers\Admin\AdminOrganizationsController;
 use App\Http\Controllers\Admin\AdminPagesController;
 use App\Http\Controllers\Admin\AdminPetitionDeleteController;
 use App\Http\Controllers\Admin\AdminPetitionsController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegacyShortLinkController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetitionController;
 use App\Http\Controllers\SitemapController;
@@ -173,6 +175,10 @@ Route::prefix('admin')->name('admin.')->middleware('no.cache')->group(function (
     Route::middleware(['admin.auth', 'admin.audit'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
+        Route::get('/organizations', [AdminOrganizationsController::class, 'index'])->middleware('permission:organizations,view')->name('organizations');
+        Route::get('/organizations/{organization}', [AdminOrganizationsController::class, 'show'])->whereNumber('organization')->middleware('permission:organizations,view')->name('organizations.show');
+        Route::post('/organizations/{organization}/{action}', [AdminOrganizationsController::class, 'action'])->whereNumber('organization')->where('action', 'verify|reject|suspend|restore|founding|donation|reassign|identity')->middleware('permission:organizations,edit')->name('organizations.action');
+
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/options/global', [GlobalOptionsController::class, 'edit'])->middleware('permission:options,view')->name('options.global');
@@ -282,6 +288,18 @@ Route::prefix('{locale}')
 Route::prefix('{locale}')
     ->middleware(['setLocale', 'block.banned.user'])
     ->group(function () use ($withoutSession) {
+        Route::get('/organizations', [OrganizationController::class, 'landing'])->name('organizations');
+        Route::get('/organizations/terms', [OrganizationController::class, 'terms'])->name('organizations.terms');
+        Route::get('/org/{slug}', [OrganizationController::class, 'show'])->name('organizations.show');
+        Route::middleware(['auth', 'profile.complete', 'no.cache'])->group(function () {
+            Route::get('/organizations/apply', [OrganizationController::class, 'apply'])->name('organizations.apply');
+            Route::post('/organizations/apply', [OrganizationController::class, 'store'])->middleware('throttle:5,1')->name('organizations.store');
+            Route::get('/org/{slug}/manage', [OrganizationController::class, 'manage'])->name('organizations.manage');
+            Route::get('/org/{slug}/manage/profile', [OrganizationController::class, 'edit'])->name('organizations.edit');
+            Route::post('/org/{slug}/manage/profile', [OrganizationController::class, 'update'])->middleware('throttle:10,1')->name('organizations.update');
+            Route::post('/org/{slug}/manage/resubmit', [OrganizationController::class, 'resubmit'])->middleware('throttle:5,1')->name('organizations.resubmit');
+        });
+
         Route::get('/oauth/google', [GoogleAuthController::class, 'redirect'])->name('oauth.google');
         Route::get('/oauth/google/callback', [GoogleAuthController::class, 'callback'])->name('oauth.google.callback');
 

@@ -13,6 +13,7 @@ use App\Mail\VerifyAccountMail;
 use App\Models\Language;
 use App\Models\User;
 use App\Models\UserLevel;
+use App\Services\OrganizationLifecycle;
 use App\Services\PetitionSigning;
 use App\Services\WordPressUserDeletionService;
 use App\Support\AppLog;
@@ -394,7 +395,10 @@ class AuthController extends Controller
         }
 
         try {
-            User::query()->whereKey($u->getKey())->delete();
+            DB::transaction(function () use ($u) {
+                app(OrganizationLifecycle::class)->suspendForDeletedOwner($u);
+                User::query()->whereKey($u->getKey())->delete();
+            }, 3);
         } catch (\Throwable $e) {
             AppLog::error(
                 'Account deletion failed at local delete step',

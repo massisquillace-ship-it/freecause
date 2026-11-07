@@ -54,6 +54,8 @@ class Seo
             $description = $petition && ! $petition->is_active
                 ? $tr->title.'. '.__('pet.offline_title')
                 : ($tr->description ?: $tr->title);
+        } elseif (request()->routeIs('organizations.show') && isset($data['org'])) {
+            $description = $data['org']->localized('tagline') ?: $data['org']->localized('description');
         } elseif ($tr instanceof PageTranslation) {
             $description = $tr->content ?: $tr->title;
         } elseif (self::isListing()) {
@@ -67,7 +69,7 @@ class Seo
     public static function robots(array $data): string
     {
         $public = request()->routeIs(
-            'home', 'petitions.index', 'petitions.byCategory', 'petition.show',
+            'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show',
             'page.show', 'faqs', 'how-to-write-a-petition', 'donations',
             'personal-data-processing', 'contacts'
         );

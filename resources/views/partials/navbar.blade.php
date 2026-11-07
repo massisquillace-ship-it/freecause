@@ -32,6 +32,7 @@
                         {{ $explore }}
                     </a>
                 </li>
+                <li class="nav-item"><a class="nav-link" href="{{ lroute('organizations') }}">{{ __('organizations.nav') }}</a></li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/magazine') }}">
                         {{ $c['nav_magazine'] ?? __('nav.magazine') }}
@@ -90,6 +91,7 @@
             <x-lucide-circle-help aria-hidden="true" />
             <span>{{ $help }}</span>
         </a>
+        <a class="fcui-sheet-list__item" href="{{ lroute('organizations') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('organizations.nav') }}</span></a>
         <a class="fcui-sheet-list__item" href="{{ url('/magazine') }}">
             <x-lucide-newspaper aria-hidden="true" />
             <span>{{ $c['nav_magazine'] ?? __('nav.magazine') }}</span>

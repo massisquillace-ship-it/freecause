@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SettingsSeeder::class);
         $this->call(StaticPageSeeder::class);
         $this->call(CategorySeeder::class);
+        $this->call(OrganizationCauseSeeder::class);
         $this->call(PermissionSeeder::class);
     }
 }

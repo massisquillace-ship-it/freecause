@@ -11,6 +11,7 @@ use App\Mail\VerifyAccountMail;
 use App\Models\Language;
 use App\Models\User;
 use App\Models\UserLevel;
+use App\Services\OrganizationLifecycle;
 use App\Services\PetitionSigning;
 use App\Services\WordPressUserDeletionService;
 use App\Support\AppLog;
@@ -534,7 +535,11 @@ class AdminUsersController extends Controller
                 continue;
             }
 
-            $deleted += $user->delete() ? 1 : 0;
+            $deleted += DB::transaction(function () use ($user) {
+                app(OrganizationLifecycle::class)->suspendForDeletedOwner($user);
+
+                return $user->delete() ? 1 : 0;
+            }, 3);
         }
 
         if ($deleted > 0) {

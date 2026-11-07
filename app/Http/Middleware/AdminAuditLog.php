@@ -62,6 +62,7 @@ class AdminAuditLog
         $normalized = strtolower(preg_replace('/[^a-z0-9]/i', '', $key));
 
         return preg_match('/password|passwd|passphrase|secret|token|authorization|credential|apikey|privatekey|otp|onetimecode|codeverifier|authcode|clientassertion/', $normalized) === 1
+            || in_array($normalized, ['verificationreference', 'verificationnote', 'rejectionreason', 'suspensionreason', 'reason'], true)
             || $normalized === 'pass'
             || preg_match('/(?:^|[_-])pass(?:$|[_-])/i', $key) === 1
             || preg_match('/[a-z]Pass$/', $key) === 1;

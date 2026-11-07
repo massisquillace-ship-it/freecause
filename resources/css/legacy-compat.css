@@ -724,6 +724,16 @@ a:not([data-slot]):hover{
     font-style: normal;
     font-display: swap;
 }
+/* Core Latin glyphs use the same variable font in a smaller file. The full
+   preceding face remains the fallback for every other supported script. */
+@font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter/InterVariable-latin.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0152-0153, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2713;
+}
 a:not([data-slot]){
     color: #cc1f1f;
 }
