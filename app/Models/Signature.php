@@ -20,7 +20,10 @@ class Signature extends Model
         'ip_address',
     ];
 
+    protected $hidden = ['org_optin_revoke_token'];
+
     protected $casts = [
+        'org_optin' => 'boolean', 'org_optin_at' => 'datetime', 'org_optin_revoked_at' => 'datetime',
         'confirmed' => 'boolean',
         'is_spam' => 'boolean',
     ];
