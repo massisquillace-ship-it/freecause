@@ -77,7 +77,7 @@ class AuthController extends Controller
 
         $userLevel = UserLevel::where('name', 'user')->first();
 
-        if (Spam::isSpam($data['email'])) {
+        if (Spam::isSpam($data['email'], Spam::reviewOwned())) {
             Spam::log('register', $data['email']);
 
             AppLog::warning(

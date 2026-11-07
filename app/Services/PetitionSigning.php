@@ -66,13 +66,7 @@ class PetitionSigning
             return back()->withInput();
         }
 
-        $spamText = implode(' ', [
-            $data['name'] ?? '',
-            $data['email'] ?? '',
-            $data['comment'] ?? '',
-        ]);
-
-        if (Spam::isSpam($spamText, Spam::reviewOwned())) {
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned())) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
