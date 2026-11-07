@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Organization;
 use App\Models\Petition;
 use App\Services\PageContentService;
 use App\Support\CacheKeys;
@@ -74,7 +75,13 @@ class HomeController extends Controller
 
         $magazinePosts = array_map(fn ($r) => is_array($r) ? (object) $r : $r, (array) $magazinePosts);
 
+        $organizations = Organization::public()->with('causes')->orderByDesc('verified_at')->orderByDesc('id')->limit(6)->get();
+        if ($organizations->count() < 3) {
+            $organizations = collect();
+        }
+
         return view('pages.home', compact(
+            'organizations',
             'content',
             'categories',
             'featuredPetition',
