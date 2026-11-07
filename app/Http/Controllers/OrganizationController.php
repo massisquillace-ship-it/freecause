@@ -68,7 +68,7 @@ class OrganizationController extends Controller
     public function campaigns(string $locale, string $slug)
     {
         $org = $this->owned($slug);
-        $campaigns = $org->petitions()->where(fn ($q) => $q->where('user_id', auth()->id())->orWhere(fn ($public) => $public->visible()))->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
+        $campaigns = $org->petitions()->withExists(['signatures as has_external_signatures' => fn ($q) => $q->where('confirmed', true)->where('is_spam', false)->where(fn ($signer) => $signer->whereColumn('signatures.user_id', '!=', 'petitions.user_id')->orWhereNull('signatures.user_id'))])->where(fn ($q) => $q->where('user_id', auth()->id())->orWhere(fn ($public) => $public->visible()))->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
         $available = Petition::where('user_id', auth()->id())->whereNull('organization_id')
             ->with('translations')->orderByDesc('id')->paginate(12, ['*'], 'available_page');
 
