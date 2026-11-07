@@ -335,6 +335,7 @@
 
     {{-- Ads: native --}}
     <x-ads.slot name="native" class="my-6" />
+    @include('organizations.home-cards')
 @endsection
 
 @push('head')
