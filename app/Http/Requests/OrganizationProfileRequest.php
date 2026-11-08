@@ -7,7 +7,10 @@ use App\Models\Organization;
 use App\Rules\OrganizationUrl;
 use App\Support\Countries;
 use App\Support\Locale;
+use App\Support\ReviewKeywords;
+use App\Support\Spam;
 use Database\Seeders\OrganizationCauseSeeder;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -72,5 +75,21 @@ class OrganizationProfileRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            foreach (['tagline', 'description'] as $field) {
+                foreach ((array) $this->input($field) as $locale => $text) {
+                    if (! is_string($text) || $text === '') {
+                        continue;
+                    }
+                    if (Spam::isSpam($text, Spam::reviewOwned()) || ReviewKeywords::matches($text) !== []) {
+                        $validator->errors()->add($field.'.'.$locale, __('organizations.text_rejected'));
+                    }
+                }
+            }
+        });
     }
 }
