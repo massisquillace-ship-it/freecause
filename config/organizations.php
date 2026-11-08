@@ -11,4 +11,5 @@ return [
     'admin_email' => env('ORGANIZATIONS_ADMIN_EMAIL'),
     'admin_locale' => env('ORGANIZATIONS_ADMIN_LOCALE', 'en'),
     'support_email' => env('ORGANIZATIONS_SUPPORT_EMAIL'),
+    'locales' => ['en', 'fr', 'it'],
 ];
