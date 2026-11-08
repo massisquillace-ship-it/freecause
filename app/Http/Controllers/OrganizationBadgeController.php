@@ -12,7 +12,7 @@ class OrganizationBadgeController extends Controller
     {
         abort_unless(in_array($locale, active_locales(), true), 404);
         App::setLocale($locale);
-        $org = Organization::public()->withCampaignTotals()->where('slug', $slug)->first();
+        $org = Organization::verified()->withCampaignTotals()->where('slug', $slug)->first();
         $svg = view('organizations.badge', compact('org'))->render();
         $etag = '"'.hash('sha256', $svg).'"';
         $response = response($svg, 200, [
