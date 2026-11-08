@@ -22,6 +22,10 @@ class OrganizationStatusMail extends Mailable
         $profile = in_array($this->event, ['verify', 'restore'], true) && ($this->notice['restored_verified'] ?? false);
         $path = $this->toAdmin ? 'admin/organizations/'.$this->organizationId : $this->emailLocale.'/org/'.rawurlencode($this->notice['slug']).($profile ? '' : '/manage');
 
+        if (! $this->toAdmin && $this->event === 'reject' && ! empty($this->notice['rejected_claimant'])) {
+            $path = $this->emailLocale.'/org/'.rawurlencode($this->notice['slug']).'/claim';
+        }
+
         return $this->subject($subject)->view('emails.organization-status')->with([
             'heading' => $subject, 'bodyText' => $body,
             'reason' => $this->notice['reason'] ?? '', 'destination' => canonical_url($path),
