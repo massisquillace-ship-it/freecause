@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Petition;
 use App\Support\EdgeCachePurge;
+use App\Support\ReviewKeywords;
+use App\Support\Spam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -59,6 +61,16 @@ class PetitionOutcomeController extends Controller
             }],
             'confirm_reopen' => ['nullable', 'boolean'],
         ]);
+        $summary = (string) ($data['outcome_summary'] ?? '');
+        if ($summary !== '' && ! $request->routeIs('admin.*')) {
+            if (Spam::isSpam($summary, Spam::reviewOwned())) {
+                Spam::log('petition.outcome', json_encode(['petition_id' => $id, 'summary' => $summary]));
+                throw ValidationException::withMessages(['outcome_summary' => __('create.err_suspicious')]);
+            }
+            if (ReviewKeywords::matches($summary) !== []) {
+                throw ValidationException::withMessages(['outcome_summary' => __('create.err_suspicious')]);
+            }
+        }
         DB::transaction(function () use ($id, $data, $request) {
             $petition = Petition::whereKey($id)->lockForUpdate()->firstOrFail();
             abort_unless($request->routeIs('admin.*') ? admin_can('petitions', 'edit') : (int) $petition->user_id === (int) auth('web')->id(), 403);

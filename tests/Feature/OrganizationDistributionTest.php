@@ -118,6 +118,26 @@ class OrganizationDistributionTest extends TestCase
         $this->assertDatabaseCount('petition_outcome_events', 0);
     }
 
+    public function test_owner_outcome_summary_with_hard_spam_keyword_is_rejected_and_logged(): void
+    {
+        $org = $this->org();
+        $petition = $this->petition($org);
+        $this->actingAs($org->owner)->post($this->outcomeUrl($petition), array_replace($this->victory(), ['outcome_summary' => 'Buy viagra cheap pills']))->assertSessionHasErrors('outcome_summary');
+        $this->assertSame('open', $petition->fresh()->outcome);
+        $this->assertDatabaseCount('petition_outcome_events', 0);
+        $this->assertDatabaseHas('spam_logs', ['type' => 'petition.outcome']);
+    }
+
+    public function test_owner_outcome_summary_with_review_keyword_is_rejected_and_clean_summary_saves(): void
+    {
+        $org = $this->org();
+        $petition = $this->petition($org);
+        $this->actingAs($org->owner)->post($this->outcomeUrl($petition), array_replace($this->victory(), ['outcome_summary' => 'We won thanks to the online casino']))->assertSessionHasErrors('outcome_summary');
+        $this->assertSame('open', $petition->fresh()->outcome);
+        $this->post($this->outcomeUrl($petition), $this->victory())->assertSessionHasNoErrors();
+        $this->assertSame('victory', $petition->fresh()->outcome);
+    }
+
     public function test_reopen_needs_confirmation_and_preserves_audit_without_publishing_a_draft(): void
     {
         $org = $this->org();
