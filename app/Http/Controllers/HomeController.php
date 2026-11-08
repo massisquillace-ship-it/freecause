@@ -75,7 +75,7 @@ class HomeController extends Controller
 
         $magazinePosts = array_map(fn ($r) => is_array($r) ? (object) $r : $r, (array) $magazinePosts);
 
-        $organizations = Organization::public()->with('causes')->orderByDesc('verified_at')->orderByDesc('id')->limit(6)->get();
+        $organizations = Organization::verified()->with('causes')->orderByDesc('verified_at')->orderByDesc('id')->limit(6)->get();
         if ($organizations->count() < 3) {
             $organizations = collect();
         }
