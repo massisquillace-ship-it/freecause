@@ -60,7 +60,10 @@ class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
             }
             $org = Organization::find($notice->organization_id);
             $recipient = $notice->recipient_user_id ? User::find($notice->recipient_user_id) : null;
-            if (! $org || (! $notice->to_admin && (! $recipient || (int) $org->owner_user_id !== (int) $recipient->id || $recipient->isBanned()))) {
+            $claimRejection = $org && $org->status === 'unclaimed' && $notice->event === 'reject'
+                && (int) ($notice->payload['rejected_claimant'] ?? 0) === (int) $notice->recipient_user_id;
+            $staleClaimRejection = ! empty($notice->payload['rejected_claimant']) && ! $claimRejection;
+            if (! $org || $staleClaimRejection || (! $notice->to_admin && (! $recipient || (! $claimRejection && (int) $org->owner_user_id !== (int) $recipient->id) || $recipient->isBanned()))) {
                 $notice->forceFill(['cancelled_at' => now()])->save();
 
                 return;
