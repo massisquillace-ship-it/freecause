@@ -30,6 +30,7 @@ class OrganizationDiscoveryTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
+        config(['organizations.public_launch' => true, 'organizations.min_directory_count' => 1]);
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class, OrganizationCauseSeeder::class]);
         config(['organizations.consent_enabled' => true]);
     }
