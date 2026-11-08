@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Hiermee worden uw account, uw profiel en uw aanmelding permanent verwijderd. Deze actie is onmiddellijk en kan niet ongedaan worden gemaakt.',
     'delete_google_why' => 'Voor uw veiligheid verifieert u met Google dat u het bent voordat wij uw account verwijderen.',
     'google_only_note' => 'Uw account logt in met Google. Voeg een wachtwoord toe zodat u ook met uw e-mailadres kunt inloggen.',
+    'email_needs_password' => 'Stel een wachtwoord in voordat u uw e-mailadres wijzigt.',
     'set_password_cta' => 'Wachtwoord instellen',
     'set_password' => 'Wachtwoord instellen',
     'set_password_help' => 'Maak een wachtwoord aan om uw account te beveiligen en inloggen met e-mail mogelijk te maken.',

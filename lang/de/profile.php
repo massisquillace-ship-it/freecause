@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Dadurch werden Ihr Konto, Ihr Profil und Ihre Anmeldung dauerhaft gelöscht. Diese Aktion erfolgt sofort und kann nicht rückgängig gemacht werden.',
     'delete_google_why' => 'Zu Ihrer Sicherheit bestätigen Sie bitte mit Google, dass Sie es sind, bevor wir Ihr Konto löschen.',
     'google_only_note' => 'Ihr Konto meldet sich mit Google an. Legen Sie ein Passwort fest, damit Sie sich auch mit Ihrer E-Mail-Adresse anmelden können.',
+    'email_needs_password' => 'Legen Sie ein Passwort fest, bevor Sie Ihre E-Mail-Adresse ändern.',
     'set_password_cta' => 'Passwort festlegen',
     'set_password' => 'Passwort festlegen',
     'set_password_help' => 'Erstellen Sie ein Passwort, um Ihr Konto zu schützen und die Anmeldung per E-Mail zu aktivieren.',

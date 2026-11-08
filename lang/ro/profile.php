@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Aceasta vă șterge definitiv contul, profilul și autentificarea. Această acțiune este imediată și nu poate fi anulată.',
     'delete_google_why' => 'Pentru siguranța dvs., confirmați cu Google că sunteți dvs. înainte de a vă șterge contul.',
     'google_only_note' => 'Contul dvs. se autentifică cu Google. Adăugați o parolă pentru a vă putea autentifica și cu emailul.',
+    'email_needs_password' => 'Setați o parolă înainte de a vă schimba adresa de email.',
     'set_password_cta' => 'Setați o parolă',
     'set_password' => 'Setați o parolă',
     'set_password_help' => 'Creați o parolă pentru a vă securiza contul și a activa autentificarea prin email.',

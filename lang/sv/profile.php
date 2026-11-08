@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Detta raderar permanent ditt konto, din profil och din inloggning. Åtgärden sker omedelbart och kan inte ångras.',
     'delete_google_why' => 'För din säkerhet, verifiera att det är du med Google innan vi raderar ditt konto.',
     'google_only_note' => 'Ditt konto loggar in med Google. Lägg till ett lösenord så att du även kan logga in med din e-postadress.',
+    'email_needs_password' => 'Ange ett lösenord innan du ändrar din e-postadress.',
     'set_password_cta' => 'Ange ett lösenord',
     'set_password' => 'Ange ett lösenord',
     'set_password_help' => 'Skapa ett lösenord för att säkra ditt konto och aktivera inloggning med e-post.',
