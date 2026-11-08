@@ -155,6 +155,9 @@
             {{ session('profile_completion') }} <a href="{{ lroute('profile') }}" class="underline font-semibold">{{ __('profile.finish_profile') }}</a>
         </div>
         @endif
+        @if (config('organizations.email_delivery_paused') && request()->routeIs('login', 'register', 'password.*', 'verification.*', 'organizations', 'organizations.apply', 'organizations.manage'))
+            <div class="container my-4" role="status"><p class="border border-border rounded-lg bg-surface-muted p-4 text-sm">{{ config('organizations.delivery_notices.'.app()->getLocale(), config('organizations.delivery_notices.en')) }}</p></div>
+        @endif
         @yield('content')
 
     </main>
