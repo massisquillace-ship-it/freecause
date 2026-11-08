@@ -538,7 +538,7 @@ class PetitionController extends Controller
                 }
 
                 if (filled($data['organization_id'] ?? null)) {
-                    $org = Organization::public()->where('owner_user_id', auth()->id())->whereKey($data['organization_id'])->lockForUpdate()->first();
+                    $org = Organization::verified()->where('owner_user_id', auth()->id())->whereKey($data['organization_id'])->lockForUpdate()->first();
                     if (! $org) {
                         throw ValidationException::withMessages(['organization_id' => __('organizations.invalid_attribution')]);
                     }
