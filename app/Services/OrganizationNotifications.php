@@ -19,9 +19,9 @@ class OrganizationNotifications
         };
         foreach ($targets as $admin) {
             $notice = OrganizationNotification::create([
-                'organization_id' => $org->id, 'recipient_user_id' => $admin ? null : $org->owner_user_id,
+                'organization_id' => $org->id, 'recipient_user_id' => $admin ? null : ($details['rejected_claimant'] ?? $org->owner_user_id),
                 'event' => $event, 'to_admin' => $admin,
-                'payload' => ['name' => $org->name, 'slug' => $org->slug, 'reason' => $details['review_note'] ?? '', 'restored_verified' => $org->status === 'verified'],
+                'payload' => ['name' => $org->name, 'slug' => $org->slug, 'reason' => $details['review_note'] ?? '', 'restored_verified' => $org->status === 'verified', 'rejected_claimant' => $details['rejected_claimant'] ?? null],
             ]);
             DB::afterCommit(function () use ($notice) {
                 if (! config('organizations.notifications_enabled')) {
