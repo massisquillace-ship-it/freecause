@@ -42,6 +42,7 @@ use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\VersionController;
 use App\Http\Controllers\WidgetController;
 use App\Http\Middleware\BlockBannedIp;
+use App\Http\Middleware\OrganizationApplicationAccess;
 use App\Http\Middleware\SetLocale;
 use App\Support\Settings;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -182,6 +183,8 @@ Route::prefix('admin')->name('admin.')->middleware('no.cache')->group(function (
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
         Route::get('/organizations', [AdminOrganizationsController::class, 'index'])->middleware('permission:organizations,view')->name('organizations');
+        Route::get('/organizations/create-unclaimed', [AdminOrganizationsController::class, 'createUnclaimed'])->middleware('permission:organizations,edit')->name('organizations.unclaimed.create');
+        Route::post('/organizations/create-unclaimed', [AdminOrganizationsController::class, 'storeUnclaimed'])->middleware(['permission:organizations,edit', 'throttle:10,1'])->name('organizations.unclaimed.store');
         Route::get('/organizations/{organization}', [AdminOrganizationsController::class, 'show'])->whereNumber('organization')->middleware('permission:organizations,view')->name('organizations.show');
         Route::post('/organizations/{organization}/{action}', [AdminOrganizationsController::class, 'action'])->whereNumber('organization')->where('action', 'verify|reject|suspend|restore|founding|donation|reassign|identity')->middleware('permission:organizations,edit')->name('organizations.action');
 
@@ -300,11 +303,14 @@ Route::prefix('{locale}')
         Route::get('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'show'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke');
         Route::post('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'revoke'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke.post');
         Route::get('/organizations/explore', [OrganizationController::class, 'explore'])->name('organizations.explore');
+        Route::get('/organizations/claim-search', [OrganizationController::class, 'claimSearch'])->name('organizations.claim-search');
+        Route::get('/organizations/apply', [OrganizationController::class, 'apply'])->middleware([OrganizationApplicationAccess::class, 'profile.complete', 'no.cache'])->name('organizations.apply');
+        Route::post('/organizations/apply', [OrganizationController::class, 'store'])->middleware([OrganizationApplicationAccess::class, 'profile.complete', 'no.cache', 'throttle:5,1'])->name('organizations.store');
         Route::get('/organizations/terms', [OrganizationController::class, 'terms'])->name('organizations.terms');
         Route::get('/org/{slug}', [OrganizationController::class, 'show'])->name('organizations.show');
         Route::middleware(['auth', 'profile.complete', 'no.cache'])->group(function () {
-            Route::get('/organizations/apply', [OrganizationController::class, 'apply'])->name('organizations.apply');
-            Route::post('/organizations/apply', [OrganizationController::class, 'store'])->middleware('throttle:5,1')->name('organizations.store');
+            Route::get('/org/{slug}/claim', [OrganizationController::class, 'claim'])->name('organizations.claim');
+            Route::post('/org/{slug}/claim', [OrganizationController::class, 'storeClaim'])->middleware('throttle:5,1')->name('organizations.claim.store');
             Route::get('/org/{slug}/manage', [OrganizationController::class, 'manage'])->name('organizations.manage');
             Route::get('/org/{slug}/manage/petitions', [OrganizationController::class, 'campaigns'])->name('organizations.campaigns');
             Route::post('/org/{slug}/manage/petitions/attach', [OrganizationController::class, 'attach'])->middleware('throttle:20,1')->name('organizations.attach');
