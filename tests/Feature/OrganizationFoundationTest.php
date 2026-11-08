@@ -18,6 +18,7 @@ use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -90,6 +91,39 @@ class OrganizationFoundationTest extends TestCase
         config(['organizations.terms.en' => '']);
         $this->actingAs($this->owner())->post('/en/organizations/apply', $this->payload())->assertForbidden();
         $this->assertDatabaseCount('organizations', 0);
+    }
+
+    public function test_published_terms_and_delivery_notice_exist_in_every_supported_language(): void
+    {
+        $legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-11-08.json')), true, 512, JSON_THROW_ON_ERROR);
+        config(['organizations.terms' => $legal['documents'], 'organizations.terms_version' => $legal['version'], 'organizations.delivery_notices' => $legal['delivery_notices'], 'organizations.email_delivery_paused' => true]);
+        foreach (array_keys(config('language_flags')) as $locale) {
+            $this->assertNotEmpty($legal['documents'][$locale]);
+            $this->assertNotEmpty($legal['delivery_notices'][$locale]);
+            $this->get('/'.$locale.'/organizations/terms')->assertOk()->assertSee($legal['version'])->assertSee('hello@freecause.com')->assertSee('/'.$locale.'/privacy-policy', false);
+            $this->get('/'.$locale.'/organizations')->assertOk()->assertSee($legal['delivery_notices'][$locale]);
+        }
+        $this->get('/en/login')->assertOk()->assertSee($legal['delivery_notices']['en']);
+        $this->get('/en/forgot-password')->assertOk()->assertSee($legal['delivery_notices']['en']);
+        config(['organizations.email_delivery_paused' => false]);
+        $this->get('/en/login')->assertOk()->assertDontSee($legal['delivery_notices']['en']);
+    }
+
+    public function test_application_opens_with_published_terms_while_mail_stays_paused_without_verifying_account(): void
+    {
+        $legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-11-08.json')), true, 512, JSON_THROW_ON_ERROR);
+        config(['organizations.terms' => $legal['documents'], 'organizations.terms_version' => $legal['version'], 'organizations.notifications_enabled' => false]);
+        Mail::fake();
+        $owner = $this->owner();
+        $owner->update(['verified' => false]);
+        $this->actingAs($owner)->post('/en/organizations/apply', $this->payload())->assertRedirect()->assertSessionHasNoErrors();
+        $org = Organization::firstOrFail();
+        $this->assertSame('pending', $org->status);
+        $this->assertSame('2026-11-08', $org->terms_version);
+        $this->assertNotNull($org->terms_accepted_at);
+        $this->assertFalse((bool) $owner->fresh()->verified);
+        $this->get('/en/org/'.$org->slug)->assertNotFound();
+        Mail::assertNothingSent();
     }
 
     public function test_cause_seeding_is_idempotent_and_does_not_detach_organizations(): void
