@@ -60,7 +60,9 @@ class Seo
                 ? $tr->title.'. '.__('pet.offline_title')
                 : ($tr->description ?: $tr->title);
         } elseif (request()->routeIs('organizations.show') && isset($data['org'])) {
-            $description = $data['org']->localized('tagline') ?: $data['org']->localized('description');
+            $description = $data['org']->status === 'unclaimed'
+                ? $data['org']->name.'. '.__('organizations.unclaimed')
+                : ($data['org']->localized('tagline') ?: $data['org']->localized('description'));
         } elseif ($tr instanceof PageTranslation) {
             $description = $tr->content ?: $tr->title;
         } elseif (self::isListing()) {
@@ -74,18 +76,19 @@ class Seo
     public static function robots(array $data): string
     {
         $public = request()->routeIs(
-            'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show', 'organizations.explore',
+            'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show', 'organizations.explore', 'organizations.terms',
             'page.show', 'faqs', 'how-to-write-a-petition', 'donations',
             'personal-data-processing', 'contacts'
         );
+        $organizationLaunchHidden = ! config('organizations.public_launch') && (request()->routeIs('organizations', 'organizations.explore', 'organizations.terms') || (request()->routeIs('organizations.show') && ($data['org']->status ?? '') === 'unclaimed'));
         $petition = $data['petition'] ?? null;
         $organizationFiltered = request()->routeIs('organizations.explore') && (filled(request()->query('q')) || filled(request()->query('cause')) || filled(request()->query('country')) || request()->query('sort'));
         $filtered = self::isListing() && (
             filled(request()->query('q')) || in_array(request()->query('sort'), ['signed', 'trending'], true)
         );
         $emptyListing = (self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty())
-            || (request()->routeIs('organizations.explore') && isset($data['organizations']) && $data['organizations']->isEmpty());
-        if (! $public || isset($data['exception']) || $organizationFiltered || $filtered || $emptyListing
+            || (request()->routeIs('organizations.explore') && ((isset($data['organizations']) && $data['organizations']->isEmpty()) || ($data['directoryIsEmpty'] ?? false)));
+        if (! $public || $organizationLaunchHidden || isset($data['exception']) || $organizationFiltered || $filtered || $emptyListing
             || (request()->routeIs('petition.show') && $petition && $petition->status !== 'published')
             || request()->has('status') || request()->query('view') === 'pages') {
             return 'noindex, follow';
