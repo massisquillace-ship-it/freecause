@@ -2,10 +2,14 @@
     $isAuthed = auth()->check();
     $c = $navbarContent ?? [];
     $explore = $c['nav_explore'] ?? __('nav.explore');
+    if (preg_match('~^(?:https?://|/)~i', trim($explore))) { $explore = __('nav.explore'); }
+    $organizationRoute = request()->routeIs('organizations', 'organizations.*');
+    $showOrganizationNav = \App\Models\Organization::directoryReady();
     $help = $c['nav_help'] ?? __('nav.help');
     $loginLabel = $c['nav_login'] ?? __('auth.login');
     $accountLabel = $isAuthed ? auth()->user()->display_name : $loginLabel;
-    $startFree = $c['nav_startfree'] ?? __('nav.startfree');
+    $startFree = ($organizationRoute && $showOrganizationNav) ? __('organizations.claim_organization') : ($c['nav_startfree'] ?? __('nav.startfree'));
+    $startTarget = ($organizationRoute && $showOrganizationNav) ? lroute('organizations.claim-search') : lroute('petition.create');
 @endphp
 <nav class="navbar navbar-expand-lg bg-white shadow-elev-1">
     <div class="container">
@@ -32,7 +36,7 @@
                         {{ $explore }}
                     </a>
                 </li>
-                <li class="nav-item"><a class="nav-link" href="{{ lroute('organizations') }}">{{ __('organizations.nav') }}</a></li>
+                @if($showOrganizationNav)<li class="nav-item"><a class="nav-link" href="{{ lroute('organizations') }}">{{ __('organizations.nav') }}</a></li>@endif
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/magazine') }}">
                         {{ $c['nav_magazine'] ?? __('nav.magazine') }}
@@ -64,7 +68,7 @@
                 @endif
 
                 <li class="nav-item mt-2 lg:mt-0 lg:ms-3">
-                    <a class="fcui-btn fcui-btn--md fcui-btn--primary w-100 w-lg-auto" href="{{ lroute('petition.create') }}">
+                    <a class="fcui-btn fcui-btn--md fcui-btn--primary w-100 w-lg-auto" href="{{ $startTarget }}">
                         {{ $startFree }}
                     </a>
                 </li>
@@ -91,7 +95,7 @@
             <x-lucide-circle-help aria-hidden="true" />
             <span>{{ $help }}</span>
         </a>
-        <a class="fcui-sheet-list__item" href="{{ lroute('organizations') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('organizations.nav') }}</span></a>
+        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('organizations') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('organizations.nav') }}</span></a>@endif
         <a class="fcui-sheet-list__item" href="{{ url('/magazine') }}">
             <x-lucide-newspaper aria-hidden="true" />
             <span>{{ $c['nav_magazine'] ?? __('nav.magazine') }}</span>
@@ -102,10 +106,12 @@
                 <x-lucide-log-in aria-hidden="true" />
                 <span>{{ $loginLabel }}</span>
             </a>
+            @unless($organizationRoute)
             <a class="fcui-sheet-list__item" href="{{ lroute('register') }}">
                 <x-lucide-user-plus aria-hidden="true" />
                 <span>{{ __('auth.create_account') }}</span>
             </a>
+            @endunless
         @else
             <a class="fcui-sheet-list__item" href="{{ lroute('profile') }}">
                 <x-lucide-circle-user-round aria-hidden="true" />
@@ -124,7 +130,7 @@
             </form>
         @endif
 
-        <a class="fcui-sheet-list__item" href="{{ lroute('petition.create') }}">
+        <a class="fcui-sheet-list__item" href="{{ $startTarget }}">
             <x-lucide-megaphone aria-hidden="true" />
             <span>{{ $startFree }}</span>
         </a>

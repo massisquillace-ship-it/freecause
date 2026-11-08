@@ -15,13 +15,13 @@
     @forelse($organizations as $org)
         <li class="border border-border rounded-lg p-5 min-w-0">
             <a class="flex gap-3 items-center underline" href="{{ lroute('organizations.show', ['slug'=>$org->slug]) }}">
-                @if($org->logo_path)<img src="{{ Storage::disk('public')->url($org->logo_path) }}" width="48" height="48" loading="lazy" class="size-12 object-cover rounded-sm shrink-0" alt="">@else<span class="size-12 flex items-center justify-center bg-surface-muted rounded-sm shrink-0" aria-hidden="true">{{ mb_substr($org->name,0,1) }}</span>@endif
+                @if($org->status === 'verified' && $org->logo_path)<img src="{{ Storage::disk('public')->url($org->logo_path) }}" width="48" height="48" loading="lazy" class="size-12 object-cover rounded-sm shrink-0" alt="">@else<span class="size-12 flex items-center justify-center bg-surface-muted rounded-sm shrink-0" aria-hidden="true">{{ mb_substr($org->name,0,1) }}</span>@endif
                 <h2 class="text-xl font-bold break-words">{{ $org->name }}</h2>
             </a>
-            <p class="mt-3">{{ $org->localized('tagline') }}</p><p class="mt-3">{{ $countries[$org->country] ?? $org->country }}</p>
+            @if($org->status === 'verified')<p class="mt-3">{{ $org->localized('tagline') }}</p>@else<p class="mt-3">{{ __('organizations.unclaimed') }}</p>@endif<p class="mt-3">{{ $countries[$org->country] ?? $org->country }}</p>
             <ul class="flex flex-wrap gap-2 mt-3">@foreach($org->causes as $cause)<li class="text-sm border border-border px-2 py-1 rounded-sm">{{ $cause->label() }}</li>@endforeach</ul>
         </li>
-    @empty<li>{{ __('organizations.no_results') }}</li>@endforelse
+    @empty<li>{{ __('organizations.no_results') }} <a class="underline" href="{{ lroute('organizations.explore') }}">{{ __('organizations.reset_filters') }}</a></li>@endforelse
     </ul>
     <div class="mt-8">{{ $organizations->links() }}</div>
 </section>

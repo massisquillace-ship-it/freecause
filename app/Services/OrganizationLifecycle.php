@@ -28,6 +28,9 @@ class OrganizationLifecycle
             if (in_array($action, ['verify', 'reject', 'suspend', 'restore'], true) && trim((string) $reason) === '') {
                 throw ValidationException::withMessages(['reason' => __('organizations.reason_required')]);
             }
+            $claimRejected = $action === 'reject' && $org->claimed_at !== null && $org->claimed_by_user_id !== null;
+            $claimant = $org->claimed_by_user_id;
+            $acceptedVersion = $org->terms_version;
             $org->status = match ($action) {
                 'verify' => 'verified', 'restore' => $org->verified_at ? 'verified' : 'pending', 'reject' => 'rejected', 'suspend' => 'suspended'
             };
@@ -46,8 +49,19 @@ class OrganizationLifecycle
                 $org->rejection_reason = null;
                 $org->suspension_reason = null;
             }
+            if ($claimRejected) {
+                $org->forceFill([
+                    'status' => 'unclaimed', 'type' => 'other', 'owner_user_id' => null, 'claimed_by_user_id' => null, 'claimed_at' => null,
+                    'representation_confirmed_at' => null, 'terms_accepted_at' => null, 'terms_version' => null,
+                    'verification_reference' => '', 'legal_name' => null, 'territory' => null, 'tax_code' => null,
+                    'website' => null, 'email_public' => null, 'social_links' => null, 'description' => null, 'tagline' => null,
+                    'logo_path' => null, 'cover_path' => null, 'donation_url' => null,
+                    'donation_url_approved_at' => null, 'donation_url_approved_by' => null,
+                ]);
+            }
             $org->save();
-            $this->record($org, $actor->id, $action, ['from' => $old, 'to' => $org->status, 'review_note' => $reason]);
+            $this->record($org, $actor->id, $action, ['from' => $old, 'to' => $org->status, 'review_note' => $reason,
+                'rejected_claimant' => $claimRejected ? $claimant : null, 'accepted_terms_version' => $acceptedVersion]);
 
             return $org;
         }, 3);
@@ -61,6 +75,7 @@ class OrganizationLifecycle
             $owner = User::whereKey($newOwnerId)->lockForUpdate()->firstOrFail();
             abort_if($owner->isBanned(), 422);
             $org = Organization::whereKey($organization->id)->lockForUpdate()->firstOrFail();
+            abort_if($org->status === 'unclaimed', 409);
             $old = $org->owner_user_id;
             $org->owner_user_id = $owner->id;
             $org->save();

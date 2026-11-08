@@ -18,6 +18,8 @@ export CACHE_STORE=array SESSION_DRIVER=file QUEUE_CONNECTION=sync MAIL_MAILER=a
 export SENTRY_LARAVEL_DSN= LOG_CHANNEL=stderr ENFORCE_MIN_PHP=false
 # Consent text is synthetic/test-only in this isolated database.
 export ORGANIZATIONS_CONSENT_ENABLED=true
+export ORGANIZATIONS_PUBLIC_LAUNCH=true
+export ORGANIZATIONS_MIN_DIRECTORY_COUNT=1
 export PHP_CLI_SERVER_WORKERS=4
 
 [ "$DB_CONNECTION" = sqlite ]

@@ -65,7 +65,7 @@ class SitemapController extends Controller
 
     public function pages()
     {
-        return $this->xml($this->cached('pages.v4', function () {
+        return $this->xml($this->cached('pages.v5.'.(int) config('organizations.public_launch'), function () {
             $hasPublicOrganizations = Organization::public()->exists();
             $pagesByLocale = [];
 
@@ -77,7 +77,10 @@ class SitemapController extends Controller
                     $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/'.$slug));
                 }
 
-                if (in_array($locale, config('organizations.locales'), true)) {
+                if (config('organizations.public_launch')) {
+                    $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/terms'));
+                }
+                if (config('organizations.public_launch') && in_array($locale, config('organizations.locales'), true)) {
                     $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations'));
                     if ($hasPublicOrganizations) {
                         $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
@@ -216,11 +219,11 @@ class SitemapController extends Controller
 
     public function organizations()
     {
-        return $this->xml($this->cached('organizations.v2', function () {
+        return $this->xml($this->cached('organizations.v3.'.(int) config('organizations.public_launch'), function () {
             $out = $this->urlsetHeader();
             $locales = array_intersect(active_locales(), config('organizations.locales'));
             $default = default_locale();
-            foreach (Organization::public()->orderBy('id')->cursor() as $org) {
+            foreach (Organization::public()->when(! config('organizations.public_launch'), fn ($q) => $q->where('status', 'verified'))->orderBy('id')->cursor() as $org) {
                 $alternates = [];
                 foreach ($locales as $locale) {
                     $alternates[] = ['hreflang' => $locale, 'href' => canonical_url($locale.'/org/'.rawurlencode($org->slug))];

@@ -29,6 +29,10 @@ class OrganizationE2eSeeder extends Seeder
             ]);
             $org->causes()->sync(Cause::orderBy('id')->limit(3)->pluck('id'));
         }
+        Organization::updateOrCreate(['slug' => 'e2e-organization-unclaimed'], [
+            'name' => 'Unclaimed public test group', 'type' => 'other', 'country' => 'IT',
+            'status' => 'unclaimed', 'source' => 'admin', 'verification_reference' => '',
+        ]);
         $image = imagecreatetruecolor(1500, 500);
         imagefill($image, 0, 0, imagecolorallocate($image, 30, 70, 60));
         ob_start();

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cause;
 use App\Models\Organization;
 use App\Services\OrganizationLifecycle;
+use App\Services\UnclaimedOrganizations;
 use App\Support\Countries;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,22 @@ class AdminOrganizationsController extends Controller
         }
 
         return view('admin.organizations.index', ['organizations' => $query->paginate(30)->withQueryString()]);
+    }
+
+    public function createUnclaimed()
+    {
+        return view('admin.organizations.create-unclaimed', ['countries' => Countries::all(), 'causes' => Cause::orderBy('sort_order')->get()]);
+    }
+
+    public function storeUnclaimed(Request $request, UnclaimedOrganizations $importer)
+    {
+        $data = $request->only('name', 'country', 'causes');
+        $request->validate(['petition_ids' => ['nullable', 'string', 'max:3000']]);
+        $data['petition_ids'] = preg_split('/[|;,\s]+/', trim((string) $request->input('petition_ids')), -1, PREG_SPLIT_NO_EMPTY);
+        $result = $importer->create($data, 'admin', auth('admin')->id());
+
+        return redirect()->route('admin.organizations.show', ['organization' => $result['organization']->id])
+            ->with('success', __($result['created'] ? 'organizations.saved' : 'organizations.already_listed'));
     }
 
     public function show(int $organization)

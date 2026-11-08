@@ -63,7 +63,7 @@ class OrganizationProfileRequest extends FormRequest
             $rules['representation_confirmed'] = ['accepted'];
             $rules['terms_accepted'] = ['accepted'];
         }
-        if ($org?->verified_at) {
+        if ($org?->verified_at || $org?->claimed_at) {
             foreach (Organization::IDENTITY_FIELDS as $field) {
                 // Disabled form fields are omitted. Submitted identity must match exactly.
                 $rules[$field] = ['sometimes', 'nullable', function ($attribute, $value, $fail) use ($org) {
@@ -72,6 +72,16 @@ class OrganizationProfileRequest extends FormRequest
                     }
                 }];
             }
+        }
+
+        if ($org?->claimed_at && ! $org->verified_at) {
+            $rules['causes'][] = function ($attribute, $value, $fail) use ($org) {
+                $expected = $org->causes()->pluck('causes.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+                $actual = collect((array) $value)->map(fn ($id) => (int) $id)->sort()->values()->all();
+                if ($expected !== $actual) {
+                    $fail(__('organizations.claim_review'));
+                }
+            };
         }
 
         return $rules;

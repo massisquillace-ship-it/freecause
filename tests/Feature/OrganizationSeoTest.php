@@ -19,6 +19,7 @@ class OrganizationSeoTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
+        config(['organizations.public_launch' => true, 'organizations.min_directory_count' => 1]);
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class, OrganizationCauseSeeder::class]);
         Cache::flush();
     }
@@ -71,6 +72,7 @@ class OrganizationSeoTest extends TestCase
         $xml = $this->get('/sitemap-pages.xml')->assertOk()->getContent();
         $this->assertStringContainsString('/en/organizations/explore', $xml);
         $this->assertStringContainsString('/it/organizations</loc>', $xml);
-        $this->assertStringNotContainsString('/de/organizations', $xml);
+        $this->assertStringNotContainsString('/de/organizations</loc>', $xml);
+        $this->assertStringContainsString('/de/organizations/terms', $xml);
     }
 }

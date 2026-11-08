@@ -61,7 +61,7 @@ class OrganizationConsent
         }
         DB::transaction(function () use ($proof, $signature, $request, $petition, $locale) {
             // Same org -> petition lock order as attribution changes. Recheck both at submit time.
-            $org = Organization::public()->whereKey($proof['organization'] ?? 0)->lockForUpdate()->first();
+            $org = Organization::verified()->whereKey($proof['organization'] ?? 0)->lockForUpdate()->first();
             $current = Petition::whereKey($petition->id)->lockForUpdate()->first();
             if (! $org || $org->name !== ($proof['name'] ?? '') || ! $current
                 || (int) $current->organization_id !== (int) $org->id || $current->status !== 'published' || ! $current->is_active) {

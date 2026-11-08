@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Organization;
 use App\Models\Petition;
 use App\Support\EdgeCachePurge;
 use Illuminate\Bus\Queueable;
@@ -26,9 +27,15 @@ class PurgeOrganizationAttribution implements ShouldQueue
         if (! config('edge-cache.purge_enabled')) {
             return;
         }
-        $urls = [canonical_url('sitemap.xml'), canonical_url('sitemap-organizations.xml')];
+        $urls = [canonical_url('sitemap.xml'), canonical_url('sitemap-organizations.xml'), canonical_url('sitemap-pages.xml')];
+        $slug = Organization::whereKey($this->organizationId)->value('slug');
         foreach (active_locales() as $locale) {
             $urls[] = canonical_url($locale);
+            $urls[] = canonical_url($locale.'/organizations');
+            $urls[] = canonical_url($locale.'/organizations/explore');
+            if ($slug) {
+                $urls[] = canonical_url($locale.'/org/'.rawurlencode($slug));
+            }
         }
         EdgeCachePurge::urls($urls);
         Petition::where('organization_id', $this->organizationId)

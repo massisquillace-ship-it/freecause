@@ -6,24 +6,24 @@
     @if($errors->any())
         <div role="alert" class="border border-border p-4 mb-6"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
     @endif
-    @if($org->verified_at)<p class="mb-6">{{ __('organizations.identity_locked') }}</p>@endif
+    @if($org->verified_at || $org->claimed_at)<p class="mb-6">{{ __($org->verified_at ? 'organizations.identity_locked' : 'organizations.claim_review') }}</p>@endif
     <form method="post" enctype="multipart/form-data" action="{{ $org->exists ? lroute('organizations.update', ['slug' => $org->slug]) : lroute('organizations.store') }}" class="space-y-6">
         @csrf
         @foreach(['name', 'legal_name', 'slug', 'territory', 'tax_code', 'website', 'donation_url', 'email_public'] as $field)
             <div>
                 <label class="block font-semibold mb-2" for="org-{{ $field }}">{{ __('organizations.'.$field) }}</label>
-                <input class="w-full border border-border rounded-sm p-3" id="org-{{ $field }}" name="{{ $field }}" type="{{ in_array($field, ['website','donation_url']) ? 'url' : ($field === 'email_public' ? 'email' : 'text') }}" value="{{ old($field, $org->$field) }}" maxlength="{{ ['name'=>120,'legal_name'=>200,'slug'=>80,'territory'=>160,'tax_code'=>16,'email_public'=>254][$field] ?? 2048 }}" @required($field === 'name') @disabled($org->verified_at && in_array($field, \App\Models\Organization::IDENTITY_FIELDS))>
+                <input class="w-full border border-border rounded-sm p-3" id="org-{{ $field }}" name="{{ $field }}" type="{{ in_array($field, ['website','donation_url']) ? 'url' : ($field === 'email_public' ? 'email' : 'text') }}" value="{{ old($field, $org->$field) }}" maxlength="{{ ['name'=>120,'legal_name'=>200,'slug'=>80,'territory'=>160,'tax_code'=>16,'email_public'=>254][$field] ?? 2048 }}" @required($field === 'name') @disabled(($org->verified_at || $org->claimed_at) && in_array($field, \App\Models\Organization::IDENTITY_FIELDS))>
             </div>
         @endforeach
         <div>
             <label class="block font-semibold mb-2" for="org-type">{{ __('organizations.type') }}</label>
-            <select id="org-type" name="type" class="w-full border border-border rounded-sm p-3" required @disabled($org->verified_at)>
+            <select id="org-type" name="type" class="w-full border border-border rounded-sm p-3" required @disabled($org->verified_at || $org->claimed_at)>
                 @foreach(\App\Models\Organization::TYPES as $type)<option value="{{ $type }}" @selected(old('type', $org->type) === $type)>{{ __('organizations.'.$type) }}</option>@endforeach
             </select>
         </div>
         <div>
             <label class="block font-semibold mb-2" for="org-country">{{ __('organizations.country') }}</label>
-            <select id="org-country" name="country" class="w-full border border-border rounded-sm p-3" required @disabled($org->verified_at)>
+            <select id="org-country" name="country" class="w-full border border-border rounded-sm p-3" required @disabled($org->verified_at || $org->claimed_at)>
                 @foreach($countries as $code => $name)<option value="{{ $code }}" @selected(old('country', $org->country) === $code)>{{ $name }}</option>@endforeach
             </select>
         </div>
@@ -36,7 +36,8 @@
             <legend class="font-semibold mb-3">{{ __('organizations.causes') }}</legend>
             <div class="grid sm:grid-cols-2 gap-3">
                 @foreach($causes as $cause)
-                    <label class="flex gap-2"><input type="checkbox" name="causes[]" value="{{ $cause->id }}" @checked(in_array($cause->id, old('causes', $org->exists ? $org->causes->modelKeys() : [])))> {{ $cause->label() }}</label>
+                    <label class="flex gap-2"><input type="checkbox" name="causes[]" value="{{ $cause->id }}" @disabled($org->claimed_at && !$org->verified_at) @checked(in_array($cause->id, old('causes', $org->exists ? $org->causes->modelKeys() : [])))> {{ $cause->label() }}</label>
+                    @if($org->claimed_at && !$org->verified_at && $org->causes->contains($cause->id))<input type="hidden" name="causes[]" value="{{ $cause->id }}">@endif
                 @endforeach
             </div>
         </fieldset>

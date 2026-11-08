@@ -26,6 +26,9 @@
         ['label' => __('pages.privacy_policy'), 'href' => lroute('page.show', ['slug' => 'privacy-policy'])],
         ['label' => $personalDataTitle, 'href' => lroute('personal-data-processing')],
     ];
+    if (\App\Models\Organization::directoryReady()) {
+        $footerLinks[] = ['label' => __('organizations.nav'), 'href' => lroute('organizations')];
+    }
 @endphp
 
 <section class="site-footer bg-dark text-on-dark font-[Arial,sans-serif]">
@@ -49,7 +52,7 @@
                                 </li>
                             @endforeach
                             <li>
-                                <button type="button" data-fc-cookie-settings data-cc="show-preferencesModal" class="text-on-dark text-sm">Cookies</button>
+                                <a href="{{ lroute('page.show', ['slug'=>'privacy-policy']) }}" data-fc-cookie-settings data-cc="show-preferencesModal" class="text-on-dark text-sm underline">Cookies</a>
                             </li>
                         </ul>
                     </nav>

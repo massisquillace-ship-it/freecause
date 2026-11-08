@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\OrganizationClaimRequest;
 use App\Http\Requests\OrganizationProfileRequest;
 use App\Jobs\PurgeOrganizationAttribution;
 use App\Models\Cause;
@@ -29,13 +30,17 @@ class OrganizationController extends Controller
     public function landing()
     {
         $owned = auth('web')->check() ? Organization::where('owner_user_id', auth('web')->id())->orderByDesc('id')->get() : collect();
-        $view = view('organizations.landing', ['owned' => $owned, 'applicationsOpen' => $this->applicationsOpen()]);
+        $view = view('organizations.landing', ['owned' => $owned, 'directoryIsEmpty' => ! Organization::public()->exists(), 'applicationsOpen' => config('organizations.public_launch') && $this->applicationsOpen()]);
 
         return auth('web')->check() ? $this->privateResponse($view) : $view;
     }
 
     public function explore(Request $request)
     {
+        if (! Organization::directoryReady()) {
+            return $this->landing();
+        }
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'cause' => ['nullable', 'string', Rule::exists('causes', 'slug')],
@@ -54,7 +59,7 @@ class OrganizationController extends Controller
             $query->where('country', $filters['country']);
         }
         match ($filters['sort'] ?? 'name') {
-            'newest' => $query->orderByDesc('verified_at')->orderByDesc('id'),
+            'newest' => $query->orderByDesc('created_at')->orderByDesc('id'),
             'signatures' => $query->orderByDesc('signatures_total')->orderBy('name')->orderBy('id'),
             default => $query->orderBy('name')->orderBy('id'),
         };
@@ -63,6 +68,57 @@ class OrganizationController extends Controller
             'organizations' => $query->paginate(12)->withQueryString(), 'filters' => $filters,
             'countries' => Countries::all(), 'causes' => Cause::orderBy('sort_order')->get(),
         ]);
+    }
+
+    public function claimSearch(Request $request)
+    {
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:120']]);
+        $term = trim($data['q'] ?? '');
+        $results = collect();
+        if ($term !== '') {
+            $literal = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
+            $results = Organization::public()->whereRaw("organizations.name LIKE ? ESCAPE '!'", ['%'.$literal.'%'])
+                ->orderBy('name')->orderBy('id')->limit(20)->get();
+        }
+
+        return view('organizations.claim-search', ['organizations' => $results, 'q' => $term, 'countries' => Countries::all()]);
+    }
+
+    public function claim(string $locale, string $slug)
+    {
+        $org = Organization::where('slug', $slug)->firstOrFail();
+        abort_unless($org->status === 'unclaimed' || ($org->status === 'pending' && $org->claimed_at), 404);
+
+        return $this->privateResponse(view('organizations.claim', compact('org')));
+    }
+
+    public function storeClaim(OrganizationClaimRequest $request, string $locale, string $slug)
+    {
+        abort_unless(filled(config('organizations.terms_version')) && filled(config('organizations.terms.en')), 403);
+        $result = DB::transaction(function () use ($request, $slug) {
+            $claimant = User::whereKey(auth('web')->id())->lockForUpdate()->firstOrFail();
+            abort_if($claimant->isBanned(), 403);
+            $org = Organization::where('slug', $slug)->lockForUpdate()->firstOrFail();
+            if ($org->status === 'pending' && $org->claimed_at) {
+                return ['org' => $org, 'submitted' => false];
+            }
+            abort_unless($org->status === 'unclaimed' && $org->owner_user_id === null, 409, __('organizations.claim_review'));
+            $org->forceFill([
+                'type' => $request->validated('type'), 'verification_reference' => $request->validated('verification_reference'),
+                'owner_user_id' => auth('web')->id(), 'claimed_by_user_id' => auth('web')->id(), 'claimed_at' => now(),
+                'status' => 'pending', 'representation_confirmed_at' => now(), 'terms_accepted_at' => now(),
+                'terms_version' => config('organizations.terms_version'),
+            ])->save();
+            $this->lifecycle->record($org, auth('web')->id(), 'applied', ['claim' => true, 'terms_version' => $org->terms_version]);
+
+            return ['org' => $org, 'submitted' => true];
+        }, 3);
+        $org = $result['org'];
+        if (! $result['submitted']) {
+            return $this->privateResponse(view('organizations.claim', compact('org')))->setStatusCode(409);
+        }
+
+        return redirect()->to(lroute('organizations.manage', ['slug' => $org->slug]));
     }
 
     public function campaigns(string $locale, string $slug)
@@ -113,14 +169,14 @@ class OrganizationController extends Controller
 
     public function apply()
     {
-        abort_unless($this->applicationsOpen(), 403, __('organizations.applications_closed'));
+        abort_unless($this->applicationsOpen(), 403);
 
         return $this->form(new Organization(['country' => auth('web')->user()->country, 'cover_focal_point' => 'center']));
     }
 
     public function store(OrganizationProfileRequest $request, string $locale)
     {
-        abort_unless($this->applicationsOpen(), 403, __('organizations.applications_closed'));
+        abort_unless($this->applicationsOpen(), 403);
         $data = $request->safe()->except(['causes', 'logo', 'cover', 'remove_logo', 'remove_cover', 'representation_confirmed', 'terms_accepted']);
         $data['slug'] = ($data['slug'] ?? null) ?: $this->uniqueSlug($data['name']);
         $paths = $this->uploads($request);
@@ -151,7 +207,7 @@ class OrganizationController extends Controller
 
         $campaigns = $org->petitions()->visible()->with('translations')->orderByRaw("CASE WHEN outcome = 'victory' THEN 0 ELSE 1 END")->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
 
-        return view('organizations.show', ['campaigns' => $campaigns, 'org' => $org, 'profileUrl' => canonical_url($locale.'/org/'.$org->slug)]);
+        return view($org->status === 'unclaimed' ? 'organizations.unclaimed' : 'organizations.show', ['campaigns' => $campaigns, 'org' => $org, 'profileUrl' => canonical_url($locale.'/org/'.$org->slug)]);
     }
 
     public function manage(string $locale, string $slug)
@@ -266,7 +322,7 @@ class OrganizationController extends Controller
 
     private function applicationsOpen(): bool
     {
-        return (bool) config('organizations.applications_open') && filled(config('organizations.terms_version')) && filled(config('organizations.terms.en'));
+        return (config('organizations.public_launch') || config('organizations.applications_open')) && filled(config('organizations.terms_version')) && filled(config('organizations.terms.en'));
     }
 
     private function uniqueSlug(string $name): string

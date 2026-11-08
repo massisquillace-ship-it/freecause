@@ -30,6 +30,7 @@ class OrganizationDistributionTest extends TestCase
         // Real commits exercise outbox callbacks; use a fresh in-memory database per test.
         $this->artisan('migrate:fresh');
         $this->withoutVite();
+        config(['organizations.public_launch' => true, 'organizations.min_directory_count' => 1]);
         config(['organizations.notifications_enabled' => true]);
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class, OrganizationCauseSeeder::class]);
         Bus::fake();
