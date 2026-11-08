@@ -15,7 +15,7 @@
     <p>{{ __('organizations.campaigns') }}: {{ $org->petitions_count }}</p>
     <p>{{ __('organizations.donation_url') }}: <span class="break-all">{{ $org->donation_url ?: '—' }}</span></p>
     <p>{{ $org->donation_url_approved_at ? __('organizations.donation_approved') : __('organizations.donation_pending') }}</p>
-    @if($org->status === 'verified')<a class="underline" href="{{ lroute('organizations.show', ['slug'=>$org->slug]) }}" target="_blank" rel="noopener">{{ __('organizations.public_profile') }}</a>@endif
+    @if(in_array($org->status, ['unclaimed','verified'], true))<a class="underline" href="{{ lroute('organizations.show', ['slug'=>$org->slug]) }}" target="_blank" rel="noopener">{{ __('organizations.public_profile') }}</a>@endif
 </x-blatui.card>
 @if(admin_can('organizations', 'edit'))
     <x-blatui.card class="p-6 mb-6">
@@ -46,6 +46,7 @@
             </form>
         @endif
     </x-blatui.card>
+    @if($org->status !== 'unclaimed')
     <x-blatui.card class="p-6 mb-6">
         <h2 class="font-semibold text-xl mb-4">{{ __('organizations.reassign') }}</h2>
         <p class="mb-4">{{ __('organizations.reassign_warning') }}</p>
@@ -55,6 +56,7 @@
             <x-blatui.button type="submit">{{ __('organizations.reassign') }}</x-blatui.button>
         </form>
     </x-blatui.card>
+    @endif
     <x-blatui.card class="p-6 mb-6">
         <h2 class="font-semibold text-xl mb-4">{{ __('organizations.identity') }}</h2>
         <form method="post" action="{{ route('admin.organizations.action', ['organization'=>$org->id, 'action'=>'identity']) }}" class="space-y-3" data-turbo="false">
