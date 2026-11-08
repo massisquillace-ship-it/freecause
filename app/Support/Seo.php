@@ -40,7 +40,12 @@ class Seo
             }
         }
 
-        return canonical_url().($params ? '?'.http_build_query($params, '', '&', PHP_QUERY_RFC3986) : '');
+        $path = null;
+        if (request()->routeIs('organizations', 'organizations.explore', 'organizations.show') && ! in_array(app()->getLocale(), config('organizations.locales'), true)) {
+            $path = 'en/'.Str::after(request()->path(), '/');
+        }
+
+        return canonical_url($path).($params ? '?'.http_build_query($params, '', '&', PHP_QUERY_RFC3986) : '');
     }
 
     public static function description(array $data, string $fallback): string
@@ -78,7 +83,8 @@ class Seo
         $filtered = self::isListing() && (
             filled(request()->query('q')) || in_array(request()->query('sort'), ['signed', 'trending'], true)
         );
-        $emptyListing = self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty();
+        $emptyListing = (self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty())
+            || (request()->routeIs('organizations.explore') && isset($data['organizations']) && $data['organizations']->isEmpty());
         if (! $public || isset($data['exception']) || $organizationFiltered || $filtered || $emptyListing
             || (request()->routeIs('petition.show') && $petition && $petition->status !== 'published')
             || request()->has('status') || request()->query('view') === 'pages') {
@@ -116,7 +122,7 @@ class Seo
             }
         } elseif (request()->routeIs('organizations.show', 'organizations', 'organizations.explore')) {
             $suffix = request()->routeIs('organizations.show') ? '/org/'.rawurlencode($data['org']->slug) : (request()->routeIs('organizations.explore') ? '/organizations/explore' : '/organizations');
-            foreach ($active as $locale) {
+            foreach (array_intersect($active, config('organizations.locales')) as $locale) {
                 $links[$locale] = canonical_url($locale.$suffix);
             }
         } elseif (request()->routeIs('home', 'petitions.index', 'contacts')) {

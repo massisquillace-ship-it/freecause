@@ -65,17 +65,23 @@ class SitemapController extends Controller
 
     public function pages()
     {
-        return $this->xml($this->cached('pages.v3', function () {
+        return $this->xml($this->cached('pages.v4', function () {
+            $hasPublicOrganizations = Organization::public()->exists();
             $pagesByLocale = [];
 
             foreach (active_locales() as $locale) {
                 $pagesByLocale[$locale] = [$this->pageEntry(canonical_url($locale))];
                 $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/petitions'));
-                $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations'));
-                $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
 
                 foreach (self::STATIC_PAGE_SLUGS as $slug) {
                     $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/'.$slug));
+                }
+
+                if (in_array($locale, config('organizations.locales'), true)) {
+                    $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations'));
+                    if ($hasPublicOrganizations) {
+                        $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
+                    }
                 }
             }
 
@@ -238,10 +244,12 @@ class SitemapController extends Controller
             foreach ($current as $i => $entry) {
                 $alternates = [];
                 foreach (active_locales() as $otherLocale) {
-                    $alternates[] = [
-                        'hreflang' => $otherLocale,
-                        'href' => $pagesByLocale[$otherLocale][$i]['loc'],
-                    ];
+                    if (isset($pagesByLocale[$otherLocale][$i])) {
+                        $alternates[] = [
+                            'hreflang' => $otherLocale,
+                            'href' => $pagesByLocale[$otherLocale][$i]['loc'],
+                        ];
+                    }
                 }
 
                 if ($locale === default_locale()) {
