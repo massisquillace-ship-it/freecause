@@ -58,9 +58,11 @@ for (const state of ['pending', 'rejected', 'suspended']) {
     });
 }
 
-test('public applications closed and organization navigation usable', async ({ page }) => {
+test('organization landing uses claim search and no closed-status message', async ({ page }) => {
     await page.goto('/en/organizations');
-    await expect(page.getByText('Applications are not open yet.')).toBeVisible();
+    await expect(page.getByText('Applications are not open yet.')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Find your organization', exact: true })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: 'Find your organization', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Organization terms', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Apply for an organization profile' })).toHaveCount(0);
 });
