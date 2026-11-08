@@ -1,14 +1,19 @@
 <?php
 
+$legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-11-08.json')), true, 512, JSON_THROW_ON_ERROR);
+
 return [
-    // Public applications stay closed until approved terms and phase-three delivery exist.
-    // Enable only after the owner approves the retained consent/privacy texts.
+    // Applications, optional consent capture and notification delivery are independent switches.
     'consent_enabled' => env('ORGANIZATIONS_CONSENT_ENABLED', false),
     'applications_open' => env('ORGANIZATIONS_APPLICATIONS_OPEN', false),
-    'terms_version' => env('ORGANIZATIONS_TERMS_VERSION', ''),
-    'terms' => [],
+    // Keep the accepted version coupled to its immutable, tracked document.
+    'terms_version' => $legal['version'],
+    'terms' => $legal['documents'],
+    'email_delivery_paused' => env('ORGANIZATIONS_EMAIL_DELIVERY_PAUSED', false),
+    'delivery_notices' => $legal['delivery_notices'],
     'notifications_enabled' => env('ORGANIZATIONS_NOTIFICATIONS_ENABLED', false),
     'admin_email' => env('ORGANIZATIONS_ADMIN_EMAIL'),
     'admin_locale' => env('ORGANIZATIONS_ADMIN_LOCALE', 'en'),
     'support_email' => env('ORGANIZATIONS_SUPPORT_EMAIL'),
+    'locales' => ['en', 'fr', 'it'],
 ];
