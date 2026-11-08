@@ -252,9 +252,7 @@ class PetitionSigning
     {
         $data = $request->validate(self::authedRules());
 
-        $identity = ($data['name'] ?? '').' '.($data['email'] ?? '');
-
-        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned()) || Spam::isSpam($identity, Spam::reviewOwned(), true)) {
+        if (Spam::isSpam($data['comment'] ?? '', Spam::reviewOwned())) {
             Spam::log('signature', json_encode($data));
 
             toast(__('sign.suspicious'), 'error');
