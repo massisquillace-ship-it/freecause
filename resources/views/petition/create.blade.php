@@ -37,7 +37,7 @@
 
             @auth
                 @php
-                    $publishOrganizations = \App\Models\Organization::public()->where('owner_user_id', auth()->id())->orderByDesc('verified_at')->orderByDesc('id')->get();
+                    $publishOrganizations = \App\Models\Organization::verified()->where('owner_user_id', auth()->id())->orderByDesc('verified_at')->orderByDesc('id')->get();
                     $petitionCauses = \App\Models\Cause::orderBy('sort_order')->get();
                 @endphp
                 @if ($errors->any())
