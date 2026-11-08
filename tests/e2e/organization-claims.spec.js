@@ -17,6 +17,8 @@ for (const width of [375, 1280]) {
                 const action = page.locator('[data-bottom-nav]').getByRole('link', { name: claim, exact: true });
                 await expect(action).toBeVisible();
                 await expect(action).toHaveAttribute('href', new RegExp(`/${locale}/organizations/claim-search$`));
+                const widths = await page.locator('[data-bottom-nav] > a, [data-bottom-nav] > button').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().width));
+                expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(1.1);
             }
             expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
             const result = await new AxeBuilder({ page }).include('section.container').withTags(['wcag2a', 'wcag2aa']).analyze();
