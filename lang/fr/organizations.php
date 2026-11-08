@@ -40,6 +40,7 @@ return [
     'focal_upload_required' => 'Importez à nouveau la couverture pour changer sa position de recadrage.',
     'representation' => 'Je confirme être autorisé à représenter cette organisation.',
     'accept_terms' => 'J’accepte les conditions des organisations.',
+    'text_rejected' => 'Ce texte contient des formulations non autorisées. Veuillez le réécrire.',
     'identity_locked' => 'Les champs d’identité sont verrouillés après la première vérification. Contactez l’assistance pour les corriger.',
     'status' => 'État de vérification',
     'pending' => 'En attente de vérification',

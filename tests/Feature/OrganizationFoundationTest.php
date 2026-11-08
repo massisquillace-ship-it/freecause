@@ -194,6 +194,18 @@ class OrganizationFoundationTest extends TestCase
         $this->get('/en/org/'.$org->slug)->assertDontSee('https://example.org/new');
     }
 
+    public function test_verified_owner_edit_rejects_spam_text_and_keeps_clean_edit(): void
+    {
+        $owner = $this->owner();
+        $org = $this->organization($owner, ['status' => 'verified', 'verified_at' => now(), 'description' => ['en' => 'Original description']]);
+        $url = '/en/org/'.$org->slug.'/manage/profile';
+        $this->actingAs($owner)->post($url, $this->payload(['description' => ['en' => 'Buy viagra here']]))->assertSessionHasErrors('description.en');
+        $this->post($url, $this->payload(['tagline' => ['en' => 'Buy viagra here']]))->assertSessionHasErrors('tagline.en');
+        $this->assertSame(['en' => 'Original description'], $org->fresh()->description);
+        $this->post($url, $this->payload(['description' => ['en' => 'Clean new description']]))->assertSessionHasNoErrors();
+        $this->assertSame('Clean new description', $org->fresh()->description['en']);
+    }
+
     public function test_donation_approval_binds_exact_reviewed_url_and_requires_confirmation(): void
     {
         $org = $this->organization(null, ['status' => 'verified', 'donation_url' => 'https://example.org/donate']);

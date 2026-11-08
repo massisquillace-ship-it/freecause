@@ -40,6 +40,7 @@ return [
     'focal_upload_required' => 'Carica di nuovo la copertina per cambiare la posizione del ritaglio.',
     'representation' => 'Confermo di essere autorizzato a rappresentare questa organizzazione.',
     'accept_terms' => 'Accetto i termini per le organizzazioni.',
+    'text_rejected' => 'Questo testo contiene formulazioni non consentite. Riscrivilo.',
     'identity_locked' => 'I dati identificativi sono bloccati dopo la prima verifica. Contatta il supporto per correggerli.',
     'status' => 'Stato di verifica',
     'pending' => 'In attesa di verifica',

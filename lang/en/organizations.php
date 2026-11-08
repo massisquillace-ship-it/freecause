@@ -40,6 +40,7 @@ return [
     'focal_upload_required' => 'Upload the cover again to change its crop position.',
     'representation' => 'I confirm that I am authorized to represent this organization.',
     'accept_terms' => 'I accept the organization terms.',
+    'text_rejected' => 'This text contains wording that is not allowed. Please rewrite it.',
     'identity_locked' => 'Identity fields are locked after the first verification. Contact support for corrections.',
     'status' => 'Verification status',
     'pending' => 'Pending review',
