@@ -210,7 +210,7 @@ class OrganizationDistributionTest extends TestCase
         $pending = $this->org(null, ['status' => 'pending']);
         $this->get('/en')->assertOk()->assertViewHas('organizations', fn ($orgs) => $orgs->isEmpty());
         $this->get('/sitemap.xml')->assertSee('sitemap-organizations.xml');
-        $this->get('/sitemap-organizations.xml')->assertOk()->assertSee('/en/org/'.$one->slug)->assertSee('/it/org/'.$one->slug)->assertDontSee($pending->slug);
+        $this->get('/sitemap-organizations.xml')->assertOk()->assertSee('/en/org/'.$one->slug)->assertSee('/it/org/'.$one->slug)->assertDontSee('/de/org/'.$one->slug)->assertDontSee($pending->slug);
         $pending->update(['status' => 'verified', 'verified_at' => now()]);
         $this->get('/sitemap-organizations.xml')->assertSee($pending->slug);
         $this->get('/en')->assertViewHas('organizations', fn ($orgs) => $orgs->count() === 3);
