@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'This permanently deletes your account, your profile, and your sign-in. This action is immediate and cannot be undone.',
     'delete_google_why' => 'For your security, verify it is you with Google before we delete your account.',
     'google_only_note' => 'Your account signs in with Google. Add a password so you can also log in with your email.',
+    'email_needs_password' => 'Set a password before changing your email address.',
     'set_password_cta' => 'Set a password',
     'set_password' => 'Set a password',
     'set_password_help' => 'Create a password to secure your account and enable email login.',

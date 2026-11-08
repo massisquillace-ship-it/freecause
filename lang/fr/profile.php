@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Cela supprime définitivement votre compte, votre profil et votre connexion. Cette action est immédiate et irréversible.',
     'delete_google_why' => 'Pour votre sécurité, vérifiez qu\'il s\'agit bien de vous avec Google avant que nous supprimions votre compte.',
     'google_only_note' => 'Votre compte se connecte avec Google. Ajoutez un mot de passe pour pouvoir aussi vous connecter avec votre email.',
+    'email_needs_password' => 'Définissez un mot de passe avant de modifier votre adresse email.',
     'set_password_cta' => 'Définir un mot de passe',
     'set_password' => 'Définir un mot de passe',
     'set_password_help' => 'Créez un mot de passe pour sécuriser votre compte et activer la connexion par email.',

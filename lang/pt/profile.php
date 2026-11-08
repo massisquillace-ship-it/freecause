@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Isto elimina permanentemente a sua conta, o seu perfil e o seu início de sessão. Esta ação é imediata e não pode ser anulada.',
     'delete_google_why' => 'Para sua segurança, confirme que é você com o Google antes de eliminarmos a sua conta.',
     'google_only_note' => 'A sua conta inicia sessão com o Google. Adicione uma palavra-passe para poder iniciar sessão também com o seu email.',
+    'email_needs_password' => 'Defina uma palavra-passe antes de alterar o seu endereço de email.',
     'set_password_cta' => 'Definir uma palavra-passe',
     'set_password' => 'Definir uma palavra-passe',
     'set_password_help' => 'Crie uma palavra-passe para proteger a sua conta e ativar o início de sessão por email.',

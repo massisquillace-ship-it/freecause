@@ -164,6 +164,7 @@ class ProfileCrudTest extends TestCase
                 'locale' => 'en',
                 'new_email' => 'new-address@example.com',
                 'new_email_confirmation' => 'new-address@example.com',
+                'current_password' => 'correct-current',
             ])
             ->assertRedirect('/en/profile')
             ->assertSessionHasErrors('new_email');
@@ -186,6 +187,7 @@ class ProfileCrudTest extends TestCase
                 'locale' => 'en',
                 'new_email' => $taken->email,
                 'new_email_confirmation' => $taken->email,
+                'current_password' => 'correct-current',
             ])
             ->assertRedirect('/en/profile')
             ->assertSessionHasErrors('new_email');
@@ -207,6 +209,7 @@ class ProfileCrudTest extends TestCase
                 'locale' => 'en',
                 'new_email' => 'fresh-address@example.com',
                 'new_email_confirmation' => 'fresh-address@example.com',
+                'current_password' => 'correct-current',
             ])
             ->assertRedirect('/en/profile')
             ->assertSessionHasNoErrors();
@@ -230,6 +233,7 @@ class ProfileCrudTest extends TestCase
                 'locale' => 'en',
                 'new_email' => $email,
                 'new_email_confirmation' => $email,
+                'current_password' => 'correct-current',
             ]);
     }
 
@@ -427,10 +431,81 @@ class ProfileCrudTest extends TestCase
                 'locale' => 'en',
                 'new_email' => 'stable@example.com',
                 'new_email_confirmation' => 'stable@example.com',
+                'current_password' => 'correct-current',
             ])
             ->assertRedirect('/en/profile')
             ->assertSessionHasNoErrors();
 
         $this->assertTrue((bool) $user->fresh()->verified);
+    }
+
+    public function test_email_change_requires_current_password_for_a_password_user(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser();
+        $payload = [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'country' => 'US',
+            'gender' => 'male',
+            'locale' => 'en',
+            'new_email' => 'guarded@example.com',
+            'new_email_confirmation' => 'guarded@example.com',
+        ];
+
+        $this->actingAs($user)->from('/en/profile')->post('/en/profile', $payload)
+            ->assertSessionHasErrors('current_password');
+        $this->assertNull($user->fresh()->pending_email);
+
+        $this->actingAs($user)->from('/en/profile')->post('/en/profile', $payload + ['current_password' => 'wrong'])
+            ->assertSessionHasErrors('current_password');
+        $this->assertNull($user->fresh()->pending_email);
+
+        $this->actingAs($user)->post('/en/profile', $payload + ['current_password' => 'correct-current'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('guarded@example.com', $user->fresh()->pending_email);
+    }
+
+    public function test_google_only_user_cannot_set_a_new_email(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser([
+            'google_id' => 'google-account-id',
+            'password' => Hash::make('unknown'),
+            'password_changed_at' => null,
+        ]);
+
+        $this->requestEmailChange($user, 'google-swap@example.com')->assertSessionHasErrors('new_email');
+
+        $this->assertNull($user->fresh()->pending_email);
+        Mail::assertNothingQueued();
+    }
+
+    public function test_google_only_user_can_save_profile_without_or_with_unchanged_email(): void
+    {
+        $user = $this->passwordUser([
+            'google_id' => 'google-account-id',
+            'password' => Hash::make('unknown'),
+            'password_changed_at' => null,
+        ]);
+        $payload = [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'country' => 'US',
+            'gender' => 'male',
+            'locale' => 'en',
+        ];
+
+        $this->actingAs($user)->from('/en/profile')->post('/en/profile', $payload)
+            ->assertSessionHasNoErrors();
+
+        $same = strtoupper($user->email);
+        $this->actingAs($user)->from('/en/profile')->post('/en/profile', $payload + ['new_email' => $same, 'new_email_confirmation' => $same])
+            ->assertSessionHasNoErrors();
+        $this->assertNull($user->fresh()->pending_email);
     }
 }

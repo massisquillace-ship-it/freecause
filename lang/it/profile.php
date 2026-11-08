@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Questa operazione elimina definitivamente il tuo account, il tuo profilo e il tuo accesso. L\'azione è immediata e non può essere annullata.',
     'delete_google_why' => 'Per la tua sicurezza, verifica con Google che sei tu prima che eliminiamo il tuo account.',
     'google_only_note' => 'Il tuo account accede con Google. Aggiungi una password per poter accedere anche con la tua email.',
+    'email_needs_password' => 'Imposta una password prima di modificare il tuo indirizzo email.',
     'set_password_cta' => 'Imposta una password',
     'set_password' => 'Imposta una password',
     'set_password_help' => 'Crea una password per proteggere il tuo account e abilitare l\'accesso tramite email.',

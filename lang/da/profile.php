@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Dette sletter permanent din konto, din profil og dit login. Handlingen sker med det samme og kan ikke fortrydes.',
     'delete_google_why' => 'Af hensyn til din sikkerhed skal du bekræfte, at det er dig, med Google, før vi sletter din konto.',
     'google_only_note' => 'Din konto logger ind med Google. Tilføj en adgangskode, så du også kan logge ind med din e-mail.',
+    'email_needs_password' => 'Angiv en adgangskode, før du ændrer din e-mailadresse.',
     'set_password_cta' => 'Angiv en adgangskode',
     'set_password' => 'Angiv en adgangskode',
     'set_password_help' => 'Opret en adgangskode for at sikre din konto og aktiver e-mail login.',

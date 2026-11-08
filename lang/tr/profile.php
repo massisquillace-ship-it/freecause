@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Bu işlem hesabınızı, profilinizi ve giriş bilgilerinizi kalıcı olarak siler. Bu işlem anında gerçekleşir ve geri alınamaz.',
     'delete_google_why' => 'Güvenliğiniz için, hesabınızı silmeden önce Google ile sizin olduğunuzu doğrulayın.',
     'google_only_note' => 'Hesabınız Google ile giriş yapıyor. E-postanızla da giriş yapabilmek için bir şifre ekleyin.',
+    'email_needs_password' => 'E-posta adresinizi değiştirmeden önce bir şifre belirleyin.',
     'set_password_cta' => 'Bir şifre belirle',
     'set_password' => 'Bir şifre belirle',
     'set_password_help' => 'Hesabınızı güvende tutmak ve e-posta ile girişi etkinleştirmek için bir şifre oluşturun.',

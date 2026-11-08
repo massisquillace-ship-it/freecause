@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\Countries;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateProfileRequest extends FormRequest
 {
@@ -43,9 +44,23 @@ class UpdateProfileRequest extends FormRequest
                 Rule::unique('users', 'pending_email')->ignore($user?->id)->where(fn ($q) => $q->where('verification_token_sent_at', '>', now()->subHours(48))),
             ],
             'new_email_confirmation' => ['required_with:new_email', 'same:new_email'],
-            'current_password' => [Rule::requiredIf(fn () => filled($this->input('new_password')) && (bool) $user?->hasLocalPassword()), 'nullable', 'current_password:web'],
+            'current_password' => [Rule::requiredIf(fn () => (filled($this->input('new_password')) || $this->changesEmail()) && (bool) $user?->hasLocalPassword()), 'nullable', 'current_password:web'],
             'new_password' => ['nullable', 'string', 'min:8', 'max:72', 'confirmed'],
         ];
+    }
+
+    private function changesEmail(): bool
+    {
+        return filled($this->input('new_email')) && $this->input('new_email') !== strtolower((string) $this->user()?->email);
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if ($this->changesEmail() && ! $this->user()?->hasLocalPassword()) {
+                $v->errors()->add('new_email', __('profile.email_needs_password'));
+            }
+        });
     }
 
     public function messages(): array

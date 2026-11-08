@@ -61,6 +61,7 @@ return [
     'delete_explain' => 'Spowoduje to trwałe usunięcie Twojego konta, profilu i danych logowania. Ta czynność jest natychmiastowa i nie można jej cofnąć.',
     'delete_google_why' => 'Dla Twojego bezpieczeństwa potwierdź za pomocą Google, że to Ty, zanim usuniemy Twoje konto.',
     'google_only_note' => 'Twoje konto loguje się za pomocą Google. Dodaj hasło, aby móc logować się także za pomocą adresu email.',
+    'email_needs_password' => 'Ustaw hasło przed zmianą adresu email.',
     'set_password_cta' => 'Ustaw hasło',
     'set_password' => 'Ustaw hasło',
     'set_password_help' => 'Utwórz hasło, aby zabezpieczyć konto i włączyć logowanie za pomocą email.',
