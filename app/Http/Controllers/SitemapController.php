@@ -216,9 +216,9 @@ class SitemapController extends Controller
 
     public function organizations()
     {
-        return $this->xml($this->cached('organizations.v1', function () {
+        return $this->xml($this->cached('organizations.v2', function () {
             $out = $this->urlsetHeader();
-            $locales = active_locales();
+            $locales = array_intersect(active_locales(), config('organizations.locales'));
             $default = default_locale();
             foreach (Organization::public()->orderBy('id')->cursor() as $org) {
                 $alternates = [];
