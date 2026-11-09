@@ -31,7 +31,7 @@
 
         <div class="collapse navbar-collapse" id="fcNav">
             <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center">
-                @if($showOrganizationNav)<li class="nav-item"><a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>@endif
+                <li class="nav-item"><a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>
                 <li class="nav-item">
                     <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('petitions.index') }}">
                         {{ $explore }}
@@ -97,7 +97,7 @@
             <x-lucide-circle-help aria-hidden="true" />
             <span>{{ $help }}</span>
         </a>
-        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('organizations.explore') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('home.organizations_label') }}</span></a>@endif
+        <a class="fcui-sheet-list__item" href="{{ lroute('organizations.explore') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('home.organizations_label') }}</span></a>
         <a class="fcui-sheet-list__item" href="{{ url('/magazine') }}">
             <x-lucide-newspaper aria-hidden="true" />
             <span>{{ $c['nav_magazine'] ?? __('nav.magazine') }}</span>
