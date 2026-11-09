@@ -8,6 +8,7 @@ use App\Services\PetitionSigning;
 use App\Support\AppLog;
 use App\Support\Locale;
 use App\Support\WpSso;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -194,6 +195,28 @@ class GoogleAuthController extends Controller
             try {
                 $currentUser->google_id = $google->getId();
                 DB::transaction(fn () => $currentUser->save());
+            } catch (QueryException $e) {
+                if (self::isGoogleIdUniqueViolation($e)) {
+                    AppLog::warning(
+                        'Google link rejected — identity was linked concurrently',
+                        'User ID: '.$currentUser->id.' | Email: '.$email,
+                        'auth.google'
+                    );
+
+                    return redirect("/{$destLocale}/profile")->withErrors([
+                        'google_link' => __('profile.google_link_in_use'),
+                    ]);
+                }
+
+                AppLog::error(
+                    'Google link failed to save',
+                    'User ID: '.$currentUser->id.' | '.$e->getMessage(),
+                    'auth.google'
+                );
+
+                return redirect("/{$destLocale}/profile")->withErrors([
+                    'google_link' => __('profile.google_link_failed'),
+                ]);
             } catch (\Throwable $e) {
                 AppLog::error(
                     'Google link failed to save',
@@ -268,18 +291,35 @@ class GoogleAuthController extends Controller
         if (! $user) {
             $newUser = true;
 
-            $user = User::create([
-                'name' => $fullName,
-                'first_name' => $first,
-                'last_name' => $last,
-                'email' => $email,
-                'password' => null,
-                'locale' => Locale::toFull($destLocale),
-                'ip' => $request->ip(),
-                'level_id' => $userLevel?->id,
-                'welcome_email_pending' => true,
-                'verified' => true,
-            ]);
+            try {
+                $user = User::create([
+                    'name' => $fullName,
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'password' => null,
+                    'google_id' => $google->getId(),
+                    'locale' => Locale::toFull($destLocale),
+                    'ip' => $request->ip(),
+                    'level_id' => $userLevel?->id,
+                    'welcome_email_pending' => true,
+                    'verified' => true,
+                ]);
+            } catch (QueryException $e) {
+                if (self::isGoogleIdUniqueViolation($e)) {
+                    AppLog::warning(
+                        'Google OAuth refused — identity was linked concurrently',
+                        'Email: '.$email.' | Google ID: '.$google->getId(),
+                        'auth.google'
+                    );
+
+                    return redirect("/{$destLocale}/login")->withErrors([
+                        'oauth' => __('auth.google_signin_failed'),
+                    ]);
+                }
+
+                throw $e;
+            }
 
             AppLog::info(
                 'User registered via Google',
@@ -317,7 +357,23 @@ class GoogleAuthController extends Controller
 
         $user->google_id = $google->getId();
 
-        $user->save();
+        try {
+            $user->save();
+        } catch (QueryException $e) {
+            if (self::isGoogleIdUniqueViolation($e)) {
+                AppLog::warning(
+                    'Google OAuth refused — identity was linked concurrently',
+                    'Email: '.$email.' | Google ID: '.$google->getId(),
+                    'auth.google'
+                );
+
+                return redirect("/{$destLocale}/login")->withErrors([
+                    'oauth' => __('auth.google_signin_failed'),
+                ]);
+            }
+
+            throw $e;
+        }
 
         if ($wasUnverified) {
             PetitionSigning::markVerified($user);
@@ -360,5 +416,13 @@ class GoogleAuthController extends Controller
         }
 
         return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
+    }
+
+    private static function isGoogleIdUniqueViolation(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'google_id')
+            || str_contains($message, 'users_google_id_unique');
     }
 }

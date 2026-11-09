@@ -32,7 +32,7 @@ class WelcomeOnboardingTest extends TestCase
     {
         return User::factory()->create(array_merge([
             'verified' => true,
-            'google_id' => 'synthetic-google-id',
+            'google_id' => 'synthetic-google-id-'.fake()->uuid(),
             'locale' => 'en_US',
             'country' => null,
             'gender' => null,
