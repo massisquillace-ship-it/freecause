@@ -199,6 +199,45 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_banned_user_with_wrong_password_gets_invalid_credentials_response(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'banned@example.com',
+            'password' => Hash::make('password123'),
+            'banned_until' => now()->addDay(),
+        ]);
+
+        $response = $this->post('/en/login', [
+            'email' => $user->email,
+            'password' => 'wrongpassword',
+        ]);
+
+        $response->assertSessionHasErrors(['email' => __('auth.err_invalid_credentials')]);
+        $response->assertSessionMissing('toast');
+        $this->assertGuest();
+    }
+
+    public function test_banned_user_with_correct_password_gets_suspended_response_without_login(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'banned@example.com',
+            'password' => Hash::make('password123'),
+            'banned_until' => now()->addDay(),
+        ]);
+
+        $response = $this->from('/en/login')->post('/en/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response->assertRedirect('/en/login');
+        $response->assertSessionHas('toast', [
+            'type' => 'error',
+            'message' => __('auth.err_suspended'),
+        ]);
+        $this->assertGuest();
+    }
+
     public function test_successful_password_login_backfills_password_timestamp_for_older_google_linked_user(): void
     {
         $user = User::factory()->create([

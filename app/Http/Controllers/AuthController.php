@@ -189,19 +189,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user) {
-            if ($user->isBanned()) {
-                AppLog::warning(
-                    'Banned user attempted login',
-                    'User ID: '.$user->id.' | IP: '.$request->ip(),
-                    'auth.login'
-                );
-                toast(__('auth.err_suspended'), 'error');
-
-                return back()->withInput();
-            }
-        }
-
         $legacyHash = $user && filled($user->password) && str_contains($user->password, ':');
 
         try {
@@ -217,6 +204,19 @@ class AuthController extends Controller
         }
 
         if ($loggedIn) {
+            if ($user->isBanned()) {
+                Auth::guard('web')->logout();
+
+                AppLog::warning(
+                    'Banned user attempted login',
+                    'User ID: '.$user->id.' | IP: '.$request->ip(),
+                    'auth.login'
+                );
+                toast(__('auth.err_suspended'), 'error');
+
+                return back()->withInput();
+            }
+
             if (! $user->verified) {
                 Auth::guard('web')->logout();
 
