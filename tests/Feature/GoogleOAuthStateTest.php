@@ -193,6 +193,28 @@ class GoogleOAuthStateTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_google_only_user_can_reauthenticate_when_account_email_differs_from_google_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'account-email@example.test',
+            'google_id' => 'synthetic-google-user',
+            'password_changed_at' => null,
+            'verified' => true,
+        ]);
+
+        $this->actingAs($user);
+        $state = $this->startGoogleLogin('/en/account/delete/google');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/profile')
+            ->assertSessionHas('account_delete_google_verified', function (array $proof) use ($user) {
+                return $proof['user_id'] === $user->id && is_int($proof['verified_at']);
+            });
+
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_account_deletion_reauthentication_rejects_a_different_google_account(): void
     {
         $user = User::factory()->create([

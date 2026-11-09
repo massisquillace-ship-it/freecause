@@ -135,8 +135,7 @@ class GoogleAuthController extends Controller
             $matchesCurrentUser = $currentUser
                 && (int) ($ctx['user_id'] ?? 0) === (int) $currentUser->id
                 && filled($currentUser->google_id)
-                && hash_equals((string) $currentUser->google_id, (string) $google->getId())
-                && hash_equals(strtolower(trim((string) $currentUser->email)), $email);
+                && hash_equals((string) $currentUser->google_id, (string) $google->getId());
 
             if (! $matchesCurrentUser) {
                 $request->session()->forget('account_delete_google_verified');
