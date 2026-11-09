@@ -11,6 +11,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Laravel\Socialite\Facades\Socialite;
@@ -261,6 +262,79 @@ class GoogleOAuthStateTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->assertSame('synthetic-google-user', $user->fresh()->google_id);
+    }
+
+    public function test_database_rejects_duplicate_google_id_links(): void
+    {
+        User::factory()->create(['google_id' => 'synthetic-google-user']);
+
+        $this->expectException(QueryException::class);
+
+        User::factory()->create(['google_id' => 'synthetic-google-user']);
+    }
+
+    public function test_google_login_race_rejects_duplicate_without_changing_the_account(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google-state@example.test',
+            'google_id' => null,
+            'password' => null,
+            'password_changed_at' => null,
+            'verified' => true,
+        ]);
+
+        $triggered = false;
+        User::saving(function (User $saving) use ($user, &$triggered): void {
+            if (! $triggered && $saving->id === $user->id && $saving->google_id === 'synthetic-google-user') {
+                $triggered = true;
+                User::withoutEvents(fn () => User::factory()->create([
+                    'google_id' => 'synthetic-google-user',
+                ]));
+            }
+        });
+
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors('oauth');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertDatabaseCount('users', 2);
+    }
+
+    public function test_google_link_race_rejects_duplicate_without_changing_either_account(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google-state@example.test',
+            'google_id' => null,
+            'password_changed_at' => now(),
+            'verified' => true,
+        ]);
+
+        $triggered = false;
+        User::saving(function (User $saving) use ($user, &$triggered): void {
+            if (! $triggered && $saving->id === $user->id && $saving->google_id === 'synthetic-google-user') {
+                $triggered = true;
+                User::withoutEvents(fn () => User::factory()->create([
+                    'google_id' => 'synthetic-google-user',
+                ]));
+            }
+        });
+
+        $this->actingAs($user);
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=link');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/profile')
+            ->assertSessionHasErrors('google_link');
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->google_id);
+        $this->assertDatabaseCount('users', 1);
     }
 
     public function test_linking_google_rejects_a_mismatched_email(): void
