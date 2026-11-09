@@ -10,17 +10,19 @@
             @if (! empty($item['href']))
                 <a
                     href="{{ $item['href'] }}"
+                    @if(!empty($item['ariaLabel'])) aria-label="{{ $item['ariaLabel'] }}" @endif
                     class="fcui-bottom-nav__item {{ ! empty($item['active']) ? 'is-active' : '' }}"
                     @if (! empty($item['active'])) aria-current="page" @endif
                 >
                     @if (! empty($item['icon']))
                         <x-dynamic-component :component="'lucide-'.$item['icon']" aria-hidden="true" />
                     @endif
-                    <span class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">{{ $item['label'] }}</span>
+                    <span class="max-w-full whitespace-normal text-center break-words hyphens-auto line-clamp-2">{{ $item['label'] }}</span>
                 </a>
             @else
                 <button
                     type="button"
+                    @if(!empty($item['ariaLabel'])) aria-label="{{ $item['ariaLabel'] }}" @endif
                     class="fcui-bottom-nav__item {{ ! empty($item['active']) ? 'is-active' : '' }}"
                     @if (! empty($item['sheet'])) data-sheet-open="{{ $item['sheet'] }}" @endif
                     @if (! empty($item['active'])) aria-current="page" @endif
@@ -28,7 +30,7 @@
                     @if (! empty($item['icon']))
                         <x-dynamic-component :component="'lucide-'.$item['icon']" aria-hidden="true" />
                     @endif
-                    <span class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">{{ $item['label'] }}</span>
+                    <span class="max-w-full whitespace-normal text-center break-words hyphens-auto line-clamp-2">{{ $item['label'] }}</span>
                 </button>
             @endif
         @endforeach
