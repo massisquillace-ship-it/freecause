@@ -126,7 +126,7 @@ class PetitionSigning
             $sentAt = $existingUser->verification_token_sent_at;
             // Re-send at most once per token lifetime (48h, see AuthController::verify).
             if (! $existingUser->verified && $needsVerification && Settings::get('smtp_enabled', false)
-                && (! $sentAt || $sentAt->lt(now()->subHours(48)))) {
+                && (! $sentAt || $existingUser->verificationExpired())) {
                 try {
                     $existingUser->forceFill([
                         'pending_email' => null, // token goes to the current address, not a pending one

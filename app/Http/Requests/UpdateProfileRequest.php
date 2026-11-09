@@ -42,7 +42,7 @@ class UpdateProfileRequest extends FormRequest
             ],
             'identify_mode' => ['nullable', Rule::in(['full', 'name', 'nick'])],
             'new_email' => ['nullable', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user?->id),
-                Rule::unique('users', 'pending_email')->ignore($user?->id)->where(fn ($q) => $q->where('verification_token_sent_at', '>', now()->subHours(48))),
+                Rule::unique('users', 'pending_email')->ignore($user?->id)->where(fn ($q) => $q->where('verification_token_sent_at', '>', User::verificationCutoff())),
             ],
             'new_email_confirmation' => ['required_with:new_email', 'same:new_email'],
             'current_password' => [Rule::requiredIf(fn () => (filled($this->input('new_password')) || $this->changesEmail()) && (bool) $user?->hasLocalPassword()), 'nullable', 'current_password:web'],

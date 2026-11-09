@@ -26,6 +26,7 @@ use App\Support\Spam;
 use App\Support\WpSso;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -436,7 +437,7 @@ class AuthController extends Controller
         return view('auth.verify-confirmation', [
             'locale' => $locale,
             'token' => $token,
-            'expired' => (bool) ($user->verification_token_sent_at?->lt(now()->subHours(48))),
+            'expired' => $user->verificationExpired(),
         ]);
     }
 
@@ -451,90 +452,108 @@ class AuthController extends Controller
         }
 
         if ($user->pending_email) {
-            $expired = false;
-            $taken = false;
-            $cleanup = null;
+            $confirmed = $this->confirmPendingEmail($request, $locale, $token, $user);
 
+            if ($confirmed instanceof RedirectResponse) {
+                return $confirmed;
+            }
+
+            $user = $confirmed;
+        }
+
+        return $this->confirmFirstVerification($request, $locale, $user);
+    }
+
+    private function confirmPendingEmail(Request $request, string $locale, string $token, User $user): User|RedirectResponse
+    {
+        $expired = false;
+        $taken = false;
+        $cleanup = null;
+
+        try {
+            $cleanup = DB::transaction(function () use (&$user, $token, &$expired, &$taken) {
+                $locked = User::where('verification_token', $token)->lockForUpdate()->first();
+
+                if (! $locked || ! $locked->pending_email) {
+                    $user = null;
+
+                    return null;
+                }
+
+                $user = $locked;
+                $expired = $locked->verificationExpired();
+                $taken = ! $expired && User::where('email', strtolower($locked->pending_email))->whereKeyNot($locked->id)->exists();
+
+                $oldEmail = null;
+
+                if (! $expired && ! $taken) {
+                    $oldEmail = $locked->email;
+                    $locked->email = $locked->pending_email;
+                }
+
+                $locked->pending_email = null;
+                $locked->verification_token = null;
+                $locked->save();
+
+                if ($oldEmail === null || strtolower($oldEmail) === strtolower($locked->email)) {
+                    return null;
+                }
+
+                return AccountDeletionCleanup::create([
+                    'user_id' => $locked->id,
+                    'email' => $oldEmail,
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            $taken = true;
+            User::whereKey($user->id)->update(['pending_email' => null, 'verification_token' => null]);
+            $user->refresh();
+        }
+
+        if (! $user) {
+            toast(__('auth.verify_invalid'), 'error');
+
+            return redirect()->to("/{$locale}");
+        }
+
+        if ($cleanup) {
             try {
-                $cleanup = DB::transaction(function () use (&$user, $token, &$expired, &$taken) {
-                    $locked = User::where('verification_token', $token)->lockForUpdate()->first();
-
-                    if (! $locked || ! $locked->pending_email) {
-                        $user = null;
-
-                        return null;
-                    }
-
-                    $user = $locked;
-                    $expired = $locked->verification_token_sent_at && $locked->verification_token_sent_at->lt(now()->subHours(48));
-                    $taken = ! $expired && User::where('email', strtolower($locked->pending_email))->whereKeyNot($locked->id)->exists();
-
-                    $oldEmail = null;
-
-                    if (! $expired && ! $taken) {
-                        $oldEmail = $locked->email;
-                        $locked->email = $locked->pending_email;
-                    }
-
-                    $locked->pending_email = null;
-                    $locked->verification_token = null;
-                    $locked->save();
-
-                    if ($oldEmail === null || strtolower($oldEmail) === strtolower($locked->email)) {
-                        return null;
-                    }
-
-                    return AccountDeletionCleanup::create([
-                        'user_id' => $locked->id,
-                        'email' => $oldEmail,
-                    ]);
-                });
-            } catch (UniqueConstraintViolationException) {
-                $taken = true;
-                User::whereKey($user->id)->update(['pending_email' => null, 'verification_token' => null]);
-                $user->refresh();
-            }
-
-            if (! $user) {
-                toast(__('auth.verify_invalid'), 'error');
-
-                return redirect()->to("/{$locale}");
-            }
-
-            if ($cleanup) {
-                try {
-                    CleanupDeletedAccount::dispatch($cleanup->id);
-                } catch (\Throwable $e) {
-                    Log::warning('Old email cleanup dispatch deferred', [
-                        'cleanup_id' => $cleanup->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // A still-unverified account that just proved its (new) address falls through to markVerified().
-            if ($expired || $taken || $user->verified) {
-                $request->session()->forget(['verify_email', 'verify_intended', 'verify_autologin']);
-
-                if ($expired) {
-                    toast(__('auth.verify_expired'), 'error');
-
-                    return redirect()->to($user->verified ? "/{$locale}/profile" : "/{$locale}/resend-verification");
-                }
-
-                toast($taken ? __('profile.email_taken') : __('auth.verify_success'), $taken ? 'error' : 'success');
-
-                return redirect()->to("/{$locale}");
+                CleanupDeletedAccount::dispatch($cleanup->id);
+            } catch (\Throwable $e) {
+                Log::warning('Old email cleanup dispatch deferred', [
+                    'cleanup_id' => $cleanup->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
+        // A still-unverified account that just proved its (new) address falls through to markVerified().
+        if ($expired || $taken || $user->verified) {
+            $request->session()->forget(['verify_email', 'verify_intended', 'verify_autologin']);
+
+            if ($expired) {
+                toast(__('auth.verify_expired'), 'error');
+
+                return redirect()->to($user->verified ? "/{$locale}/profile" : "/{$locale}/resend-verification");
+            }
+
+            toast($taken ? __('profile.email_taken') : __('auth.verify_success'), $taken ? 'error' : 'success');
+
+            return redirect()->to("/{$locale}");
+        }
+
+        return $user;
+    }
+
+    private function confirmFirstVerification(Request $request, string $locale, User $user): RedirectResponse
+    {
         if ($user->verified) {
             toast(__('auth.verify_already'), 'info');
 
             return redirect()->to("/{$locale}");
         }
 
-        if ($user->verification_token_sent_at && $user->verification_token_sent_at->lt(now()->subHours(48))) {
+        if ($user->verificationExpired()) {
             toast(__('auth.verify_expired'), 'error');
 
             return redirect()->to("/{$locale}/resend-verification");
