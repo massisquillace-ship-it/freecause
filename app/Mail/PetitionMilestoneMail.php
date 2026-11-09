@@ -14,6 +14,8 @@ class PetitionMilestoneMail extends Mailable implements ShouldQueue
 {
     use GatedByMailQuota, Queueable, SerializesModels;
 
+    public bool $transactional = true;
+
     public function __construct(
         public Petition $petition,
         public User $owner,
