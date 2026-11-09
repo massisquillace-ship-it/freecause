@@ -1,15 +1,18 @@
 <?php
 
 return [
+    'organization_verified' => 'Organization verified by FreeCause',
+    'goal_reached_petitions' => 'Petitions that reached their signature goal',
+    'see_all_victories' => 'See all goals reached',
     'recently_signed_title' => 'Recently signed petitions',
     'recently_signed_subtitle' => 'Ordered by the latest confirmed signature',
     'organizations_empty' => 'Organizations will appear here as they become public.',
     'campaigns_empty' => 'No confirmed signatures yet.',
-    'victories_empty' => 'No victories have been reported yet.',
+    'victories_empty' => 'No petitions have reached their signature goal yet in this language.',
     'petitions_label' => 'Petitions',
     'status_verified' => 'Verified',
     'status_unclaimed' => 'Unclaimed',
-    'victory_badge' => 'Victory reported by organizer',
+    'victory_badge' => 'Signature goal reached',
 
     'blog_read_more' => 'Read More',
     'blog_subtitle' => 'Stay updated with our latest insights and news',
@@ -78,7 +81,7 @@ return [
     'popular_title' => 'Most supported campaigns of the last year',
     'popular_subtitle' => 'Petitions by organizations and citizens, ranked by signatures',
     'victories_title' => 'Victories',
-    'victories_subtitle' => 'Results reported by organizers',
+    'victories_subtitle' => 'Petitions that reached their signature goal, by individuals and organizations',
     'causes_title' => 'Explore by cause',
     'claim_title' => ':count organizations already have a page on FreeCause. Is yours one of them?',
     'claim_subtitle' => 'Pages are generated from petitions published over 15 years. Claim yours, verify your identity and start managing it.',
