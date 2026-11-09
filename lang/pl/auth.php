@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google nie przekazało adresu e-mail.',
     'google_email_exists' => 'Konto z tym adresem e-mail już istnieje. Najpierw zaloguj się hasłem, a następnie połącz Google w swoim profilu.',
     'google_signin_failed' => 'Logowanie nie powiodło się. Spróbuj ponownie.',
+    'reset_link_sent' => 'Jeśli istnieje konto z tym adresem e-mail, wysłano link do zresetowania hasła.',
+    'reset_failed' => 'Ten link do zresetowania hasła jest nieprawidłowy lub wygasł.',
+    'reset_success' => 'Twoje hasło zostało zresetowane.',
 ];

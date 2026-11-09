@@ -28,6 +28,67 @@ class MailQuotaUserMessageTest extends TestCase
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class]);
     }
 
+    public function test_forgot_password_reply_is_identical_for_known_and_unknown_email(): void
+    {
+        Mail::fake();
+        User::factory()->create(['email' => 'known@example.com']);
+
+        $known = $this->from('/en/forgot-password')
+            ->post('/en/forgot-password', ['email' => 'known@example.com']);
+        $unknown = $this->from('/en/forgot-password')
+            ->post('/en/forgot-password', ['email' => 'nobody@example.com']);
+
+        $known->assertRedirect('/en/forgot-password')
+            ->assertSessionHas('status', __('auth.reset_link_sent'))
+            ->assertSessionHasNoErrors();
+        $unknown->assertRedirect('/en/forgot-password')
+            ->assertSessionHas('status', __('auth.reset_link_sent'))
+            ->assertSessionHasNoErrors();
+        $this->assertSame($known->getStatusCode(), $unknown->getStatusCode());
+        $this->assertSame($known->headers->get('Location'), $unknown->headers->get('Location'));
+    }
+
+    public function test_reset_password_with_invalid_token_shows_translated_error(): void
+    {
+        $user = User::factory()->create(['email' => 'reset@example.com']);
+
+        $this->from('/en/reset-password/bad')
+            ->post('/en/reset-password', [
+                'email' => $user->email,
+                'token' => 'bad',
+                'password' => 'New-Password-123',
+                'password_confirmation' => 'New-Password-123',
+            ])
+            ->assertRedirect('/en/reset-password/bad')
+            ->assertSessionHasErrors(['email' => __('auth.reset_failed')]);
+    }
+
+    public function test_reset_password_success_flashes_translated_message(): void
+    {
+        $user = User::factory()->create(['email' => 'reset@example.com']);
+        $token = Password::createToken($user);
+
+        $this->post('/en/reset-password', [
+            'email' => $user->email,
+            'token' => $token,
+            'password' => 'New-Password-123',
+            'password_confirmation' => 'New-Password-123',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertStringContainsString(__('auth.reset_success'), json_encode(session()->all()));
+    }
+
+    public function test_reset_keys_exist_in_every_locale(): void
+    {
+        foreach (['da', 'de', 'el', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'ru', 'sv', 'tr'] as $locale) {
+            foreach (['reset_link_sent', 'reset_failed', 'reset_success'] as $key) {
+                $text = trans("auth.$key", [], $locale);
+                $this->assertNotSame("auth.$key", $text, "$locale $key");
+                $this->assertNotSame('', trim($text), "$locale $key");
+            }
+        }
+    }
+
     public function test_password_reset_says_try_later_without_sending_when_tripped(): void
     {
         MailQuota::trip();

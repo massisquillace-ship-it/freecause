@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google non ha fornito un indirizzo email.',
     'google_email_exists' => 'Esiste già un account con questa email. Accedi prima con la tua password, poi collega Google dal tuo profilo.',
     'google_signin_failed' => 'Accesso non riuscito. Riprova.',
+    'reset_link_sent' => 'Se esiste un account con questa email, è stato inviato un link per reimpostare la password.',
+    'reset_failed' => 'Questo link per reimpostare la password non è valido o è scaduto.',
+    'reset_success' => 'La tua password è stata reimpostata.',
 ];

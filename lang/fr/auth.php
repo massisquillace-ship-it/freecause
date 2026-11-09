@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google n\'a pas fourni d\'adresse email.',
     'google_email_exists' => 'Un compte avec cet email existe déjà. Connectez-vous d\'abord avec votre mot de passe, puis liez Google depuis votre profil.',
     'google_signin_failed' => 'La connexion a échoué. Veuillez réessayer.',
+    'reset_link_sent' => 'Si un compte existe pour cet e-mail, un lien de réinitialisation du mot de passe a été envoyé.',
+    'reset_failed' => 'Ce lien de réinitialisation du mot de passe est invalide ou a expiré.',
+    'reset_success' => 'Votre mot de passe a été réinitialisé.',
 ];

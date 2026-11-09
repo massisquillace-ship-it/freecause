@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'O Google não forneceu um email.',
     'google_email_exists' => 'Já existe uma conta com este email. Inicie sessão primeiro com a sua palavra-passe e depois associe o Google no seu perfil.',
     'google_signin_failed' => 'Falha no início de sessão. Tente novamente.',
+    'reset_link_sent' => 'Se existir uma conta com este email, foi enviado um link para redefinir a palavra-passe.',
+    'reset_failed' => 'Este link para redefinir a palavra-passe é inválido ou expirou.',
+    'reset_success' => 'A sua palavra-passe foi redefinida.',
 ];

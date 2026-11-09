@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google bir e-posta adresi sağlamadı.',
     'google_email_exists' => 'Bu e-posta ile bir hesap zaten var. Önce şifrenizle giriş yapın, ardından Google\'ı profilinizden bağlayın.',
     'google_signin_failed' => 'Giriş başarısız oldu. Lütfen tekrar deneyin.',
+    'reset_link_sent' => 'Bu e-posta için bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.',
+    'reset_failed' => 'Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.',
+    'reset_success' => 'Şifreniz sıfırlandı.',
 ];
