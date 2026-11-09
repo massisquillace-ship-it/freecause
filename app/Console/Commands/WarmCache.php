@@ -3,13 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PetitionController;
 use App\Models\Category;
 use App\Models\Language;
+use App\Services\HomepageData;
+use App\Services\HomepageMagazine;
 use App\Services\PageContentService;
 use App\Support\CacheKeys;
 use Illuminate\Console\Command;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class WarmCache extends Command
@@ -46,8 +48,14 @@ class WarmCache extends Command
 
         $this->warmHomeContent($locale);
         Category::cachedActive($locale);
-        HomeController::recentActivities($locale);
-        HomeController::magazinePosts();
+        $previousLocale = app()->getLocale();
+        try {
+            app()->setLocale($locale);
+            app(HomepageData::class)->forRequest(Request::create('/'.$locale));
+            app(HomepageMagazine::class)->posts($locale);
+        } finally {
+            app()->setLocale($previousLocale);
+        }
         $this->warmPetitionsCache($locale);
     }
 
