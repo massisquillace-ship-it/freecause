@@ -477,10 +477,14 @@ class AuthController extends Controller
 
             try {
                 $user->save();
-            } catch (UniqueConstraintViolationException) {
-                $taken = true;
+            } catch (UniqueConstraintViolationException $e) {
+                if ($oldEmail === null) {
+                    throw $e;
+                }
+
+                $user->email = $oldEmail;
                 $oldEmail = null;
-                $user->email = $user->getOriginal('email');
+                $taken = true;
                 $user->save();
             }
 
