@@ -355,7 +355,7 @@ Route::prefix('{locale}')
 
             Route::post('/account/unlink/google', [AuthController::class, 'unlinkGoogle'])->name('account.unlink.google');
 
-            Route::post('/create-petition', [PetitionController::class, 'store'])->name('petition.store')->middleware('throttle:5,1');
+            Route::post('/create-petition', [PetitionController::class, 'store'])->name('petition.store')->middleware(['throttle:5,1', 'throttle:petition-create-daily']);
 
             Route::get('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'edit'])->name('petition.outcome');
             Route::post('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'update'])->name('petition.outcome.update');

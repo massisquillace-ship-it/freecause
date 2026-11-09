@@ -57,6 +57,26 @@ class PetitionCreateFlowTest extends TestCase
         $this->assertDatabaseHas('petition_translations', ['petition_id' => $petition->id, 'locale' => 'en']);
     }
 
+    public function test_daily_petition_limit_applies_per_user(): void
+    {
+        for ($i = 1; $i <= 10; $i++) {
+            $this->actingAs($this->user)
+                ->postJson('/en/create-petition', $this->payload(['title' => "Test Petition Title {$i}"]))
+                ->assertRedirect();
+
+            $this->travel(61)->seconds();
+        }
+
+        $this->actingAs($this->user)
+            ->postJson('/en/create-petition', $this->payload(['title' => 'Test Petition Title 11']))
+            ->assertTooManyRequests();
+
+        $other = User::factory()->create(['verified' => true]);
+        $this->actingAs($other)
+            ->postJson('/en/create-petition', $this->payload(['title' => 'Other User Petition']))
+            ->assertRedirect();
+    }
+
     public function test_short_description_fails_validation(): void
     {
         $this->actingAs($this->user)->post('/en/create-petition', $this->payload(['description' => '<p>Too short</p>']))

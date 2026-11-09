@@ -96,6 +96,9 @@ class AppServiceProvider extends ServiceProvider
             RateLimiter::for('admin-login', function (Request $request) {
                 return Limit::perMinute(10)->by($request->ip());
             });
+            RateLimiter::for('petition-create-daily', function (Request $request) {
+                return Limit::perDay(10)->by('user:'.$request->user()->getAuthIdentifier());
+            });
         } catch (\Throwable $e) {
             Log::warning('bootRateLimiting failed: '.$e->getMessage());
         }
