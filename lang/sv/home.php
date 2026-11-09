@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive(require __DIR__.'/../en/home.php', [
     'blog_read_more' => 'Läs mer',
     'blog_subtitle' => 'Håll dig uppdaterad med våra senaste insikter och nyheter',
     'blog_title' => 'Senaste från tidningen Freecause',
@@ -47,4 +47,4 @@ return [
     'what_p3' => 'Utan ett utrymme att kämpa för våra orsaker, oavsett hur små eller vardagliga de än verkar, känns sann frihet utom räckhåll.',
     'what_p4' => 'Det är därför vi byggde <span class="red">FreeCause - Online Petition</span>- fri, oberoende och gjord för dig.',
     'what_title' => 'Vad är online petition',
-];
+]);
