@@ -397,7 +397,7 @@ class AuthController extends Controller
         try {
             DB::transaction(function () use ($u) {
                 app(OrganizationLifecycle::class)->suspendForDeletedOwner($u);
-                User::query()->whereKey($u->getKey())->delete();
+                $u->delete();
             }, 3);
         } catch (\Throwable $e) {
             AppLog::error(
