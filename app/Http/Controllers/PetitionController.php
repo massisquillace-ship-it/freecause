@@ -911,7 +911,9 @@ class PetitionController extends Controller
                         'title' => $data['title'],
                         'keywords' => $reviewMatches,
                     ]));
+                }
 
+                if ($reviewMatches !== []) {
                     toast(__('petition.review_required'), 'warning');
                 } else {
                     toast(__('create.toast_updated'), 'success');
