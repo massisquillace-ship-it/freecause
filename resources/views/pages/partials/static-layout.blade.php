@@ -29,6 +29,9 @@
                         <div data-faq-search-root>
                             {!! \App\Services\ContentRenderer::renderFaqAccordion($content) !!}
                         </div>
+                        @push('scripts')
+                            <script src="{{ asset('legacy/js-v2/bootstrap.bundle.min.js') }}" defer></script>
+                        @endpush
                     @else
                         <div class="fc-prose [&_h1]:text-lg [&_h1]:mt-8 [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:mt-8 [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:mt-8 [&_h3]:font-semibold [&_ul]:pl-4 [&_ul]:mb-4">
                             {!! \App\Services\ContentRenderer::render($content) !!}
