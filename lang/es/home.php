@@ -1,6 +1,8 @@
 <?php
 
 return array_replace_recursive(require __DIR__.'/../en/home.php', [
+    'hero' => ['title_global' => 'Asociaciones, comités y ONG en todo el mundo: quiénes son y por qué luchan.', 'world' => 'mundo'],
+    'trending_title_global' => 'En crecimiento en todo el mundo esta semana',
     'organization_verified' => 'Organización verificada por FreeCause',
     'goal_reached_petitions' => 'Peticiones que alcanzaron su objetivo de firmas',
     'see_all_victories' => 'Ver todos los objetivos alcanzados',
