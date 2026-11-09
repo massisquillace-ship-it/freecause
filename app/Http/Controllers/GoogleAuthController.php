@@ -155,6 +155,16 @@ class GoogleAuthController extends Controller
                 ->with('success', __('profile.google_delete_verified'));
         }
 
+        if (! filter_var($google->user['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            AppLog::warning(
+                'Google OAuth refused — email not verified by Google',
+                'Google ID: '.$google->getId(),
+                'auth.google'
+            );
+
+            return redirect("/{$destLocale}/login")->withErrors(['oauth' => __('auth.google_signin_failed')]);
+        }
+
         if (($ctx['flow'] ?? null) === 'link') {
             $currentUser = Auth::guard('web')->user();
 
@@ -306,7 +316,7 @@ class GoogleAuthController extends Controller
                     'verified' => true,
                 ]);
             } catch (QueryException $e) {
-                if (self::isGoogleIdUniqueViolation($e)) {
+                if ((string) $e->getCode() === '23000' || self::isGoogleIdUniqueViolation($e)) {
                     AppLog::warning(
                         'Google OAuth refused — identity was linked concurrently',
                         'Email: '.$email.' | Google ID: '.$google->getId(),

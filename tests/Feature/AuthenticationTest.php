@@ -127,6 +127,7 @@ class AuthenticationTest extends TestCase
     public function test_google_oauth_callback_returns_to_embedded_page(): void
     {
         $googleUser = Mockery::mock();
+        $googleUser->user = ['email_verified' => true];
         $googleUser->shouldReceive('getEmail')->once()->andReturn('google@example.com');
         $googleUser->shouldReceive('getName')->once()->andReturn('Google User');
         $googleUser->shouldReceive('getId')->atLeast()->once()->andReturn('google-user-id');
