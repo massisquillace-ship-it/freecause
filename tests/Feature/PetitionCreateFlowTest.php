@@ -77,6 +77,23 @@ class PetitionCreateFlowTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_spam_blocked_submits_count_toward_daily_limit(): void
+    {
+        for ($i = 1; $i <= 10; $i++) {
+            $this->actingAs($this->user)
+                ->post('/en/create-petition', $this->payload(['title' => 'Cheap viagra and betting offers']))
+                ->assertSessionHasErrors(['title' => __('create.err_suspicious')]);
+
+            $this->travel(61)->seconds();
+        }
+
+        $this->actingAs($this->user)
+            ->postJson('/en/create-petition', $this->payload())
+            ->assertTooManyRequests();
+
+        $this->assertDatabaseCount('petitions', 0);
+    }
+
     public function test_short_description_fails_validation(): void
     {
         $this->actingAs($this->user)->post('/en/create-petition', $this->payload(['description' => '<p>Too short</p>']))
