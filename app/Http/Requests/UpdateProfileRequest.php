@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Rules\MaxBytes;
 use App\Support\Countries;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -45,7 +46,7 @@ class UpdateProfileRequest extends FormRequest
             ],
             'new_email_confirmation' => ['required_with:new_email', 'same:new_email'],
             'current_password' => [Rule::requiredIf(fn () => (filled($this->input('new_password')) || $this->changesEmail()) && (bool) $user?->hasLocalPassword()), 'nullable', 'current_password:web'],
-            'new_password' => ['nullable', 'string', 'min:8', 'max:72', 'confirmed'],
+            'new_password' => ['nullable', 'string', 'min:8', new MaxBytes(72), 'confirmed'],
         ];
     }
 
