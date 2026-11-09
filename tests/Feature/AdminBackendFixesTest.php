@@ -650,4 +650,15 @@ class AdminBackendFixesTest extends TestCase
         $this->assertDatabaseMissing('banned_ips', ['ip' => '10.1.1.1']);
         $this->assertNull(Cache::get('banned_ip:10.1.1.1'));
     }
+
+    public function test_unknown_user_login_runs_a_hash_check_and_matches_wrong_password_message(): void
+    {
+        $admin = $this->systemAdmin();
+
+        $wrong = $this->from('/admin/login')->post('/admin/login', ['login' => $admin->email, 'password' => 'wrong-secret']);
+        $unknown = $this->from('/admin/login')->post('/admin/login', ['login' => 'nobody@example.test', 'password' => 'wrong-secret']);
+
+        $wrong->assertSessionHasErrors(['login' => 'Invalid credentials.']);
+        $unknown->assertSessionHasErrors(['login' => 'Invalid credentials.']);
+    }
 }
