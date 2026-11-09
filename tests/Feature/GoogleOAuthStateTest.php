@@ -287,6 +287,64 @@ class GoogleOAuthStateTest extends TestCase
         $this->assertNull($user->fresh()->google_id);
     }
 
+    public function test_google_login_refuses_an_account_with_a_password(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google-state@example.test',
+            'google_id' => null,
+            'password_changed_at' => now(),
+            'verified' => true,
+        ]);
+
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors(['email' => trans('auth.google_email_exists', [], 'en')]);
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->google_id);
+    }
+
+    public function test_google_login_links_a_passwordless_account(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google-state@example.test',
+            'google_id' => null,
+            'password' => null,
+            'password_changed_at' => null,
+            'verified' => true,
+        ]);
+
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])->assertRedirect();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame('synthetic-google-user', $user->fresh()->google_id);
+    }
+
+    public function test_google_login_refuses_an_account_linked_to_a_different_google_id(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google-state@example.test',
+            'google_id' => 'other-google-user',
+            'verified' => true,
+        ]);
+
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors('oauth');
+
+        $this->assertGuest();
+        $this->assertSame('other-google-user', $user->fresh()->google_id);
+    }
+
     public function test_google_sign_in_confirms_a_pending_guest_signature(): void
     {
         $user = User::factory()->create([
