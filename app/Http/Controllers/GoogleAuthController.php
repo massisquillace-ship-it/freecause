@@ -256,6 +256,16 @@ class GoogleAuthController extends Controller
             }
         }
 
+        if ($user && filled($user->google_id) && $user->google_id !== $google->getId()) {
+            AppLog::warning(
+                'Google OAuth refused — account linked to another Google ID',
+                'User ID: '.$user->id.' | Email: '.$email.' | Google ID: '.$google->getId(),
+                'auth.google'
+            );
+
+            return redirect("/{$destLocale}/login")->withErrors(['oauth' => __('auth.google_signin_failed')]);
+        }
+
         if (! $user) {
             $newUser = true;
 
