@@ -90,11 +90,31 @@ class AppServiceProvider extends ServiceProvider
         abort(503, $message);
     }
 
+    private static function normalizedInput(mixed $value): string
+    {
+        return is_string($value) ? strtolower(trim($value)) : '';
+    }
+
     private function bootRateLimiting(): void
     {
         try {
             RateLimiter::for('admin-login', function (Request $request) {
-                return Limit::perMinute(10)->by($request->ip());
+                $limits = [Limit::perMinute(10)->by('admin-login-ip:'.$request->ip())];
+                $login = self::normalizedInput($request->input('login'));
+                if ($login !== '') {
+                    $limits[] = Limit::perMinute(10)->by('admin-login-email:'.$login);
+                }
+
+                return $limits;
+            });
+            RateLimiter::for('login', function (Request $request) {
+                $limits = [Limit::perMinute(6)->by('login-ip:'.$request->ip())];
+                $email = self::normalizedInput($request->input('email'));
+                if ($email !== '') {
+                    $limits[] = Limit::perMinute(6)->by('login-email:'.$email);
+                }
+
+                return $limits;
             });
             RateLimiter::for('petition-create-daily', function (Request $request) {
                 return Limit::perDay(10)->by('user:'.$request->user()->getAuthIdentifier());

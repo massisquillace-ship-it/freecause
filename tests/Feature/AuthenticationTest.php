@@ -896,4 +896,66 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHasErrors();
     }
+
+    private function failedLoginFrom(string $ip, string $email)
+    {
+        return $this->withServerVariables(['REMOTE_ADDR' => $ip])->postJson('/en/login', [
+            'email' => $email,
+            'password' => 'wrongpassword',
+        ]);
+    }
+
+    public function test_login_is_limited_per_email_across_ips(): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            $this->failedLoginFrom('10.0.0.'.$i, 'victim@example.com')->assertStatus(302);
+        }
+
+        $this->failedLoginFrom('10.0.0.7', 'victim@example.com')->assertStatus(429);
+    }
+
+    public function test_login_email_limit_does_not_block_other_emails(): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            $this->failedLoginFrom('10.0.1.'.$i, 'a@example.com');
+        }
+
+        $this->failedLoginFrom('10.0.1.1', 'b@example.com')->assertStatus(302);
+        $this->failedLoginFrom('10.0.1.99', 'b@example.com')->assertStatus(302);
+    }
+
+    public function test_second_email_from_same_ip_is_not_blocked_by_first(): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            $this->failedLoginFrom('10.0.2.1', 'a@example.com');
+        }
+
+        $this->failedLoginFrom('10.0.2.1', 'b@example.com')->assertStatus(302);
+    }
+
+    public function test_admin_login_is_limited_per_login_across_ips(): void
+    {
+        for ($i = 1; $i <= 10; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '10.0.3.'.$i])
+                ->postJson('/admin/login', ['login' => 'boss', 'password' => 'wrongpassword'])
+                ->assertStatus(302);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.3.11'])
+            ->postJson('/admin/login', ['login' => 'boss', 'password' => 'wrongpassword'])
+            ->assertStatus(429);
+    }
+
+    public function test_admin_login_with_array_login_does_not_error(): void
+    {
+        $this->postJson('/admin/login', ['login' => ['x'], 'password' => 'wrongpassword'])
+            ->assertStatus(422);
+    }
+
+    public function test_empty_email_does_not_share_a_bucket_across_ips(): void
+    {
+        for ($i = 1; $i <= 7; $i++) {
+            $this->failedLoginFrom('10.0.4.'.$i, '')->assertStatus(422);
+        }
+    }
 }
