@@ -130,4 +130,56 @@ class UserProfileTest extends TestCase
 
         $this->assertSame(0, $lookups);
     }
+
+    public function test_banned_user_profile_returns_404(): void
+    {
+        $this->profileUser->forceFill(['banned_until' => now()->addDay()])->save();
+
+        $this->get('/en/user/scraper-target/'.$this->profileUser->id)->assertNotFound();
+    }
+
+    public function test_bulk_ban_after_cached_view_returns_404(): void
+    {
+        $url = '/en/user/scraper-target/'.$this->profileUser->id;
+        $this->get($url)->assertOk();
+
+        User::whereKey($this->profileUser->id)->update(['banned_until' => now()->addDay()]);
+
+        $this->get($url)->assertNotFound();
+    }
+
+    public function test_bulk_unverify_after_cached_view_returns_404(): void
+    {
+        $url = '/en/user/scraper-target/'.$this->profileUser->id;
+        $this->get($url)->assertOk();
+
+        User::whereKey($this->profileUser->id)->update(['verified' => false]);
+
+        $this->get($url)->assertNotFound();
+    }
+
+    public function test_unverified_user_profile_returns_404(): void
+    {
+        $this->profileUser->forceFill(['verified' => false])->save();
+
+        $this->get('/en/user/scraper-target/'.$this->profileUser->id)->assertNotFound();
+    }
+
+    public function test_signed_petitions_are_not_exposed(): void
+    {
+        $other = User::factory()->create(['verified' => true]);
+        $petition = $this->addPublishedPetition($other);
+        PetitionTranslation::where('petition_id', $petition->id)->update(['title' => 'Secretly Signed Distinct Title']);
+        Signature::factory()->create([
+            'petition_id' => $petition->id,
+            'user_id' => $this->profileUser->id,
+            'confirmed' => true,
+            'is_spam' => false,
+        ]);
+
+        $url = '/en/user/scraper-target/'.$this->profileUser->id;
+
+        $this->get($url)->assertOk()->assertDontSee('Secretly Signed Distinct Title');
+        $this->get($url.'?tab=signed')->assertOk()->assertDontSee('Secretly Signed Distinct Title');
+    }
 }

@@ -13,8 +13,10 @@ class UserProfileController extends Controller
         $locale = app()->getLocale();
         $defaultLocale = default_locale();
 
-        $data = cache()->remember("user:profile:data:{$id}:{$locale}", now()->addSeconds(120), function () use ($id, $locale, $defaultLocale) {
-            $model = User::findOrFail($id);
+        $model = User::with('level')->findOrFail($id);
+        abort_if($model->isBanned() || ! $model->verified, 404);
+
+        $data = cache()->remember("user:profile:data:{$id}:{$locale}", now()->addSeconds(120), function () use ($id, $locale, $defaultLocale, $model) {
             // cache only what the view renders, never the full User row
             $user = (object) ['display_name' => $model->display_name, 'created_at' => $model->created_at];
 
@@ -51,35 +53,11 @@ class UserProfileController extends Controller
                 ->limit(5)
                 ->get();
 
-            $recentSignatures = DB::table('signatures as s')
-                ->join('petitions as p', 'p.id', '=', 's.petition_id')
-                ->select(['s.id', 'p.id as petition_id', 's.created_at'])
-                ->withTranslation([
-                    'base' => 'p',
-                    'base_key' => 'id',
-                    'translation_table' => 'petition_translations',
-                    'translation_key' => 'petition_id',
-                    'locale_alias' => 'pt_locale',
-                    'default_alias' => 'pt_default',
-                    'locale' => $locale,
-                    'default_locale' => $defaultLocale,
-                    'columns' => ['title' => 'title', 'slug' => 'slug'],
-                ])
-                ->where('s.user_id', $id)
-                ->where('s.confirmed', true)
-                ->where('s.is_spam', false)
-                ->where('p.status', 'published')
-                ->whereRaw('(pt_locale.title IS NOT NULL OR pt_default.title IS NOT NULL)')
-                ->orderByDesc('s.id')
-                ->limit(5)
-                ->get();
-
             return compact(
                 'user',
                 'petitionCount',
                 'signatureCount',
-                'recentPetitions',
-                'recentSignatures'
+                'recentPetitions'
             );
         });
 

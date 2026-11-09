@@ -51,7 +51,7 @@ class RobotsNoindexTest extends TestCase
 
     public function test_noindex_meta_on_user_path(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['verified' => true]);
 
         $this->get('/en/user/profile/'.$user->id)
             ->assertOk()
