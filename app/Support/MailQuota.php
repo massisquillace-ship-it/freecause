@@ -30,6 +30,6 @@ class MailQuota
 
     public static function causedBy(\Throwable $e): bool
     {
-        return preg_match('/(allowance|quota)/i', $e->getMessage()) === 1;
+        return preg_match('/email allowance/i', $e->getMessage()) === 1;
     }
 }

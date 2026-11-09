@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Advertentie sluiten',
     'breadcrumb' => 'Kruimelpad',
     'pagination' => 'Paginering',
+    'previous_page' => 'Vorige pagina',
+    'next_page' => 'Volgende pagina',
     'back_to_top' => 'Terug naar boven',
     'offline' => 'Je lijkt offline te zijn. Maak opnieuw verbinding en verzend opnieuw.',
 ];

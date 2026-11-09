@@ -11,7 +11,7 @@
         @if ($paginator->onFirstPage())
             <span class="{{ $item }} {{ $item }}--disabled" aria-hidden="true">«</span>
         @else
-            <a class="{{ $item }}" rel="prev" href="{{ $paginator->previousPageUrl() }}">«</a>
+            <a class="{{ $item }}" rel="prev" aria-label="{{ __('ui.previous_page') }}" href="{{ $paginator->previousPageUrl() }}">«</a>
         @endif
 
         @if ($start > 1)
@@ -37,7 +37,7 @@
         @endif
 
         @if ($paginator->hasMorePages())
-            <a class="{{ $item }}" rel="next" href="{{ $paginator->nextPageUrl() }}">»</a>
+            <a class="{{ $item }}" rel="next" aria-label="{{ __('ui.next_page') }}" href="{{ $paginator->nextPageUrl() }}">»</a>
         @else
             <span class="{{ $item }} {{ $item }}--disabled" aria-hidden="true">»</span>
         @endif

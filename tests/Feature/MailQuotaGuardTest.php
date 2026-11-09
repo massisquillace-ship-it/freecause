@@ -32,6 +32,10 @@ class MailQuotaGuardTest extends TestCase
         $this->assertFalse(MailQuota::causedBy(new RuntimeException(
             'Expected response code "250/251/252" but got code "550", with message "550 unroutable domain: engl.co.at".'
         )));
+
+        $this->assertFalse(MailQuota::causedBy(new RuntimeException(
+            'Expected response code "250/251/252" but got code "552", with message "552 5.2.2 Mailbox full, quota exceeded for user@example.com".'
+        )));
     }
 
     public function test_worker_quota_failure_trips_the_abort_flag(): void

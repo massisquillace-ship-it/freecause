@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Chiudi pubblicità',
     'breadcrumb' => 'Percorso di navigazione',
     'pagination' => 'Paginazione',
+    'previous_page' => 'Pagina precedente',
+    'next_page' => 'Pagina successiva',
     'back_to_top' => 'Torna su',
     'offline' => 'Sembra che tu sia offline. Riconnettiti e invia di nuovo.',
 ];

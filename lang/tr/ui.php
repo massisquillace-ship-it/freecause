@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Reklamı kapat',
     'breadcrumb' => 'Gezinti yolu',
     'pagination' => 'Sayfalama',
+    'previous_page' => 'Önceki sayfa',
+    'next_page' => 'Sonraki sayfa',
     'back_to_top' => 'Başa dön',
     'offline' => 'Çevrimdışı görünüyorsunuz. Yeniden bağlanın ve tekrar gönderin.',
 ];
