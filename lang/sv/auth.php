@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google angav ingen e-postadress.',
     'google_email_exists' => 'Det finns redan ett konto med den här e-postadressen. Logga först in med ditt lösenord och koppla sedan Google från din profil.',
     'google_signin_failed' => 'Inloggningen misslyckades. Försök igen.',
+    'reset_link_sent' => 'Om det finns ett konto för den här e-postadressen har en länk för att återställa lösenordet skickats.',
+    'reset_failed' => 'Länken för att återställa lösenordet är ogiltig eller har gått ut.',
+    'reset_success' => 'Ditt lösenord har återställts.',
 ];

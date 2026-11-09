@@ -548,7 +548,7 @@ class AuthController extends Controller
         }
 
         try {
-            $status = Password::sendResetLink(
+            Password::sendResetLink(
                 $request->only('email')
             );
         } catch (\Throwable $e) {
@@ -562,9 +562,7 @@ class AuthController extends Controller
             return back()->withInput()->withErrors(['email' => __('auth.email_try_later')]);
         }
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with('status', __($status))
-            : back()->withErrors(['email' => __($status)]);
+        return back()->with('status', __('auth.reset_link_sent'));
     }
 
     public function showResetForm(string $locale, string $token)
@@ -593,13 +591,13 @@ class AuthController extends Controller
         }
 
         if ($status !== Password::PASSWORD_RESET) {
-            return back()->withErrors(['email' => __($status)]);
+            return back()->withErrors(['email' => __('auth.reset_failed')]);
         }
 
         $user = User::where('email', strtolower(trim((string) $request->input('email'))))->first();
 
         if (! $user) {
-            return redirect("/{$locale}/login")->with('success', __($status));
+            return redirect("/{$locale}/login")->with('success', __('auth.reset_success'));
         }
 
         // The reset link came by email, so using it proves inbox ownership.
@@ -611,7 +609,7 @@ class AuthController extends Controller
         auth()->login($user);
         $request->session()->regenerate();
 
-        toast(__($status), 'success');
+        toast(__('auth.reset_success'), 'success');
 
         $dest = self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}");
 

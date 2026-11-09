@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google no ha proporcionado un email.',
     'google_email_exists' => 'Ya existe una cuenta con este email. Inicia sesión primero con tu contraseña y después vincula Google desde tu perfil.',
     'google_signin_failed' => 'No se pudo iniciar sesión. Inténtalo de nuevo.',
+    'reset_link_sent' => 'Si existe una cuenta con este correo electrónico, se ha enviado un enlace para restablecer la contraseña.',
+    'reset_failed' => 'Este enlace para restablecer la contraseña no es válido o ha caducado.',
+    'reset_success' => 'Tu contraseña se ha restablecido.',
 ];

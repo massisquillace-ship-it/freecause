@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google oplyste ikke en e-mailadresse.',
     'google_email_exists' => 'Der findes allerede en konto med denne e-mail. Log først ind med din adgangskode, og forbind derefter Google fra din profil.',
     'google_signin_failed' => 'Login mislykkedes. Prøv igen.',
+    'reset_link_sent' => 'Hvis der findes en konto med denne e-mail, er der sendt et link til nulstilling af adgangskoden.',
+    'reset_failed' => 'Linket til nulstilling af adgangskoden er ugyldigt eller udløbet.',
+    'reset_success' => 'Din adgangskode er blevet nulstillet.',
 ];

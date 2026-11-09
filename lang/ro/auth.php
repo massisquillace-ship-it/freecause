@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google nu a furnizat o adresă de email.',
     'google_email_exists' => 'Există deja un cont cu acest email. Autentifică-te mai întâi cu parola, apoi conectează Google din profilul tău.',
     'google_signin_failed' => 'Autentificarea a eșuat. Încearcă din nou.',
+    'reset_link_sent' => 'Dacă există un cont cu acest email, a fost trimis un link pentru resetarea parolei.',
+    'reset_failed' => 'Acest link de resetare a parolei este invalid sau a expirat.',
+    'reset_success' => 'Parola a fost resetată.',
 ];

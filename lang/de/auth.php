@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google hat keine E-Mail-Adresse übermittelt.',
     'google_email_exists' => 'Es gibt bereits ein Konto mit dieser E-Mail. Bitte melde dich zuerst mit deinem Passwort an und verknüpfe Google dann in deinem Profil.',
     'google_signin_failed' => 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
+    'reset_link_sent' => 'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen des Passworts gesendet.',
+    'reset_failed' => 'Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.',
+    'reset_success' => 'Ihr Passwort wurde zurückgesetzt.',
 ];

@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'Google heeft geen e-mailadres gegeven.',
     'google_email_exists' => 'Er bestaat al een account met dit e-mailadres. Log eerst in met je wachtwoord en koppel daarna Google vanuit je profiel.',
     'google_signin_failed' => 'Inloggen mislukt. Probeer het opnieuw.',
+    'reset_link_sent' => 'Als er een account bestaat voor dit e-mailadres, is er een link om het wachtwoord opnieuw in te stellen verzonden.',
+    'reset_failed' => 'Deze link om het wachtwoord opnieuw in te stellen is ongeldig of verlopen.',
+    'reset_success' => 'Je wachtwoord is opnieuw ingesteld.',
 ];

@@ -74,4 +74,7 @@ return [
     'google_no_email' => 'google did not provide email.',
     'google_email_exists' => 'An account with this email already exists. Please log in with your password first, then link Google from your profile.',
     'google_signin_failed' => 'Sign-in failed. Please try again.',
+    'reset_link_sent' => 'If an account exists for this email, a password reset link has been sent.',
+    'reset_failed' => 'This password reset link is invalid or has expired.',
+    'reset_success' => 'Your password has been reset.',
 ];
