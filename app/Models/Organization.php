@@ -107,7 +107,7 @@ class Organization extends Model
                 fn () => self::public()->count()
             );
 
-            return $count >= max(1, (int) config('organizations.min_directory_count', 20));
+            return $count >= max(1, (int) config('organizations.min_directory_count', 1));
         } catch (QueryException) {
             // Error pages must still render when the database is unavailable.
             return false;
