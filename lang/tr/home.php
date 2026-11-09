@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive(require __DIR__.'/../en/home.php', [
     'blog_read_more' => 'Devamını Oku',
     'blog_subtitle' => 'En son içgörülerimiz ve haberlerimizle güncel kalın',
     'blog_title' => 'Freecause dergisinden en yeniler',
@@ -49,4 +49,4 @@ return [
     'what_p3' => 'Davalarımızı savunacak bir alan olmadan, ne kadar küçük ya da sıradan görünseler de, gerçek özgürlük ulaşılmaz kalır.',
     'what_p4' => '<span class="red">FreeCause - Online Petition</span>\'ı bu yüzden kurduk—ücretsiz, bağımsız ve sizin için.',
     'what_title' => 'Çevrimiçi dilekçe nedir',
-];
+]);
