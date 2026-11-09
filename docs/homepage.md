@@ -53,7 +53,7 @@ The hourly scheduler refreshes momentum counters. An initial queued `RefreshHome
 
 ## Latest launch-rule validation — 9 November 2026
 
-After the owner approved showing sparse real data, the integrated suite against main `4ece3a46` passed **1,286 tests / 7,284 assertions**. Targeted homepage/claims/privacy checks passed 37 tests / 343 assertions. Language parity, design-system lint and Vite build passed. IT/EN/FR at 375 and 1280 px pass serious/critical axe checks without horizontal overflow; the separate zero-organization fixture confirms the petition-centric hero and visible empty-state sections. Official screenshot checks remain required before merge.
+After the owner approved showing sparse real data, the integrated suite against main `4ece3a46` passed **1,286 tests / 7,284 assertions**. Targeted homepage/claims/privacy checks passed 37 tests / 343 assertions. Language parity, design-system lint and Vite build passed. IT/EN/FR at 375 and 1280 px pass serious/critical axe checks without horizontal overflow; the separate zero-organization fixture confirms the petition-centric hero and visible empty-state sections. The recency worker additionally passes 14 focused tests / 80 assertions, including independent six-item limits per locale. Its read-only production query returned six IDs for 13 locales and two for Greek in 16.5 seconds; it runs hourly in the worker, never in the public request. A covering-index MAX is computed before translation joins and a window rank returns only the required IDs. Official screenshot checks remain required before merge.
 
 ## Visual alignment — 9 November 2026
 
