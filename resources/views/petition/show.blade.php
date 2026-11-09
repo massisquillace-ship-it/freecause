@@ -399,7 +399,7 @@
                                 @endforelse
 
                                 @if ($shoutbox->hasPages())
-                                    @include('partials.pagination', ['paginator' => $shoutbox])
+                                    <x-ui.pagination :paginator="$shoutbox" />
                                 @endif
                             </div>
                         </div>

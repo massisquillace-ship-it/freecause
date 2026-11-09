@@ -10,6 +10,7 @@ return [
     'menu' => 'Menu',
     'my_petitions' => 'Le mie petizioni',
     'logout' => 'Esci',
+    'main' => 'Navigazione principale',
     'magazine' => 'Rivista',
     'magazine_back_home' => 'Torna alla home',
     'magazine_body' => 'La rivista FreeCause è in costruzione. Torna presto per articoli, guide e storie su attivismo e cambiamento.',

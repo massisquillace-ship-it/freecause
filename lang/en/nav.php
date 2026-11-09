@@ -10,6 +10,7 @@ return [
     'menu' => 'Menu',
     'my_petitions' => 'My petitions',
     'logout' => 'Logout',
+    'main' => 'Main navigation',
     'magazine' => 'Magazine',
     'magazine_back_home' => 'Back to Home',
     'magazine_body' => 'The FreeCause magazine is under construction. Check back soon for articles, guides, and stories about activism and change.',

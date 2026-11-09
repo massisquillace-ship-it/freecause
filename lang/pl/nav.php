@@ -10,6 +10,7 @@ return [
     'menu' => 'Menu',
     'my_petitions' => 'Moje petycje',
     'logout' => 'Wyloguj',
+    'main' => 'Nawigacja główna',
     'magazine' => 'Magazyn',
     'magazine_back_home' => 'Powrót do strony głównej',
     'magazine_body' => 'Magazyn FreeCause jest w budowie. Wróć wkrótce po artykuły, poradniki i historie o aktywizmie i zmianach.',

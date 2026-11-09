@@ -141,7 +141,7 @@
     @endphp
     @if ($announcementActive && $announcementText)
         <div class="site-notice bg-brand text-white text-center px-4 py-2 text-sm font-semibold">
-            {!! e($announcementText) !!}
+            {{ $announcementText }}
         </div>
     @endif
 

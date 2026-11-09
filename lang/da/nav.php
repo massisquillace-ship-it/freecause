@@ -10,6 +10,7 @@ return [
     'menu' => 'Menu',
     'my_petitions' => 'Mine underskrifter',
     'logout' => 'Log ud',
+    'main' => 'Hovednavigation',
     'magazine' => 'Magasin',
     'magazine_back_home' => 'Tilbage til forsiden',
     'magazine_body' => 'FreeCause magasinet er under opførelse. Tjek snart tilbage for artikler, vejledninger og historier om aktivisme og forandring.',

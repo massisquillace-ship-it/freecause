@@ -10,6 +10,7 @@ return [
     'menu' => 'Menü',
     'my_petitions' => 'Dilekçelerim',
     'logout' => 'Çıkış yap',
+    'main' => 'Ana gezinme',
     'magazine' => 'Dergi',
     'magazine_back_home' => 'Ana sayfaya dön',
     'magazine_body' => 'FreeCause dergisi yapım aşamasında. Aktivizm ve değişim hakkında makaleler, rehberler ve hikâyeler için yakında tekrar uğrayın.',
