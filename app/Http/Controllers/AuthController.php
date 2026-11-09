@@ -397,6 +397,8 @@ class AuthController extends Controller
         try {
             DB::transaction(function () use ($u) {
                 app(OrganizationLifecycle::class)->suspendForDeletedOwner($u);
+                // SessionGuard rotates the remember token during logout; clear it so it cannot reinsert this deleted model.
+                $u->setRememberToken(null);
                 $u->delete();
             }, 3);
         } catch (\Throwable $e) {
