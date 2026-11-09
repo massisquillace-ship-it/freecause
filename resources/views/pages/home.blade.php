@@ -79,6 +79,32 @@
     </x-ui.container>
 </section>
 
+<section class="py-10 md:py-12" data-home-petition-introduction aria-labelledby="home-petition-intro-title">
+    <x-ui.container>
+        <div class="grid md:grid-cols-2 gap-6 items-start">
+            <div class="bg-surface-muted rounded-lg p-6 md:p-8 min-w-0">
+                <h2 id="home-petition-intro-title" class="text-2xl font-bold uppercase border-b border-brand pb-3 mb-6">{{ __('home.what_title') }}</h2>
+                <div class="space-y-5 text-ink leading-relaxed break-words">
+                    @foreach(range(1, 4) as $paragraph)
+                        <p>{!! \App\Support\HtmlSanitizer::admin()->sanitize(__('home.what_p'.$paragraph)) !!}</p>
+                    @endforeach
+                </div>
+                <a class="inline-block text-brand hover:underline mt-6" href="{{ lroute('how-to-write-a-petition') }}">{{ __('home.what_link') }}</a>
+            </div>
+            <div class="bg-surface-muted rounded-lg p-6 md:p-8 min-w-0">
+                <h2 class="text-2xl font-bold uppercase border-b border-brand pb-3 mb-6">{{ __('home.create_box_title') }}</h2>
+                <p class="font-bold text-lg mb-5">{{ __('home.create_box_p1') }}</p>
+                <ul class="list-disc pl-5 space-y-2 text-ink leading-relaxed break-words">
+                    @foreach(range(1, 5) as $feature)<li>{{ str_replace('DOC', 'CSV', __('home.create_box_li'.$feature)) }}</li>@endforeach
+                    <li><a class="text-brand hover:underline" href="{{ lroute('page.show', ['slug'=>'ethical-code']) }}">{{ __('home.create_box_li6') }}</a></li>
+                </ul>
+                <p class="font-bold mt-4">{{ __('home.create_box_p2') }}</p>
+                <a class="inline-block text-brand hover:underline mt-6" href="{{ lroute('petition.create') }}">{{ __('home.create_box_link') }}</a>
+            </div>
+        </div>
+    </x-ui.container>
+</section>
+
 @if($categories->isNotEmpty())
 <section class="py-10 md:pt-12 md:pb-8" data-home-causes data-home-categories aria-labelledby="home-causes-title">
     <x-ui.container>
