@@ -280,6 +280,49 @@ class ProfileCrudTest extends TestCase
         Queue::assertPushed(CleanupDeletedAccount::class, fn ($job) => $job->cleanupId === $cleanup->id);
     }
 
+    public function test_reusing_the_verify_link_does_not_queue_a_second_cleanup(): void
+    {
+        Mail::fake();
+        Queue::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser(['email' => 'old@example.com']);
+        $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
+        $token = $user->fresh()->verification_token;
+
+        $this->post('/en/verify/'.$token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$token)->assertRedirect('/en');
+
+        $this->assertSame(1, AccountDeletionCleanup::where('user_id', $user->id)->count());
+        $this->assertSame('moved@example.com', $user->fresh()->email);
+    }
+
+    public function test_address_claimed_during_the_swap_is_refused_without_a_server_error(): void
+    {
+        Mail::fake();
+        Queue::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser(['email' => 'old@example.com']);
+        $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
+        $token = $user->fresh()->verification_token;
+
+        $claimed = false;
+        User::saving(function (User $saving) use (&$claimed, $user) {
+            if (! $claimed && $saving->id === $user->id) {
+                $claimed = true;
+                User::factory()->create(['email' => 'moved@example.com']);
+            }
+        });
+
+        $this->post('/en/verify/'.$token)->assertRedirect('/en');
+
+        $fresh = $user->fresh();
+        $this->assertSame('old@example.com', $fresh->email);
+        $this->assertNull($fresh->pending_email);
+        $this->assertSame(0, AccountDeletionCleanup::where('user_id', $user->id)->count());
+    }
+
     public function test_second_email_change_queues_a_second_cleanup(): void
     {
         Mail::fake();
