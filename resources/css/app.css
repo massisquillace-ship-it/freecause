@@ -73,6 +73,26 @@
         text-decoration: none;
     }
 
+    body.fc-public .fc-home-nav > .container {
+        max-width: 1140px;
+    }
+
+    @media (min-width: 1536px) {
+        body.fc-public .fc-home-nav > .container {
+            max-width: 1320px;
+        }
+    }
+
+    body.fc-public .fc-home-nav .nav-link {
+        color: var(--fc-text);
+        font-size: var(--text-sm);
+    }
+
+    body.fc-public .fc-home-nav .fcui-btn {
+        font-size: var(--text-sm);
+        white-space: nowrap;
+    }
+
     .fc-section {
         padding-block: clamp(3.5rem, 8vw, 6rem);
     }
