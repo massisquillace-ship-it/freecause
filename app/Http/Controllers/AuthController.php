@@ -25,6 +25,7 @@ use App\Support\Settings;
 use App\Support\Spam;
 use App\Support\WpSso;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -473,7 +474,19 @@ class AuthController extends Controller
 
             $user->pending_email = null;
             $user->verification_token = null;
-            $user->save();
+
+            try {
+                $user->save();
+            } catch (UniqueConstraintViolationException $e) {
+                if ($oldEmail === null) {
+                    throw $e;
+                }
+
+                $user->email = $oldEmail;
+                $oldEmail = null;
+                $taken = true;
+                $user->save();
+            }
 
             if ($oldEmail !== null && strtolower($oldEmail) !== strtolower($user->email)) {
                 $cleanup = AccountDeletionCleanup::create([
