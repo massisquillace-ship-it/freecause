@@ -259,37 +259,46 @@ class ProfileCrudTest extends TestCase
         $this->assertTrue((bool) $user->verified);
     }
 
-    public function test_verify_link_shows_email_taken_when_the_address_is_claimed_during_the_save(): void
+    public function test_verify_link_survives_the_address_being_taken_between_check_and_save(): void
     {
         Mail::fake();
-        Queue::fake();
         Settings::set('smtp_enabled', true);
 
-        $user = $this->passwordUser();
-        $oldEmail = $user->email;
+        $user = $this->passwordUser(['email' => 'old-address@example.com']);
         $this->requestEmailChange($user, 'raced@example.com')->assertSessionHasNoErrors();
         $token = $user->fresh()->verification_token;
 
-        $claimed = false;
-        User::updating(function () use (&$claimed) {
-            if ($claimed) {
-                return;
+        $raced = false;
+        User::saving(function (User $saving) use (&$raced, $user) {
+            if (! $raced && $saving->is($user) && $saving->email === 'raced@example.com') {
+                $raced = true;
+                User::withoutEvents(fn () => User::factory()->create(['email' => 'raced@example.com']));
             }
-
-            $claimed = true;
-            User::factory()->create(['email' => 'raced@example.com']);
         });
 
-        $this->post('/en/verify/'.$token)
-            ->assertRedirect('/en')
-            ->assertSessionHas('toast.message', __('profile.email_taken'));
+        $this->post('/en/verify/'.$token)->assertRedirect('/en');
 
+        $this->assertTrue($raced);
         $user->refresh();
-        $this->assertSame($oldEmail, $user->email);
+        $this->assertSame('old-address@example.com', $user->email);
         $this->assertNull($user->pending_email);
         $this->assertNull($user->verification_token);
-        $this->assertSame(1, User::where('email', 'raced@example.com')->count());
-        Queue::assertNothingPushed();
+        $this->assertSame(0, AccountDeletionCleanup::where('user_id', $user->id)->count());
+        $this->assertSame(__('profile.email_taken'), session('toast.message'));
+        $this->assertSame('error', session('toast.type'));
+    }
+
+    public function test_is_banned_is_false_once_banned_until_has_passed_even_with_the_banned_level(): void
+    {
+        $bannedLevel = UserLevel::where('name', 'banned')->firstOrFail();
+
+        $expired = User::factory()->create(['level_id' => $bannedLevel->id, 'banned_until' => now()->subDay()]);
+        $active = User::factory()->create(['level_id' => $bannedLevel->id, 'banned_until' => now()->addDay()]);
+        $permanent = User::factory()->create(['level_id' => $bannedLevel->id, 'banned_until' => null]);
+
+        $this->assertFalse($expired->isBanned());
+        $this->assertTrue($active->isBanned());
+        $this->assertTrue($permanent->isBanned());
     }
 
     public function test_verify_link_queues_wordpress_cleanup_of_the_old_email_without_calling_wordpress(): void
