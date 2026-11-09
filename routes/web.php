@@ -338,11 +338,11 @@ Route::prefix('{locale}')
         Route::get('/user/{slug}/{id}', [UserProfileController::class, 'show'])->name('user.profile');
 
         Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
-        Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:6,1');
+        Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:auth-mail');
         Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
         Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update')->middleware('throttle:6,1');
         Route::get('/resend-verification', [AuthController::class, 'showResendVerification'])->name('verification.resend.form');
-        Route::post('/resend-verification', [AuthController::class, 'resendVerification'])->name('verification.resend')->middleware('throttle:6,1');
+        Route::post('/resend-verification', [AuthController::class, 'resendVerification'])->name('verification.resend')->middleware('throttle:auth-mail');
         Route::get('/verify-email', [AuthController::class, 'showVerifyNotice'])->name('verification.notice');
         Route::get('/email-verified', [AuthController::class, 'showVerified'])->name('verification.verified');
 

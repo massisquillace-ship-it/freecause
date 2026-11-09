@@ -116,6 +116,16 @@ class AppServiceProvider extends ServiceProvider
 
                 return $limits;
             });
+            RateLimiter::for('auth-mail', function (Request $request) {
+                $route = (string) $request->route()?->getName();
+                $limits = [Limit::perMinute(6)->by('auth-mail-ip:'.$route.':'.$request->ip())];
+                $email = self::normalizedInput($request->input('email'));
+                if ($email !== '') {
+                    $limits[] = Limit::perHour(3)->by('auth-mail-email:'.$route.':'.$email);
+                }
+
+                return $limits;
+            });
         } catch (\Throwable $e) {
             Log::warning('bootRateLimiting failed: '.$e->getMessage());
         }

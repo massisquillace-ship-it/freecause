@@ -778,6 +778,21 @@ class AuthenticationTest extends TestCase
         Mail::assertQueued(VerifyAccountMail::class, 1);
     }
 
+    public function test_auth_mail_routes_are_limited_per_email_across_ips(): void
+    {
+        Mail::fake();
+        foreach (['/en/forgot-password', '/en/resend-verification'] as $url) {
+            foreach (['victim@example.com', 'Victim@Example.com', ' victim@example.com '] as $i => $email) {
+                $this->withServerVariables(['REMOTE_ADDR' => '10.1.0.'.$i])
+                    ->postJson($url, ['email' => $email])->assertStatus(302);
+            }
+            $this->withServerVariables(['REMOTE_ADDR' => '10.1.0.9'])
+                ->postJson($url, ['email' => 'victim@example.com'])->assertStatus(429);
+            $this->withServerVariables(['REMOTE_ADDR' => '10.1.0.10'])
+                ->postJson($url, ['email' => 'other@example.com'])->assertStatus(302);
+        }
+    }
+
     public function test_user_can_logout(): void
     {
         $user = User::factory()->create();
