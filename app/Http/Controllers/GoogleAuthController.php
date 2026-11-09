@@ -11,6 +11,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
 
@@ -262,6 +264,7 @@ class GoogleAuthController extends Controller
         $userLevel = UserLevel::where('name', 'user')->first();
 
         $newUser = false;
+        $tookOver = false;
 
         if ($user && empty($user->google_id)) {
 
@@ -276,14 +279,19 @@ class GoogleAuthController extends Controller
                 );
             } else {
                 AppLog::warning(
-                    'Google OAuth email conflict — existing account not linked',
-                    'Email: '.$email.' | Google ID: '.$google->getId(),
+                    'Google OAuth took over password account',
+                    'User ID: '.$user->id.' | Email: '.$email.' | Google ID: '.$google->getId(),
                     'auth.google'
                 );
 
-                return redirect("/{$destLocale}/login")
-                    ->withErrors(['email' => __('auth.google_email_exists')])
-                    ->withInput(['email' => $email]);
+                $user->password = Hash::make(Str::random(64));
+                $user->password_changed_at = null;
+                $user->remember_token = null;
+                $user->verified = true;
+                $user->verification_token = null;
+                $user->verification_token_sent_at = null;
+                $user->pending_email = null;
+                $tookOver = true;
             }
         }
 
@@ -367,7 +375,16 @@ class GoogleAuthController extends Controller
         $user->google_id = $google->getId();
 
         try {
-            $user->save();
+            DB::transaction(function () use ($user, $tookOver) {
+                $user->save();
+
+                if ($tookOver) {
+                    if (config('session.driver') === 'database') {
+                        DB::table(config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
+                    }
+                    DB::table(config('auth.passwords.users.table'))->where('email', $user->email)->delete();
+                }
+            });
         } catch (QueryException $e) {
             if (self::isGoogleIdUniqueViolation($e)) {
                 AppLog::warning(
