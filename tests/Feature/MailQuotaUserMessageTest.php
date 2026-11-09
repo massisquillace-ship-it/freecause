@@ -12,6 +12,7 @@ use Database\Seeders\UserLevelSeeder;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\SendQueuedMailable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Queue;
@@ -137,17 +138,116 @@ class MailQuotaUserMessageTest extends TestCase
         $this->assertSame('keep-me', $user->fresh()->verification_token);
     }
 
-    public function test_verification_mail_is_dropped_not_deferred_while_tripped(): void
+    public function test_registration_queues_verification_mail_as_transactional(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+
+        $this->post('/en/register', [
+            'name' => 'Pending',
+            'surname' => 'User',
+            'email' => 'pending@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email');
+
+        $user = User::where('email', 'pending@example.com')->firstOrFail();
+        $this->assertNotNull($user->verification_token);
+        $this->assertNotNull($user->verification_token_sent_at);
+        Mail::assertQueued(VerifyAccountMail::class, function (VerifyAccountMail $mail) use ($user) {
+            $this->assertTrue($mail->transactional);
+            $this->assertSame($user->verification_token, $mail->verificationToken);
+
+            return true;
+        });
+    }
+
+    public function test_deferred_verification_keeps_the_original_expiry(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+        MailQuota::trip();
+
+        $this->travelTo(now());
+        $this->post('/en/register', [
+            'name' => 'Pending',
+            'surname' => 'User',
+            'email' => 'expiry@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email');
+
+        $user = User::where('email', 'expiry@example.com')->firstOrFail();
+        $token = $user->verification_token;
+        $sentAt = $user->verification_token_sent_at;
+
+        $this->travel(49)->hours();
+        $this->get("/en/verify/{$token}")
+            ->assertOk()
+            ->assertViewHas('expired', true);
+        $this->post("/en/verify/{$token}")
+            ->assertRedirect('/en/resend-verification');
+
+        $this->assertFalse((bool) $user->fresh()->verified);
+        $this->assertTrue($sentAt->eq($user->fresh()->verification_token_sent_at));
+    }
+
+    public function test_verification_mail_is_deferred_while_tripped(): void
     {
         MailQuota::trip();
         Queue::fake();
-        $mailable = new VerifyAccountMail(new User, 'en');
+        $user = User::factory()->create([
+            'verified' => false,
+            'verification_token' => 'keep-me',
+            'verification_token_sent_at' => now(),
+        ]);
+        $mailable = new VerifyAccountMail($user, 'en');
         $job = (new SendQueuedMailable($mailable))->through($mailable->middleware());
         $job->job = $this->createMock(Job::class);
 
-        (new MailQuotaGate($mailable->transactional ?? false))
+        (new MailQuotaGate($mailable->transactional))
             ->handle($job, fn () => $this->fail('SMTP reached'));
 
-        Queue::assertNothingPushed();
+        Queue::assertPushed(SendQueuedMailable::class, function (SendQueuedMailable $retry) use ($user) {
+            $this->assertSame($user->verification_token, $retry->mailable->verificationToken);
+
+            return true;
+        });
+    }
+
+    public function test_deferred_verification_mail_retries_after_quota_recovery(): void
+    {
+        MailQuota::trip();
+        Queue::fake();
+        $mailable = new VerifyAccountMail(User::factory()->create([
+            'verified' => false,
+            'verification_token' => 'retry-me',
+            'verification_token_sent_at' => now(),
+        ]), 'en');
+        $job = (new SendQueuedMailable($mailable))->through($mailable->middleware());
+        $job->job = $this->createMock(Job::class);
+
+        (new MailQuotaGate($mailable->transactional))
+            ->handle($job, fn () => $this->fail('SMTP reached'));
+
+        $retry = null;
+        Queue::assertPushed(SendQueuedMailable::class, function (SendQueuedMailable $queued) use (&$retry) {
+            $retry = $queued;
+
+            return true;
+        });
+
+        Cache::forget('mail:quota-exhausted');
+        $retry->job = $this->createMock(Job::class);
+        $sent = false;
+
+        (new MailQuotaGate($retry->mailable->transactional))
+            ->handle($retry, function () use (&$sent) {
+                $sent = true;
+            });
+
+        $this->assertTrue($sent);
     }
 }
