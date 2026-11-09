@@ -11,9 +11,13 @@ use App\Models\UserLevel;
 use App\Support\CacheVersion;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class AdminPetitionDeleteTest extends TestCase
@@ -68,6 +72,85 @@ class AdminPetitionDeleteTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $owner->id]);
         $this->assertNull(Cache::get('legacy_shortlink:DEL123'));
         $this->assertNotSame($before, CacheVersion::get('sitemap'));
+    }
+
+    public function test_delete_removes_cover_image_files_and_variants_but_keeps_other_petitions_files(): void
+    {
+        Storage::fake('public');
+        $this->actingAs($this->admin(), 'admin');
+        $files = [
+            'petitions/cover.jpg', 'petitions/cover_800w.webp', 'petitions/cover_400w.webp',
+            'petitions/bare.png', 'petitions/keep.jpg', 'petitions/keep_800w.webp',
+        ];
+        foreach ($files as $file) {
+            Storage::disk('public')->put($file, 'x');
+        }
+        $withCover = Petition::factory()->create(['cover_image' => 'petitions/cover.jpg']);
+        $withBare = Petition::factory()->create(['cover_image' => null, 'image_url' => 'bare.png']);
+        $remote = Petition::factory()->create(['cover_image' => 'https://example.com/a.jpg']);
+        $kept = Petition::factory()->create(['cover_image' => 'petitions/keep.jpg']);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$withCover->id, $withBare->id, $remote->id], 'confirmed' => true])
+            ->assertOk()->assertJson(['deleted' => 3]);
+
+        foreach (array_slice($files, 0, 4) as $file) {
+            Storage::disk('public')->assertMissing($file);
+        }
+        Storage::disk('public')->assertExists('petitions/keep.jpg');
+        Storage::disk('public')->assertExists('petitions/keep_800w.webp');
+        $this->assertDatabaseHas('petitions', ['id' => $kept->id]);
+    }
+
+    public function test_delete_keeps_files_still_referenced_by_surviving_petitions(): void
+    {
+        Storage::fake('public');
+        $this->actingAs($this->admin(), 'admin');
+        foreach (['petitions/shared.jpg', 'petitions/shared_800w.webp', 'petitions/legacy.png'] as $file) {
+            Storage::disk('public')->put($file, 'x');
+        }
+        $gone = Petition::factory()->create(['cover_image' => 'petitions/shared.jpg']);
+        $goneLegacy = Petition::factory()->create(['cover_image' => null, 'image_url' => 'legacy.png']);
+        Petition::factory()->create(['cover_image' => 'petitions/shared.jpg']);
+        Petition::factory()->create(['cover_image' => null, 'image_url' => 'legacy.png']);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$gone->id, $goneLegacy->id], 'confirmed' => true])
+            ->assertOk();
+
+        foreach (['petitions/shared.jpg', 'petitions/shared_800w.webp', 'petitions/legacy.png'] as $file) {
+            Storage::disk('public')->assertExists($file);
+        }
+    }
+
+    public function test_delete_purges_image_urls_at_the_edge(): void
+    {
+        config()->set('edge-cache.purge_enabled', true);
+        config()->set('edge-cache.api_token', 'test-placeholder');
+        config()->set('edge-cache.zone_id', 'test-zone');
+        config()->set('edge-cache.base_url', 'https://www.freycastle.test');
+        Http::fake(['api.cloudflare.com/*' => Http::response(['success' => true])]);
+        Storage::fake('public');
+        $this->actingAs($this->admin(), 'admin');
+        $petition = Petition::factory()->create(['cover_image' => 'petitions/edge.jpg']);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$petition->id], 'confirmed' => true])
+            ->assertOk();
+
+        Http::assertSent(fn ($request) => in_array('https://www.freycastle.test/storage/petitions/edge.jpg', $request['files'], true)
+            && in_array('https://www.freycastle.test/storage/petitions/edge_800w.webp', $request['files'], true));
+    }
+
+    public function test_delete_succeeds_when_file_deletion_throws(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petition = Petition::factory()->create(['cover_image' => 'petitions/boom.jpg']);
+        $disk = Mockery::mock(Filesystem::class);
+        $disk->shouldReceive('delete')->andThrow(new \RuntimeException('disk down'));
+        Storage::shouldReceive('disk')->with('public')->andReturn($disk);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$petition->id], 'confirmed' => true])
+            ->assertOk()->assertJson(['deleted' => 1]);
+
+        $this->assertDatabaseMissing('petitions', ['id' => $petition->id]);
     }
 
     public function test_delete_requires_explicit_confirmation_and_valid_selection(): void

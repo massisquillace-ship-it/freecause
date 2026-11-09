@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Support\CacheVersion;
 use App\Support\EdgeCachePurge;
+use App\Support\ImageVariants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AdminPetitionDeleteController extends Controller
 {
@@ -20,18 +22,57 @@ class AdminPetitionDeleteController extends Controller
             'confirmed' => ['required', 'accepted'],
         ]);
 
-        [$deleted, $shortLinks, $urls] = DB::transaction(function () use ($data) {
-            $ids = DB::table('petitions')->whereIn('id', $data['ids'])
-                ->orderBy('id')->lockForUpdate()->pluck('id')->all();
+        [$deleted, $shortLinks, $urls, $imagePaths] = DB::transaction(function () use ($data) {
+            $rows = DB::table('petitions')->whereIn('id', $data['ids'])
+                ->orderBy('id')->lockForUpdate()->get(['id', 'cover_image', 'image_url']);
+            $ids = $rows->pluck('id')->all();
             $shortLinks = DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->pluck('short_link')->all();
             $urls = EdgeCachePurge::petitionUrls($ids);
+            $imagePaths = [];
+            foreach ($rows as $row) {
+                foreach ([$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null] as $path) {
+                    if ($path && str_starts_with($path, 'petitions/') && ! str_contains($path, '..')) {
+                        $imagePaths[] = $path;
+                    }
+                }
+            }
 
             // Legacy short links have no foreign key; the remaining children cascade.
             DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
             $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
 
-            return [$deleted, $shortLinks, $urls];
+            return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
         });
+
+        try {
+            $keep = array_flip(DB::table('petitions')
+                ->where(fn ($q) => $q->whereIn('cover_image', $imagePaths)
+                    ->orWhereIn('image_url', array_map(fn ($path) => substr($path, strlen('petitions/')), $imagePaths)))
+                ->get(['cover_image', 'image_url'])
+                ->flatMap(fn ($row) => [$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null])
+                ->filter()
+                ->flatMap(fn ($path) => [$path, ...array_values(ImageVariants::relativeVariantPaths($path))])
+                ->all());
+        } catch (\Throwable $e) {
+            Log::warning('Petition image reference check failed: '.$e->getMessage());
+            $imagePaths = [];
+        }
+
+        $base = rtrim((string) config('edge-cache.base_url'), '/');
+        foreach ($imagePaths as $path) {
+            if (isset($keep[$path])) {
+                continue;
+            }
+            try {
+                Storage::disk('public')->delete($path);
+                ImageVariants::purge($path);
+                foreach ([$path, ...array_values(ImageVariants::relativeVariantPaths($path))] as $file) {
+                    $urls[] = $base.'/storage/'.$file;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Petition image deletion failed: '.$e->getMessage(), ['path' => $path]);
+            }
+        }
 
         try {
             foreach ($shortLinks as $shortLink) {
