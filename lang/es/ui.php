@@ -13,4 +13,11 @@ return [
     'confirm' => 'Confirmar',
     'cancel' => 'Cancelar',
     'dismiss' => 'Cerrar',
+    'skip_to_content' => 'Saltar al contenido',
+    'advertisement' => 'Publicidad',
+    'close_advertisement' => 'Cerrar publicidad',
+    'breadcrumb' => 'Ruta de navegación',
+    'pagination' => 'Paginación',
+    'back_to_top' => 'Volver arriba',
+    'offline' => 'Parece que no tienes conexión. Vuelve a conectarte y envía de nuevo.',
 ];

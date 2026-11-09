@@ -26,7 +26,7 @@ function setup(opts = {}) {
     const clientToast = opts.toast ? { error(msg) { toastCalls.push(msg); } } : undefined;
     vm.runInNewContext(fs.readFileSync('public/legacy/js-v2/form-busy.js', 'utf8'), {
         Map, navigator,
-        document: { addEventListener(k, fn) { handlers[k] = fn; },
+        document: { body: { getAttribute() { return null; } }, addEventListener(k, fn) { handlers[k] = fn; },
             createElement() { return { setAttribute() {}, remove() { button.children.pop(); } }; },
             querySelectorAll() { return []; } },
         window: { addEventListener(k, fn) { handlers[k] = fn; }, clientToast },

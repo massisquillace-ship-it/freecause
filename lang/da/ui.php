@@ -13,4 +13,11 @@ return [
     'confirm' => 'Bekræft',
     'cancel' => 'Annuller',
     'dismiss' => 'Luk',
+    'skip_to_content' => 'Gå til indhold',
+    'advertisement' => 'Annonce',
+    'close_advertisement' => 'Luk annonce',
+    'breadcrumb' => 'Brødkrumme',
+    'pagination' => 'Sideinddeling',
+    'back_to_top' => 'Til toppen',
+    'offline' => 'Du ser ud til at være offline. Opret forbindelse igen, og send igen.',
 ];

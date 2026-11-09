@@ -13,4 +13,11 @@ return [
     'confirm' => 'Confirmer',
     'cancel' => 'Annuler',
     'dismiss' => 'Fermer',
+    'skip_to_content' => 'Aller au contenu',
+    'advertisement' => 'Publicité',
+    'close_advertisement' => 'Fermer la publicité',
+    'breadcrumb' => 'Fil d\'Ariane',
+    'pagination' => 'Pagination',
+    'back_to_top' => 'Retour en haut',
+    'offline' => 'Vous semblez être hors ligne. Reconnectez-vous et envoyez à nouveau.',
 ];

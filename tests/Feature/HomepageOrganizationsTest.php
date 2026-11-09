@@ -76,19 +76,34 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue($response->viewData('victories')->contains('id', $victory->id));
     }
 
-    public function test_directory_count_query_runs_once_across_requests_and_refreshes_on_approval(): void
+    public function test_directory_count_query_runs_once_across_requests(): void
+    {
+        config(['organizations.min_directory_count' => 1]);
+        $this->organization();
+
+        DB::enableQueryLog();
+        $this->app->instance('request', Request::create('/en'));
+        Organization::directoryReady();
+        $this->app->instance('request', Request::create('/it'));
+        Organization::directoryReady();
+        $counts = collect(DB::getQueryLog())->filter(
+            fn ($q) => str_contains($q['query'], 'count(*)') && str_contains($q['query'], 'organizations')
+        );
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $counts);
+    }
+
+    public function test_approving_an_organization_refreshes_the_directory_count(): void
     {
         config(['organizations.min_directory_count' => 2]);
-        $this->organization();
+        $this->organization(['status' => 'unclaimed']);
         $pending = $this->organization(['status' => 'pending']);
-        $count = fn () => collect(DB::getQueryLog())->filter(fn ($q) => preg_match('/count\(\*\).*from\s+["`]?organizations["`]?/i', $q['query']))->count();
-        DB::enableQueryLog();
+
         $this->assertFalse(Organization::directoryReady());
-        request()->attributes->remove('organization_directory_count');
-        $this->assertFalse(Organization::directoryReady());
-        $this->assertSame(1, $count());
+
         $pending->update(['status' => 'verified', 'owner_user_id' => User::factory()->create()->id]);
-        request()->attributes->remove('organization_directory_count');
+
         $this->assertTrue(Organization::directoryReady());
     }
 

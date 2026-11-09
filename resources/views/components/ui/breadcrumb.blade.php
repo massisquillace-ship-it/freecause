@@ -1,6 +1,6 @@
 @props(['items' => []])
 
-<nav aria-label="breadcrumb" {{ $attributes->merge(['class' => 'fcui-breadcrumb']) }}>
+<nav aria-label="{{ __('ui.breadcrumb') }}" {{ $attributes->merge(['class' => 'fcui-breadcrumb']) }}>
     <ol>
         @foreach ($items as $item)
             @php

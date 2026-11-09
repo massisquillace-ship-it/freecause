@@ -41,9 +41,15 @@ class Organization extends Model
         });
         static::saved(function (Organization $org) {
             DB::afterCommit(fn () => CacheVersion::bumpSitemap());
+            if ($org->wasRecentlyCreated || $org->wasChanged(['status', 'owner_user_id'])) {
+                DB::afterCommit(fn () => CacheVersion::bump('organizations'));
+            }
             if ($org->wasChanged(['status', 'owner_user_id', 'name', 'logo_path', 'slug'])) {
                 PurgeOrganizationAttribution::dispatch($org->id);
             }
+        });
+        static::deleted(function () {
+            DB::afterCommit(fn () => CacheVersion::bump('organizations'));
         });
     }
 
@@ -95,12 +101,13 @@ class Organization extends Model
     public static function directoryReady(): bool
     {
         try {
-            $attributes = request()->attributes;
-            if (! $attributes->has('organization_directory_count')) {
-                $attributes->set('organization_directory_count', (int) Cache::remember('organizations:directory-count:'.CacheVersion::get('sitemap'), 300, fn () => self::public()->count()));
-            }
+            $count = Cache::remember(
+                'organizations:directory-count:'.CacheVersion::get('organizations'),
+                300,
+                fn () => self::public()->count()
+            );
 
-            return $attributes->get('organization_directory_count') >= max(1, (int) config('organizations.min_directory_count', 20));
+            return $count >= max(1, (int) config('organizations.min_directory_count', 20));
         } catch (QueryException) {
             // Error pages must still render when the database is unavailable.
             return false;

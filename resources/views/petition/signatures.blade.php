@@ -140,5 +140,5 @@
 
         </x-ui.section>
 
-    <button type="button" class="fcui-scrolltop" data-scroll-top aria-label="Back to top">↑</button>
+    <button type="button" class="fcui-scrolltop" data-scroll-top aria-label="{{ __('ui.back_to_top') }}">↑</button>
 @endsection

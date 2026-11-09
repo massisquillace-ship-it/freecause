@@ -64,6 +64,30 @@ class MailQuotaUserMessageTest extends TestCase
             ->assertSessionHasErrors(['email' => __('auth.reset_failed')]);
     }
 
+    public function test_reset_password_save_failure_is_logged_and_shows_reset_failed(): void
+    {
+        $user = User::factory()->create(['email' => 'reset@example.com']);
+        $token = Password::createToken($user);
+
+        User::saving(function () {
+            throw new RuntimeException('db down');
+        });
+
+        $this->from('/en/reset-password/x')
+            ->post('/en/reset-password', [
+                'email' => $user->email,
+                'token' => $token,
+                'password' => 'New-Password-123',
+                'password_confirmation' => 'New-Password-123',
+            ])
+            ->assertSessionHasErrors(['email' => __('auth.reset_failed')]);
+
+        $this->assertDatabaseHas('logs', [
+            'level' => 'error',
+            'context' => 'auth.password',
+        ]);
+    }
+
     public function test_reset_password_success_flashes_translated_message(): void
     {
         $user = User::factory()->create(['email' => 'reset@example.com']);
