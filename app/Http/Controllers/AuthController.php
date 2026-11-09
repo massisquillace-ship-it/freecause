@@ -626,6 +626,11 @@ class AuthController extends Controller
                 }
             );
         } catch (\Throwable $e) {
+            AppLog::error(
+                'Password reset failed',
+                'Email: '.$request->input('email').' | '.$e->getMessage(),
+                'auth.password'
+            );
             $status = Password::INVALID_TOKEN;
         }
 
