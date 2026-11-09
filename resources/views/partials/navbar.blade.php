@@ -12,7 +12,7 @@
     $startTarget = $showOrganizationNav ? lroute('organizations.claim-search') : lroute('petition.create');
 @endphp
 <nav class="navbar navbar-expand-lg bg-white shadow-elev-1 {{ request()->routeIs('home') ? 'fc-home-nav' : '' }}">
-    <div class="container">
+    <div class="{{ request()->routeIs('home') ? 'mx-auto w-full px-3 max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] 2xl:max-w-[1320px] flex items-center justify-between' : 'container' }}">
         <a class="navbar-brand" href="{{ lroute('home') }}">
             <img src="{{ asset('legacy/images/logo7.png') }}" class="img-fluid" width="130" height="21" alt="FreeCause">
         </a>
