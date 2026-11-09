@@ -244,4 +244,18 @@ class AdminUserProtectionTest extends TestCase
         $this->assertFalse((bool) $rejected->fresh()->confirmed);
         $this->assertSame(0, (int) $petition->fresh()->signature_count);
     }
+
+    public function test_is_banned_uses_level_id_without_loading_the_level(): void
+    {
+        $banned = User::factory()->create(['level_id' => UserLevel::where('name', 'banned')->value('id')]);
+        $member = User::factory()->create(['level_id' => UserLevel::where('name', 'user')->value('id')]);
+
+        $banned = User::find($banned->id);
+        $member = User::find($member->id);
+
+        $this->assertTrue($banned->isBanned());
+        $this->assertFalse($member->isBanned());
+        $this->assertFalse($banned->relationLoaded('level'));
+        $this->assertFalse($member->relationLoaded('level'));
+    }
 }
