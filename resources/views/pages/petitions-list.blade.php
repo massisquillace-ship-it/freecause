@@ -20,6 +20,7 @@
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-2 max-md:contents">
                     <h1 class="text-base leading-normal m-0 font-bold break-words">{{ $heading ?? __('list.petitions') }}</h1>
                     <form method="GET" action="" data-live-search class="flex gap-2 w-full max-w-[300px] max-md:max-w-full max-md:bg-white max-md:py-2">
+                        @if($goalReached ?? false)<input type="hidden" name="goal" value="reached">@endif
                         <input type="text" name="q" value="{{ request('q') }}"
                                placeholder="{{ __('list.search_placeholder') }}"
                                aria-label="{{ __('list.search') }}"
@@ -28,7 +29,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                         </button>
                         @if(request('q'))
-                            <a href="{{ request()->url() }}" class="inline-flex items-center justify-center px-2 py-1 text-muted bg-white border border-muted rounded-xs no-underline max-md:min-h-12 max-md:min-w-12 hover:bg-muted hover:text-white"
+                            <a href="{{ ($goalReached ?? false) ? lroute('petitions.index', ['goal'=>'reached']) : request()->url() }}" class="inline-flex items-center justify-center px-2 py-1 text-muted bg-white border border-muted rounded-xs no-underline max-md:min-h-12 max-md:min-w-12 hover:bg-muted hover:text-white"
                                aria-label="{{ __('list.clear') }}" title="{{ __('list.clear') }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </a>
