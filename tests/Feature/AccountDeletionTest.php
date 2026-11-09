@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\UserLevel;
 use App\Services\WordPressUserDeletionService;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use RuntimeException;
@@ -104,6 +106,26 @@ class AccountDeletionTest extends TestCase
             ->assertRedirect('/en');
 
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    public function test_account_deletion_clears_user_level_counts_cache(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'password_changed_at' => now(),
+            'google_id' => null,
+            'level_id' => UserLevel::where('name', 'user')->value('id'),
+        ]);
+        Cache::put('level:user_counts', ['user' => 1], 3600);
+
+        $this->actingAs($user)
+            ->post('/en/account/delete', [
+                'password' => 'correct-password',
+                'confirm_delete' => '1',
+            ])
+            ->assertRedirect('/en');
+
+        $this->assertFalse(Cache::has('level:user_counts'));
     }
 
     public function test_google_only_user_cannot_unlink_their_only_login_method(): void
