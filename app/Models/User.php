@@ -27,6 +27,9 @@ class User extends Authenticatable implements HasLocalePreference
                 Cache::forget('level:user_counts');
             }
         });
+        static::deleting(function (self $user) {
+            Signature::where('user_id', $user->id)->update(['name' => '', 'email' => null, 'ip_address' => null]);
+        });
         static::deleted(function (self $user) {
             if ($user->level_id) {
                 Cache::forget('level:user_counts');

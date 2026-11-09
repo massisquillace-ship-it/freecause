@@ -21,9 +21,10 @@ class WpSso
                 'e' => $email,
                 'n' => $displayName,
                 'x' => time() + 120,
+                'j' => bin2hex(random_bytes(12)),
             ]));
 
-            $sig = hash_hmac('sha256', $payload, $secret);
+            $sig = hash_hmac('sha256', $payload.'|'.$redirect, $secret);
 
             return '/magazine/sso.php?'.http_build_query([
                 'p' => $payload,

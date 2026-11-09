@@ -383,6 +383,7 @@
 @endsection
 
 @push('scripts')
+    <script src="{{ asset('legacy/js-v2/bootstrap.bundle.min.js') }}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" integrity="sha384-QUJ+ckWz1M+a7w0UfG1sEn4pPrbQwSxGm/1TIPyioqXBrwuT9l4f9gdHWLDLbVWI" crossorigin="anonymous"></script>
     <script src="{{ asset('legacy/js-v2/petition-create.js') }}?v={{ filemtime(public_path('legacy/js-v2/petition-create.js')) }}"></script>
     <script src="{{ asset('legacy/js-v2/petition-autosave.js') }}?v={{ filemtime(public_path('legacy/js-v2/petition-autosave.js')) }}"></script>
