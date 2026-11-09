@@ -13,6 +13,8 @@ class VerifyAccountMail extends Mailable implements ShouldQueue
 {
     use GatedByMailQuota, Queueable, SerializesModels;
 
+    public bool $transactional = true;
+
     public string $firstName;
 
     public string $verificationToken;
