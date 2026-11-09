@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Jobs\RefreshHomepageMomentum;
 use App\Models\Log;
 use App\Services\ReviewKeywordRescan;
 use App\Support\AppLog;
@@ -14,6 +15,7 @@ Schedule::command('backup:run')->dailyAt('02:00')->appendOutputTo(storage_path('
 Schedule::command('backup:clean')->dailyAt('04:00')->appendOutputTo(storage_path('logs/backup.log'));
 Schedule::command('backup:monitor')->dailyAt('06:00');
 Schedule::command('cache:warm')->hourly();
+Schedule::job(new RefreshHomepageMomentum)->hourly();
 Schedule::command('petition:send-digest')->dailyAt('09:00');
 Schedule::command('emails:petition-new-signatures')->hourly();
 Schedule::call(fn () => DB::table('aggregate_traffic')->where('hour', '<', now('UTC')->subDays(90))->delete())
