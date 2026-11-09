@@ -203,7 +203,8 @@ class PetitionController extends Controller
         $locale = normalize_locale($locale);
 
         $search = trim((string) request('q', ''));
-        $page = max(1, min((int) request('page', 1), 500));
+        $pageLimit = request('goal') === 'reached' ? 10000 : 500;
+        $page = max(1, min((int) request('page', 1), $pageLimit));
 
         $categories = Category::cachedActive($locale);
 
