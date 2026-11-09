@@ -23,7 +23,7 @@ class RecentActivityPrivacyTest extends TestCase
         $petition = Petition::factory()->create(['status' => 'published', 'is_active' => true]);
         PetitionTranslation::factory()->create(['petition_id' => $petition->id, 'locale' => 'en']);
         foreach (['nick' => 'publicnick', 'name' => 'Given', 'full' => 'Private Fullname'] as $mode => $expected) {
-            $user = User::factory()->create(['name' => 'Private Fullname', 'first_name' => 'Given', 'nickname' => 'publicnick', 'identify_mode' => $mode]);
+            $user = User::factory()->create(['name' => 'Private Fullname', 'first_name' => 'Given', 'nickname' => 'publicnick'.($mode === 'nick' ? '' : $mode), 'identify_mode' => $mode]);
             Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => $user->id, 'name' => 'Old snapshot', 'confirmed' => true, 'is_spam' => false]);
             cache()->forget(CacheKeys::homeRecent('en'));
             $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
