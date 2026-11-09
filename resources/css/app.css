@@ -76,6 +76,7 @@
     body.fc-public .fc-home-nav .nav-link {
         color: var(--fc-text);
         font-size: var(--text-sm);
+        padding-inline: 0.5rem;
     }
 
     body.fc-public .fc-home-nav .fcui-btn {
