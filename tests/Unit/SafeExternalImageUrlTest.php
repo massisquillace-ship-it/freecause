@@ -43,6 +43,17 @@ class SafeExternalImageUrlTest extends TestCase
         $this->assertNull($this->staticChecks('https://93.184.216.34/image.jpg'));
     }
 
+    public function test_request_blocks_private_address_and_bad_shape_hops(): void
+    {
+        $rule = new SafeExternalImageUrl;
+        $method = (new \ReflectionClass($rule))->getMethod('request');
+        $method->setAccessible(true);
+
+        foreach (['http://10.0.0.1/a.jpg', 'http://[::1]/a.jpg', 'https://93.184.216.34:8080/a.jpg', 'ftp://93.184.216.34/a.jpg'] as $url) {
+            $this->assertSame('blocked', $method->invoke($rule, $url, true, microtime(true) + 3)['status'], $url);
+        }
+    }
+
     private function staticChecks(string $url): ?string
     {
         $rule = new SafeExternalImageUrl;
