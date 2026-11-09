@@ -24,43 +24,40 @@ class SendPetitionNewSignaturesNotification implements ShouldQueue
 
     public function handle(): void
     {
-        DB::transaction(function () {
-            $notification = PetitionSignatureNotification::with('petition.user')
-                ->whereKey($this->notificationId)
-                ->lockForUpdate()
-                ->firstOrFail();
+        $notification = PetitionSignatureNotification::with('petition.user')
+            ->whereKey($this->notificationId)
+            ->firstOrFail();
 
-            if ($notification->status === 'delivered') {
-                return;
-            }
+        if ($notification->status === 'delivered') {
+            return;
+        }
 
-            $owner = $notification->petition->user;
-            if (! $owner) {
-                return;
-            }
+        $owner = $notification->petition->user;
+        if (! $owner) {
+            return;
+        }
 
-            Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
-                $notification->petition,
-                $owner,
-                $notification->total,
-                collect($notification->signers),
-            ));
+        Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
+            $notification->petition,
+            $owner,
+            $notification->total,
+            collect($notification->signers),
+        ));
 
-            $updated = PetitionSignatureNotification::query()
-                ->whereKey($notification->id)
-                ->where('status', '!=', 'delivered')
-                ->update(['status' => 'delivered', 'updated_at' => now()]);
+        $updated = PetitionSignatureNotification::query()
+            ->whereKey($notification->id)
+            ->where('status', '!=', 'delivered')
+            ->update(['status' => 'delivered', 'updated_at' => now()]);
 
-            if ($updated) {
-                DB::table('petitions')
-                    ->where('id', $notification->petition_id)
-                    ->where(function ($query) use ($notification) {
-                        $query->whereNull('last_notified_at')
-                            ->orWhere('last_notified_at', '<', $notification->cutoff_at);
-                    })
-                    ->update(['last_notified_at' => $notification->cutoff_at]);
-            }
-        });
+        if ($updated) {
+            DB::table('petitions')
+                ->where('id', $notification->petition_id)
+                ->where(function ($query) use ($notification) {
+                    $query->whereNull('last_notified_at')
+                        ->orWhere('last_notified_at', '<', $notification->cutoff_at);
+                })
+                ->update(['last_notified_at' => $notification->cutoff_at]);
+        }
     }
 
     public function failed(Throwable $exception): void
