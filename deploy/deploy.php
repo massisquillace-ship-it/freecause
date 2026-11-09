@@ -78,6 +78,16 @@ task('artisan:optimize', function () {
     run('{{bin/php}} {{bin/artisan}} route:cache || true');
 });
 
+desc('Run migrations with enough time for production-sized indexes');
+task('artisan:migrate', function () {
+    if (! test('[ -s {{release_or_current_path}}/.env ]')) {
+        warning('The environment file is missing; migrations skipped.');
+
+        return;
+    }
+    run('{{bin/php}} {{bin/artisan}} migrate --force', timeout: 3600);
+});
+
 desc('Warm the application caches');
 task('cache:warm', function () {
     run('{{bin/php}} {{bin/artisan}} cache:warm');
