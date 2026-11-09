@@ -16,6 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
@@ -168,6 +169,22 @@ class AdminPetitionDeleteTest extends TestCase
             ->assertOk()->assertJson(['deleted' => 1]);
 
         $this->assertDatabaseMissing('petitions', ['id' => $petition->id]);
+    }
+
+    public function test_failed_delete_takes_petition_offline_and_logs_warning(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petition = Petition::factory()->create(['is_active' => 1, 'status' => 'published']);
+        Signature::factory()->create(['petition_id' => $petition->id]);
+        DB::unprepared("CREATE TRIGGER block_petition_delete BEFORE DELETE ON petitions BEGIN SELECT RAISE(ABORT, 'delete blocked'); END");
+        Log::spy();
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$petition->id], 'confirmed' => true])
+            ->assertStatus(500);
+
+        $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'is_active' => 0, 'status' => 'draft', 'held_by_admin' => 1]);
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context = []) => str_starts_with($message, 'Admin petition deletion failed')
+            && ($context['petition_ids'] ?? null) === [$petition->id])->once();
     }
 
     public function test_delete_requires_explicit_confirmation_and_valid_selection(): void
