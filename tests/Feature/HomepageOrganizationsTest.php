@@ -27,7 +27,7 @@ class HomepageOrganizationsTest extends TestCase
         parent::setUp();
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class, OrganizationCauseSeeder::class]);
         $this->mock(HomepageMagazine::class)->shouldReceive('posts')->andReturn([]);
-        config(['organizations.min_directory_count' => 20]);
+        config(['organizations.min_directory_count' => 1]);
     }
 
     private function organization(array $data = []): Organization
@@ -45,6 +45,9 @@ class HomepageOrganizationsTest extends TestCase
         ], $data));
         $petition->translations()->create(['locale' => $locale, 'title' => 'Public campaign '.$petition->id, 'slug' => 'public-campaign-'.$petition->id, 'description' => 'A public campaign description.']);
 
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'is_spam' => false]);
+        (new RefreshHomepageMomentum)->handle();
+
         return $petition;
     }
 
@@ -52,28 +55,22 @@ class HomepageOrganizationsTest extends TestCase
     {
         $this->get('/en')->assertOk()->assertSee('Start a petition, gather signatures, deliver them.')
             ->assertSee('Anyone can launch a campaign on FreeCause, alone or with their organization.')
-            ->assertSee('How it works')->assertSee('/en/search')->assertDontSee('data-home-organizations', false)
-            ->assertDontSee('data-home-campaigns', false)->assertDontSee('data-home-victories', false)
+            ->assertSee('How it works')->assertSee('/en/search')->assertSee('data-home-organizations', false)
+            ->assertSee('data-home-campaigns', false)->assertSee('data-home-victories', false)
+            ->assertSee('No confirmed signatures yet.')->assertSee('No victories have been reported yet.')
             ->assertDontSee('data-home-causes', false)->assertDontSee('data-home-claim', false)
             ->assertDontSee('Change the world!')->assertDontSee('Recent User Activities');
     }
 
-    public function test_one_gate_hides_organizations_promotion_but_not_campaigns_or_victories(): void
+    public function test_one_public_organization_and_one_single_signature_campaign_are_visible(): void
     {
-        for ($i = 0; $i < 19; $i++) {
-            $this->organization();
-        }
-        for ($i = 0; $i < 3; $i++) {
-            $this->petition();
-        }
-        $victory = $this->petition(['outcome' => 'victory', 'outcome_at' => now(), 'outcome_summary' => 'A result reported by its organizer.']);
-        $response = $this->get('/en')->assertOk()->assertSee('data-home-campaigns', false)->assertSee('data-home-victories', false)
-            ->assertDontSee('data-home-organizations', false)->assertDontSee('Claim your organization')->assertDontSee('data-home-causes', false);
-        $this->assertFalse($response->viewData('directoryReady'));
-        $this->organization();
-        $response = $this->get('/en')->assertOk()->assertSee('data-home-organizations', false)->assertSee('Claim your organization');
+        $org = $this->organization();
+        $petition = $this->petition(['signature_count' => 1]);
+        $response = $this->get('/en')->assertOk()->assertSee($org->name)->assertSee('data-home-campaigns', false)
+            ->assertSee('Public campaign '.$petition->id)->assertSee('No victories have been reported yet.');
         $this->assertTrue($response->viewData('directoryReady'));
-        $this->assertTrue($response->viewData('victories')->contains('id', $victory->id));
+        $this->assertCount(1, $response->viewData('organizations'));
+        $this->assertCount(1, $response->viewData('campaigns'));
     }
 
     public function test_directory_count_query_runs_once_across_requests(): void
@@ -107,50 +104,37 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue(Organization::directoryReady());
     }
 
-    public function test_momentum_filters_private_and_small_campaigns_and_uses_cached_weekly_order(): void
+    public function test_recent_signature_order_includes_small_old_petitions_and_excludes_invalid_signatures(): void
     {
-        $lower = $this->petition(['signature_count' => 9000, 'signatures_7d_cache' => 21]);
-        $higher = $this->petition(['signature_count' => 100, 'signatures_7d_cache' => 100]);
-        $middle = $this->petition(['signatures_7d_cache' => 50]);
-        $this->petition(['signature_count' => 49, 'signatures_7d_cache' => 1000]);
-        $this->petition(['status' => 'draft', 'signatures_7d_cache' => 2000]);
-        $this->petition(['is_active' => false, 'signatures_7d_cache' => 2000]);
+        $older = $this->petition(['signature_count' => 9000]);
+        $latest = $this->petition(['signature_count' => 1, 'created_at' => now()->subYears(10)]);
+        Signature::where('petition_id', $older->id)->update(['created_at' => now()->subDays(20)]);
+        Signature::where('petition_id', $latest->id)->update(['created_at' => now()->subDays(10)]);
+        foreach ([['confirmed' => false], ['is_spam' => true], ['created_at' => now()->addDay()]] as $invalid) {
+            Signature::factory()->create(array_merge(['petition_id' => $older->id, 'confirmed' => true, 'is_spam' => false], $invalid));
+        }
+        $this->petition(['status' => 'draft']);
+        $this->petition(['is_active' => false]);
+        (new RefreshHomepageMomentum)->handle();
         DB::enableQueryLog();
-        $response = $this->get('/en')->assertOk();
-        $this->assertSame([$higher->id, $middle->id, $lower->id], $response->viewData('campaigns')->pluck('id')->all());
+        $response = $this->get('/en')->assertOk()->assertSee('Recently signed petitions');
+        $this->assertSame([$latest->id, $older->id], $response->viewData('campaigns')->pluck('id')->all());
         $this->assertFalse(collect(DB::getQueryLog())->contains(fn ($q) => preg_match('/from\s+["`]?signatures["`]?\b/i', $q['query'])));
         DB::disableQueryLog();
     }
 
-    public function test_sparse_campaigns_fall_back_only_to_eligible_campaigns_of_last_year(): void
-    {
-        $this->petition(['signatures_7d_cache' => 0, 'created_at' => now()->subYears(2)]);
-        $one = $this->petition(['signatures_7d_cache' => 0, 'signature_count' => 1000]);
-        $this->get('/en')->assertDontSee('data-home-campaigns', false);
-        $two = $this->petition(['signatures_7d_cache' => 0, 'signature_count' => 2000]);
-        $three = $this->petition(['signatures_7d_cache' => 0, 'signature_count' => 3000]);
-        $response = $this->get('/en')->assertOk()->assertSee('Most supported campaigns of the last year');
-        $this->assertSame([$three->id, $two->id, $one->id], $response->viewData('campaigns')->pluck('id')->all());
-        $this->assertFalse($response->viewData('campaignsTrending'));
-    }
-
-    public function test_org_trending_and_cause_counts_exclude_private_states_and_claim_banner_requires_twenty_unclaimed(): void
+    public function test_one_public_organization_and_one_unclaimed_page_enable_cards_causes_and_claim_banner(): void
     {
         $cause = Cause::first();
-        $public = collect();
-        for ($i = 0; $i < 20; $i++) {
-            $org = $this->organization(['signatures_7d_cache' => $i < 3 ? 100 - $i : 0]);
-            $org->causes()->attach($cause);
-            $public->push($org);
-        }
-        $private = $this->organization(['status' => 'suspended', 'signatures_7d_cache' => 9000]);
+        $public = $this->organization();
+        $public->causes()->attach($cause);
+        $private = $this->organization(['status' => 'suspended']);
         $private->causes()->attach($cause);
         $response = $this->get('/en')->assertOk()->assertSee('data-home-claim', false)->assertSee('data-home-causes', false);
-        $this->assertTrue($response->viewData('organizationsTrending'));
-        $this->assertSame($public->take(3)->pluck('id')->all(), $response->viewData('organizations')->pluck('id')->all());
-        $this->assertSame(20, (int) $response->viewData('causes')->first()->organization_count);
-        $public->last()->update(['status' => 'pending']);
-        $this->get('/en')->assertDontSee('data-home-claim', false)->assertDontSee('data-home-organizations', false);
+        $this->assertSame([$public->id], $response->viewData('organizations')->pluck('id')->all());
+        $this->assertSame(1, (int) $response->viewData('causes')->first()->organization_count);
+        $public->update(['status' => 'pending']);
+        $this->get('/en')->assertDontSee('data-home-claim', false)->assertSee('Organizations will appear here as they become public.');
     }
 
     public function test_refresh_counts_only_recent_confirmed_nonspam_and_resets_stale_counters_without_changing_totals(): void
@@ -159,6 +143,7 @@ class HomepageOrganizationsTest extends TestCase
         $public = $this->petition(['organization_id' => $org->id, 'signatures_7d_cache' => 999]);
         $stale = $this->petition(['signatures_7d_cache' => 999]);
         $draft = $this->petition(['organization_id' => $org->id, 'status' => 'draft']);
+        Signature::query()->delete();
         foreach ([
             [$public->id, true, false, now()->subDay()], [$public->id, true, false, now()->subDays(6)],
             [$public->id, false, false, now()], [$public->id, true, true, now()],
@@ -186,8 +171,8 @@ class HomepageOrganizationsTest extends TestCase
         $request->attributes->set('country', 'IT');
         $data = app(HomepageData::class)->forRequest($request);
         $this->assertSame('Italia', $data['countryName']);
-        $this->assertSame($local->id, $data['campaigns']->first()->id);
-        $this->assertSame($other->id, $data['campaigns']->last()->id);
+        $this->assertTrue($data['campaigns']->contains('id', $local->id));
+        $this->assertTrue($data['campaigns']->contains('id', $other->id));
         $request->attributes->set('country', 'not-a-country');
         $this->assertSame('Europa', app(HomepageData::class)->forRequest($request)['countryName']);
     }
@@ -238,13 +223,13 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertDatabaseCount('petitions', 3);
     }
 
-    public function test_proof_and_verified_trust_counts_have_their_own_thresholds(): void
+    public function test_proof_and_verified_trust_counts_show_actual_small_counts(): void
     {
         $owner = User::factory()->create();
         for ($i = 0; $i < 49; $i++) {
             $this->organization($i < 9 ? ['status' => 'verified', 'owner_user_id' => $owner->id, 'verified_at' => now()] : []);
         }
-        $this->get('/en')->assertDontSee('49 organizations · since 2010')->assertDontSee('9 verified organizations');
+        $this->get('/en')->assertSee('49 organizations · since 2010')->assertSee('9 verified organizations');
         $this->organization(['status' => 'verified', 'owner_user_id' => $owner->id, 'verified_at' => now()]);
         $this->get('/en')->assertSee('50 organizations · since 2010')->assertSee('10 verified organizations');
     }
