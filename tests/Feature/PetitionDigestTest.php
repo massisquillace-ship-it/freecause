@@ -47,6 +47,7 @@ class PetitionDigestTest extends TestCase
         Mail::assertQueued(PetitionDigestMail::class);
 
         $mail = Mail::queued(PetitionDigestMail::class)->firstOrFail();
+        $this->assertSame('bulk', $mail->queue);
         $html = $mail->render();
 
         $this->assertTrue($mail->hasTo($user->email));

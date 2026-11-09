@@ -104,7 +104,7 @@ class SendPetitionDigest extends Command
                         }
 
                         if (! $dryRun) {
-                            Mail::to($user->email)->queue(new PetitionDigestMail($user, $petitions));
+                            Mail::to($user->email)->queue((new PetitionDigestMail($user, $petitions))->onQueue('bulk'));
                         }
 
                         $sent++;
