@@ -83,7 +83,7 @@ class AuditMergeBehaviourTest extends TestCase
         Signature::factory()->create(['petition_id' => $clean->id, 'user_id' => $user->id, 'confirmed' => false]);
         Signature::factory()->create(['petition_id' => $spam->id, 'user_id' => $user->id, 'confirmed' => false, 'is_spam' => true]);
 
-        $this->get('/en/verify/merge-token')->assertRedirect();
+        $this->post('/en/verify/merge-token', [])->assertRedirect();
 
         $this->assertSame(1, $clean->fresh()->signature_count);
         $this->assertSame(0, $spam->fresh()->signature_count);

@@ -248,7 +248,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser();
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
 
-        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
 
         $user->refresh();
         $this->assertSame('moved@example.com', $user->email);
@@ -269,7 +269,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser(['email' => 'old-address@example.com']);
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
 
-        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
 
         $this->assertSame('moved@example.com', $user->fresh()->email);
     }
@@ -286,7 +286,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser();
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
 
-        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
 
         $this->assertSame('moved@example.com', $user->fresh()->email);
     }
@@ -334,7 +334,7 @@ class ProfileCrudTest extends TestCase
         $this->assertNull($user->pending_email);
         $this->assertNotSame($oldToken, $user->verification_token);
 
-        $this->get("/en/verify/{$oldToken}");
+        $this->post("/en/verify/{$oldToken}", []);
         $this->assertSame('old@example.com', $user->fresh()->email);
     }
 
@@ -348,7 +348,7 @@ class ProfileCrudTest extends TestCase
         $token = $user->fresh()->verification_token;
 
         $this->travel(49)->hours();
-        $this->get("/en/verify/{$token}")->assertRedirect('/en/profile');
+        $this->post("/en/verify/{$token}", [])->assertRedirect('/en/profile');
 
         $user->refresh();
         $this->assertSame('kept@example.com', $user->email);
@@ -436,7 +436,7 @@ class ProfileCrudTest extends TestCase
         // e.g. a Google sign-up or guest signature created the account directly.
         $this->passwordUser(['email' => 'raced@example.com']);
 
-        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
 
         $user->refresh();
         $this->assertSame($originalEmail, $user->email);
