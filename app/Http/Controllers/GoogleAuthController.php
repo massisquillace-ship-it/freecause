@@ -289,16 +289,6 @@ class GoogleAuthController extends Controller
             );
         }
 
-        if (! $user) {
-            AppLog::warning(
-                'Google OAuth user resolution failed',
-                'Email: '.$email.' | Google ID: '.$google->getId(),
-                'auth.google'
-            );
-
-            return redirect("/{$destLocale}/login")->withErrors(['oauth' => __('auth.google_signin_failed')]);
-        }
-
         if ($user->isBanned()) {
             AppLog::warning(
                 'Banned user attempted Google login',

@@ -15,19 +15,12 @@ class BlockBannedUser
 
         if ($user) {
             if ($user->banned_until !== null && now()->gt($user->banned_until)) {
+                $attributes = ['banned_reason' => null, 'banned_until' => null];
                 $userLevel = UserLevel::where('name', 'user')->value('id');
                 if ($userLevel) {
-                    $user->forceFill([
-                        'level_id' => $userLevel,
-                        'banned_reason' => null,
-                        'banned_until' => null,
-                    ])->saveQuietly();
-                } else {
-                    $user->forceFill([
-                        'banned_reason' => null,
-                        'banned_until' => null,
-                    ])->saveQuietly();
+                    $attributes['level_id'] = $userLevel;
                 }
+                $user->forceFill($attributes)->saveQuietly();
 
                 return $next($request);
             }
