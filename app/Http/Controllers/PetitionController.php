@@ -819,12 +819,10 @@ class PetitionController extends Controller
     public function update(PetitionRequest $request, string $locale, string $slug, int $id)
     {
         $petition = Petition::query()->findOrFail($id);
+        $this->requireEditable($petition);
 
-        $trOrRedirect = $this->resolveTrOrRedirect('petition.edit', $locale, $slug, $petition);
-        if ($trOrRedirect instanceof RedirectResponse) {
-            return $trOrRedirect;
-        }
-        $tr = $trOrRedirect;
+        $tr = $petition->translationOrFallback($locale, default_locale());
+        abort_if(! $tr, 404);
 
         $data = $request->validated();
         $petitionText = implode(' ', [

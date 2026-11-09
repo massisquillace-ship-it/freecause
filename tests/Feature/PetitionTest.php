@@ -2269,6 +2269,38 @@ class PetitionTest extends TestCase
         $this->assertSame('draft', $petition->fresh()->status);
     }
 
+    public function test_update_with_a_stale_slug_saves_instead_of_redirecting_to_the_edit_form(): void
+    {
+        $petition = $this->ownedPetition(['status' => 'published', 'held_by_admin' => false]);
+        $petition->translations()->where('locale', 'en')->update(['slug' => 'renamed-petition-title']);
+
+        $this->actingAs($this->user)
+            ->post("/en/petition/held-petition-title/{$petition->id}/edit", ['title' => 'Fresh Petition Title'] + $this->editPayload('<p>This updated description contains enough meaningful content.</p>'))
+            ->assertRedirect("/en/petition/fresh-petition-title/{$petition->id}");
+
+        $this->assertDatabaseHas('petition_translations', ['petition_id' => $petition->id, 'locale' => 'en', 'title' => 'Fresh Petition Title']);
+    }
+
+    public function test_update_with_an_image_is_rejected_before_storing_when_another_user_signed(): void
+    {
+        Storage::fake('public');
+        $petition = $this->ownedPetition(['status' => 'published', 'held_by_admin' => false]);
+        Signature::factory()->create([
+            'petition_id' => $petition->id,
+            'user_id' => User::factory()->create()->id,
+            'confirmed' => true,
+            'is_spam' => false,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post("/en/petition/held-petition-title/{$petition->id}/edit", [
+                'image' => UploadedFile::fake()->image('petition.png', 400, 300),
+            ] + $this->editPayload('<p>This updated description contains enough meaningful content.</p>'))
+            ->assertForbidden();
+
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
     public function test_review_keyword_edit_drafts_a_published_petition_and_removing_it_publishes_again(): void
     {
         $petition = $this->ownedPetition(['status' => 'published', 'held_by_admin' => false]);
