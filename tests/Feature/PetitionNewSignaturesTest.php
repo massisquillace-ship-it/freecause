@@ -3,21 +3,18 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendPetitionNewSignaturesNotification;
-use App\Mail\PetitionNewSignaturesMail;
 use App\Models\Petition;
 use App\Models\PetitionSignatureNotification;
 use App\Models\PetitionTranslation;
 use App\Models\Signature;
 use App\Models\User;
 use App\Support\MailQuota;
-use App\Support\MailQuotaGate;
 use App\Support\Settings;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
-use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Mail\SendQueuedMailable;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -181,7 +178,7 @@ class PetitionNewSignaturesTest extends TestCase
         $this->assertSame(1, PetitionSignatureNotification::where('petition_id', $petition->id)->count());
     }
 
-    public function test_quota_exhausted_defers_the_mail_instead_of_dropping_it(): void
+    public function test_quota_exhausted_releases_the_job_and_sends_nothing(): void
     {
         $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
         $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
@@ -191,30 +188,131 @@ class PetitionNewSignaturesTest extends TestCase
         Artisan::call('emails:petition-new-signatures');
         $notification = PetitionSignatureNotification::firstOrFail();
 
+        Mail::fake();
         MailQuota::trip();
-        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+        $job = (new SendPetitionNewSignaturesNotification($notification->id))->withFakeQueueInteractions();
+        $job->handle();
 
-        $sent = null;
-        Queue::assertPushed(SendQueuedMailable::class, function ($job) use (&$sent) {
-            $sent = $job;
+        Mail::assertNothingSent();
+        $job->assertReleased(3600);
+        $this->assertSame('pending', $notification->fresh()->status);
+        $this->assertNull($petition->fresh()->last_notified_at);
+    }
 
-            return $job->mailable instanceof PetitionNewSignaturesMail;
-        });
+    public function test_paused_job_keeps_releasing_without_exhausting_attempts(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
 
-        $this->assertTrue($sent->mailable->transactional);
-        $this->assertInstanceOf(MailQuotaGate::class, $sent->middleware[0]);
-        $this->assertSame('delivered', $notification->fresh()->status);
-        $this->assertNotNull($petition->fresh()->last_notified_at);
-
-        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
-        Queue::assertPushed(SendQueuedMailable::class, 1);
-
-        $inner = $this->createMock(Job::class);
-        $inner->expects($this->once())->method('delete');
-        $sent->job = $inner;
         Queue::fake();
-        $sent->middleware[0]->handle($sent, fn () => $this->fail('SMTP reached'));
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
 
-        Queue::assertPushed(SendQueuedMailable::class, fn ($job) => $job->mailable instanceof PetitionNewSignaturesMail);
+        $this->travel(4)->hours();
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(5)]);
+
+        Mail::fake();
+        MailQuota::trip();
+        $job = (new SendPetitionNewSignaturesNotification($notification->id))->withFakeQueueInteractions();
+        for ($i = 0; $i < 5; $i++) {
+            $job->handle();
+        }
+
+        Mail::assertNothingSent();
+        $job->assertReleased(3600);
+        $this->assertSame(0, $job->tries);
+        $this->assertSame(3, $job->maxExceptions);
+        $this->assertSame('pending', $notification->fresh()->status);
+        $this->assertTrue($notification->fresh()->updated_at->gt(now()->subMinute()));
+
+        Cache::forget('mail:quota-exhausted');
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        Queue::assertNothingPushed();
+    }
+
+    public function test_failed_send_marks_failed_and_keeps_cursor(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+        $job = new SendPetitionNewSignaturesNotification($notification->id);
+
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('smtp down'));
+        try {
+            $job->handle();
+            $this->fail('Expected the send to throw.');
+        } catch (\RuntimeException) {
+            $job->failed(new \RuntimeException('smtp down'));
+        }
+
+        $this->assertSame('failed', $notification->fresh()->status);
+        $this->assertNull($petition->fresh()->last_notified_at);
+    }
+
+    public function test_stale_pending_row_is_redispatched_but_fresh_one_is_not(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        Queue::assertNothingPushed();
+
+        $this->travel(4)->hours();
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(5)]);
+        Artisan::call('emails:petition-new-signatures');
+        Queue::assertPushed(SendPetitionNewSignaturesNotification::class, fn ($job) => $job->notificationId === $notification->id);
+        $this->assertSame(1, PetitionSignatureNotification::where('petition_id', $petition->id)->count());
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        Queue::assertNothingPushed();
+    }
+
+    public function test_owner_who_opted_out_after_queueing_gets_no_mail(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+        $owner->update(['notify_new_signatures' => false]);
+
+        Mail::fake();
+        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+
+        Mail::assertNothingSent();
+        $this->assertSame('skipped', $notification->fresh()->status);
+    }
+
+    public function test_missing_owner_marks_notification_skipped(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+        $petition->forceFill(['user_id' => null])->save();
+
+        Mail::fake();
+        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+
+        Mail::assertNothingSent();
+        $this->assertSame('skipped', $notification->fresh()->status);
     }
 }

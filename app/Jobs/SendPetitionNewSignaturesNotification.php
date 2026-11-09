@@ -4,8 +4,10 @@ namespace App\Jobs;
 
 use App\Mail\PetitionNewSignaturesMail;
 use App\Models\PetitionSignatureNotification;
+use App\Support\MailQuota;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +16,11 @@ use Throwable;
 
 class SendPetitionNewSignaturesNotification implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
+    public int $tries = 0;
+
+    public int $maxExceptions = 3;
 
     public array $backoff = [60, 300];
 
@@ -32,17 +36,41 @@ class SendPetitionNewSignaturesNotification implements ShouldQueue
             return;
         }
 
-        $owner = $notification->petition->user;
-        if (! $owner) {
+        if (MailQuota::paused()) {
+            PetitionSignatureNotification::query()
+                ->whereKey($notification->id)
+                ->where('status', '!=', 'delivered')
+                ->update(['updated_at' => now()]);
+
+            $this->release(3600);
+
             return;
         }
 
-        Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
-            $notification->petition,
-            $owner,
-            $notification->total,
-            collect($notification->signers),
-        ));
+        $owner = $notification->petition->user;
+        if (! $owner || ! $owner->wantsNewSignatureEmails()) {
+            PetitionSignatureNotification::query()
+                ->whereKey($notification->id)
+                ->where('status', '!=', 'delivered')
+                ->update(['status' => 'skipped', 'updated_at' => now()]);
+
+            return;
+        }
+
+        try {
+            Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
+                $notification->petition,
+                $owner,
+                $notification->total,
+                collect($notification->signers),
+            ));
+        } catch (Throwable $e) {
+            if (MailQuota::causedBy($e)) {
+                MailQuota::trip();
+            }
+
+            throw $e;
+        }
 
         $updated = PetitionSignatureNotification::query()
             ->whereKey($notification->id)
