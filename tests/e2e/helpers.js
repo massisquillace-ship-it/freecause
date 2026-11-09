@@ -115,8 +115,10 @@ export async function newUser(page, prefix = 'u') {
 export async function createPetition(page, title) {
     await page.goto('/en/create-petition');
     await page.locator('input[name=title]').fill(title);
-    await page.locator('#petition_editor').click();
-    await page.keyboard.type('E2E petition body. '.repeat(12));
+    const editor = page.locator('#petition_editor .ql-editor[contenteditable=true]');
+    await expect(editor).toBeEditable();
+    await editor.fill('E2E petition body. '.repeat(12));
+    await expect(page.locator('#petition_description')).toHaveValue(/E2E petition body/);
     await page.locator('select[name=goal_signatures]').selectOption({ index: 1 });
     await page.locator('select[name=category_id]').selectOption({ index: 1 });
     await page.locator('form[data-petition-form] [type=submit]:visible').first().click();
