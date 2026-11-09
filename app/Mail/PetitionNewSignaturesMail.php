@@ -6,17 +6,13 @@ use App\Models\Petition;
 use App\Models\User;
 use App\Support\Locale;
 use App\Support\MailText;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 
-class PetitionNewSignaturesMail extends Mailable implements ShouldQueue
+class PetitionNewSignaturesMail extends Mailable
 {
-    use GatedByMailQuota, Queueable, SerializesModels;
-
-    public bool $transactional = true;
+    use SerializesModels;
 
     public function __construct(
         public Petition $petition,

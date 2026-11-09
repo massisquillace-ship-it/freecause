@@ -121,7 +121,7 @@ class SendPetitionNewSignatures extends Command
                         ->latest('id')
                         ->first();
 
-                    if ($notification?->status === 'pending') {
+                    if ($notification?->status === 'pending' && $notification->updated_at->gt(now()->subHours(3))) {
                         $skipped++;
 
                         continue;
@@ -136,7 +136,9 @@ class SendPetitionNewSignatures extends Command
                                 'signers' => $signers->all(),
                             ]);
 
-                            SendPetitionNewSignaturesNotification::dispatch($notification->id);
+                            $notification->touch();
+
+                            SendPetitionNewSignaturesNotification::dispatch($notification->id)->afterCommit();
                         });
                     } catch (\Throwable $e) {
                         AppLog::error('New-signatures email failed', 'Petition ID: '.$petitionId.' | '.$e->getMessage(), 'emails.new-signatures');
