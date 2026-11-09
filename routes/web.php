@@ -327,7 +327,7 @@ Route::prefix('{locale}')
         Route::get('/oauth/google/callback', [GoogleAuthController::class, 'callback'])->name('oauth.google.callback');
 
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-        Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:6,1');
+        Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:login');
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
         Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:5,1');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
