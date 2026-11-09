@@ -275,7 +275,27 @@ class OrganizationDistributionTest extends TestCase
             $this->assertSame('Test SMTP failure', $e->getMessage());
         }
         $this->assertNull($pending->fresh()->sent_at);
+        $this->assertNull($pending->fresh()->claimed_at);
         $this->assertSame('verified', $org->fresh()->status);
+    }
+
+    public function test_active_notification_claim_blocks_concurrent_delivery_and_expired_claim_retries(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true, 'global');
+        $org = $this->org();
+        app(OrganizationLifecycle::class)->record($org, $org->owner_user_id, 'verify');
+        $notice = OrganizationNotification::firstOrFail();
+        $notice->forceFill(['claimed_at' => now(), 'claim_token' => 'active-claim'])->save();
+
+        (new SendOrganizationNotification($notice->id))->handle();
+        Mail::assertNothingSent();
+
+        $notice->forceFill(['claimed_at' => now()->subMinutes(11)])->save();
+        (new SendOrganizationNotification($notice->id))->handle();
+        Mail::assertSentCount(1);
+        $this->assertNotNull($notice->fresh()->sent_at);
+        $this->assertNull($notice->fresh()->claimed_at);
     }
 
     public function test_disabled_smtp_keeps_notification_pending_and_recovery_queues_it(): void
