@@ -1,11 +1,16 @@
 <?php
 
 return array_replace_recursive(require __DIR__.'/../en/home.php', [
+    'organization_verified' => 'Organización verificada por FreeCause',
+    'goal_reached_petitions' => 'Peticiones que alcanzaron su objetivo de firmas',
+    'see_all_victories' => 'Ver todos los objetivos alcanzados',
+    'victory_badge' => 'Objetivo de firmas alcanzado',
+    'victories_subtitle' => 'Peticiones de personas y organizaciones que alcanzaron su objetivo de firmas',
     'recently_signed_title' => 'Peticiones firmadas recientemente',
     'recently_signed_subtitle' => 'Por la última firma confirmada',
     'organizations_empty' => 'Las organizaciones aparecerán aquí cuando sean públicas.',
     'campaigns_empty' => 'Todavía no hay firmas confirmadas.',
-    'victories_empty' => 'Todavía no se han declarado victorias.',
+    'victories_empty' => 'Todavía ninguna petición ha alcanzado su objetivo de firmas en este idioma.',
     'blog_read_more' => 'Leer más',
     'blog_subtitle' => 'Mantente actualizado con nuestras últimas noticias y opiniones',
     'blog_title' => 'Último de la revista Freecause',
