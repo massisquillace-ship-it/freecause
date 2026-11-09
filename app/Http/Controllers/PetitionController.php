@@ -175,6 +175,28 @@ class PetitionController extends Controller
             ->visible();
     }
 
+    public static function applySearch(Builder $query, string $search): Builder
+    {
+        $driver = DB::connection()->getDriverName();
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            $terms = PetitionTranslation::booleanTerms($search);
+            $query->where(function ($q) use ($terms) {
+                if ($terms === '') {
+                    $q->whereRaw('1 = 0');
+                } else {
+                    $q->whereRaw('MATCH(pt_locale.title) AGAINST(? IN BOOLEAN MODE)', [$terms]);
+                }
+            });
+        } else {
+            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->where('pt_locale.title', 'LIKE', $like);
+            });
+        }
+
+        return $query;
+    }
+
     public function index(string $locale)
     {
         $locale = normalize_locale($locale);
@@ -187,22 +209,7 @@ class PetitionController extends Controller
         $query = self::listingQuery($locale);
 
         if ($search !== '') {
-            $driver = DB::connection()->getDriverName();
-            if (in_array($driver, ['mysql', 'mariadb'], true)) {
-                $terms = PetitionTranslation::booleanTerms($search);
-                $query->where(function ($q) use ($terms) {
-                    if ($terms === '') {
-                        $q->whereRaw('1 = 0');
-                    } else {
-                        $q->whereRaw('MATCH(pt_locale.title) AGAINST(? IN BOOLEAN MODE)', [$terms]);
-                    }
-                });
-            } else {
-                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
-                $query->where(function ($q) use ($like) {
-                    $q->where('pt_locale.title', 'LIKE', $like);
-                });
-            }
+            self::applySearch($query, $search);
             $query->orderByDesc('petitions.signature_count');
             $petitions = $query->paginate(15, ['*'], 'page', $page)->withQueryString();
         } else {
