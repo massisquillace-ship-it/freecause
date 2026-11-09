@@ -8,7 +8,7 @@
 <section class="bg-white border-b border-border py-12 md:py-16" aria-labelledby="home-hero-title">
     <x-ui.container>
         <div class="max-w-3xl mx-auto text-center">
-            <h1 id="home-hero-title" class="text-3xl md:text-5xl leading-tight font-bold text-ink mb-6 break-words">{{ $directoryReady ? __('home.hero.title', ['country'=>$countryName]) : __('home.hero.title_petitions') }}</h1>
+            <h1 id="home-hero-title" class="text-3xl md:text-5xl leading-tight font-bold text-ink mb-6 break-words">{{ $directoryReady ? ($countryCode ? __('home.hero.title', ['country'=>$countryName]) : __('home.hero.title_global')) : __('home.hero.title_petitions') }}</h1>
             <p class="text-muted text-lg max-w-2xl mx-auto mb-7">{{ $directoryReady ? __('home.hero.subtitle') : __('home.hero.subtitle_petitions') }}</p>
             <form method="GET" action="{{ lroute('search') }}" role="search" class="flex flex-col sm:flex-row gap-0 max-w-2xl mx-auto">
                 <label class="sr-only" for="home-search">{{ __('home.hero.search_label') }}</label>
@@ -27,7 +27,7 @@
 <section class="py-10 md:py-12" data-home-organizations aria-labelledby="home-organizations-title">
     <x-ui.container>
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-            <div><h2 id="home-organizations-title" class="text-2xl font-bold mb-2">{{ $organizationsTrending ? __('home.trending_title', ['country'=>$countryName]) : __('home.active_title') }}</h2>
+            <div><h2 id="home-organizations-title" class="text-2xl font-bold mb-2">{{ $organizationsTrending ? ($countryCode ? __('home.trending_title', ['country'=>$countryName]) : __('home.trending_title_global')) : __('home.active_title') }}</h2>
             @if($organizationsTrending)<p class="text-sm text-muted">{{ __('home.trending_subtitle') }}</p>@endif</div>
             <a class="text-brand text-sm whitespace-nowrap hover:underline" href="{{ lroute('organizations.explore') }}">{{ __('organizations.see_all') }} →</a>
         </div>
@@ -64,28 +64,26 @@
 
 <section class="bg-white border-y border-border py-10 md:py-12" data-home-victories aria-labelledby="home-victories-title">
     <x-ui.container>
-        <h2 id="home-victories-title" class="text-2xl font-bold mb-2">{{ __('home.victories_title') }}</h2>
-        <p class="text-sm text-muted mb-6">{{ __('home.victories_subtitle') }}</p>
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+            <div><h2 id="home-victories-title" class="text-2xl font-bold mb-2">{{ __('home.victories_title') }}</h2>
+            <p class="text-sm text-muted">{{ __('home.victories_subtitle') }}</p></div>
+            <a class="text-brand text-sm whitespace-nowrap hover:underline" href="{{ lroute('petitions.index', ['goal'=>'reached']) }}">{{ __('home.see_all_victories') }} →</a>
+        </div>
         <div class="grid md:grid-cols-3 gap-5">
             @forelse($victories as $petition)
-            <article class="bg-white border border-border rounded-lg shadow-elev-1 p-4 min-w-0">
-                <span class="bg-success-soft text-ink rounded-full px-2 py-1 text-xs">{{ __('home.victory_badge') }}</span>
-                <h3 class="text-base font-semibold break-words my-3"><a class="text-ink hover:text-brand" href="{{ lroute('petition.show', ['slug'=>$petition->tr_slug, 'id'=>$petition->id]) }}">{{ $petition->tr_title }}</a></h3>
-                <p class="text-sm text-muted break-words">{{ \Illuminate\Support\Str::limit(strip_tags($petition->outcome_summary ?? ''), 140) }}</p>
-                <div class="mt-3">@include('home.author', ['petition'=>$petition, 'compact'=>true, 'date'=>$petition->outcome_at->locale(app()->getLocale())->translatedFormat('F Y')])</div>
-            </article>
+                @include('home.campaign-card', ['petition'=>$petition, 'goalReached'=>true])
             @empty
-            <p class="text-sm text-muted md:col-span-3">{{ __('home.victories_empty') }}</p>
+                <p class="text-sm text-muted md:col-span-3">{{ __('home.victories_empty') }}</p>
             @endforelse
         </div>
     </x-ui.container>
 </section>
 
-@if($directoryReady && $causes->isNotEmpty())
-<section class="py-10 md:pt-12 md:pb-8" data-home-causes aria-labelledby="home-causes-title">
+@if($categories->isNotEmpty())
+<section class="py-10 md:pt-12 md:pb-8" data-home-causes data-home-categories aria-labelledby="home-causes-title">
     <x-ui.container>
         <h2 id="home-causes-title" class="text-2xl font-bold mb-5">{{ __('home.causes_title') }}</h2>
-        <ul class="flex flex-wrap gap-2">@foreach($causes as $cause)<li><a class="inline-flex gap-2 bg-white border border-border text-ink rounded-full px-3 py-2 text-sm hover:underline" href="{{ lroute('organizations.explore', ['cause'=>$cause->slug]) }}">{{ $cause->label() }} <span class="text-muted">{{ number_format($cause->organization_count) }}</span></a></li>@endforeach</ul>
+        <ul class="flex flex-wrap gap-2">@foreach($categories as $category)<li><a class="inline-flex gap-2 bg-white border border-border text-ink rounded-full px-3 py-2 text-sm hover:underline" href="{{ lroute('petitions.byCategory', ['categorySlug'=>$category->tr_slug, 'category'=>$category->id]) }}">{{ $category->tr_name }}</a></li>@endforeach</ul>
     </x-ui.container>
 </section>
 @endif

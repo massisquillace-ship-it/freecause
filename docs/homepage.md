@@ -60,3 +60,11 @@ After the owner approved showing sparse real data, the integrated suite against 
 The owner supplied the [organizations-first visual reference](homepage-organizations-reference.png). Align the homepage with its compact spacing, right-aligned section links, bordered cards and short status badges, inset claim banner, outlined secondary actions and numbered steps. The public empty state uses the same new layout and petition copy. The later owner override above removes the launch-day homepage minimums. Existing logos and locale-dependent content remain authoritative.
 
 Private review data explicitly marks six campaigns, three victories and editorial placeholder cards as fictional; it never enters production. The preview magazine uses a separate SQLite fixture without WordPress users. Validate IT/EN/FR on mobile and desktop, review official-container screenshot changes, and purge both hostnames and slash variants after release.
+
+## Owner update — goals, categories and organization badges
+
+Homepage “Victories” now means public petitions with a positive signature goal and `signature_count >= goal_signatures`, in the displayed locale, regardless of personal or organization attribution or age. The badge explicitly says **signature goal reached**; this does not invent or rewrite a campaign outcome. Show six cards with a link to the complete paginated `/petitions?goal=reached` list. Goal-filtered listing caches are separate and search/pagination preserve the filter. Existing organizer-reported outcomes and organization-profile outcomes are unchanged.
+
+“Explore by cause” uses all active petition categories and their existing localized category URLs, independently of the organization gate. It does not use organization causes or omit categories with no organizations. Home petition cards show a blue badge-check only for organizations currently verified by FreeCause; unclaimed organizations retain a neutral label. Personal authors keep their privacy preferences.
+
+Global scope: petitions are filtered by the displayed language, never by Italy or another country. Positive-goal tests include US and Brazilian petitions in the same English view. Without explicit country context, organization hero and weekly headings use worldwide copy rather than Europe.

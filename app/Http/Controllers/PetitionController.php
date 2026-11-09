@@ -203,11 +203,14 @@ class PetitionController extends Controller
         $locale = normalize_locale($locale);
 
         $search = trim((string) request('q', ''));
-        $page = max(1, min((int) request('page', 1), 500));
+        $pageLimit = request('goal') === 'reached' ? 10000 : 500;
+        $page = max(1, min((int) request('page', 1), $pageLimit));
 
         $categories = Category::cachedActive($locale);
 
-        $query = self::listingQuery($locale);
+        $goalReached = request('goal') === 'reached';
+        $query = self::listingQuery($locale)->when($goalReached, fn ($q) => $q->goalReached());
+        $goalCacheSuffix = $goalReached ? ':goal-reached' : '';
 
         if ($search !== '') {
             self::applySearch($query, $search);
@@ -232,7 +235,7 @@ class PetitionController extends Controller
 
                 $petitions = $this->cachedListingPage(
                     $query,
-                    CacheKeys::petitionsTrending($locale, $page),
+                    CacheKeys::petitionsTrending($locale, $page).$goalCacheSuffix,
                     now()->addMinutes(10),
                     $page,
                     fn ($q) => $q->leftJoinSub($recent, 'trend', 'trend.petition_id', '=', 'petitions.id')
@@ -243,7 +246,7 @@ class PetitionController extends Controller
             } else {
                 $petitions = $this->cachedListingPage(
                     $query,
-                    CacheKeys::petitionsIndex($locale, $page),
+                    CacheKeys::petitionsIndex($locale, $page).$goalCacheSuffix,
                     now()->addSeconds(300),
                     $page,
                     fn ($q) => $q->orderByDesc('petitions.id')
@@ -252,8 +255,9 @@ class PetitionController extends Controller
         }
 
         return view('pages.petitions-list', [
-            'pageTitle' => $search ? __('list.search_results', ['q' => $search]) : __('list.all_petitions'),
-            'heading' => $search ? __('list.search_results', ['q' => $search]) : __('list.petitions'),
+            'pageTitle' => $search ? __('list.search_results', ['q' => $search]) : ($goalReached ? __('home.goal_reached_petitions') : __('list.all_petitions')),
+            'heading' => $search ? __('list.search_results', ['q' => $search]) : ($goalReached ? __('home.goal_reached_petitions') : __('list.petitions')),
+            'goalReached' => $goalReached,
             'search' => $search,
             'categories' => $categories,
             'sort' => $search ? null : (in_array(request('sort'), ['signed', 'newest', 'trending'], true) ? request('sort') : 'newest'),

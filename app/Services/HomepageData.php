@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Http\Controllers\PetitionController;
-use App\Models\Cause;
+use App\Models\Category;
 use App\Models\Organization;
 use App\Models\Petition;
 use App\Models\User;
@@ -11,7 +11,6 @@ use App\Support\CacheVersion;
 use App\Support\Countries;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class HomepageData
 {
@@ -20,7 +19,7 @@ class HomepageData
         $locale = app()->getLocale();
         $country = strtoupper((string) $request->attributes->get('country', ''));
         $country = Countries::isValid($country) ? $country : null;
-        $key = 'homepage:v2:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
+        $key = 'homepage:v3:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
 
         $data = Cache::remember($key, 600, fn () => $this->load($locale, $country));
         // Identity choices and account deletion must take effect even while campaign data is cached.
@@ -32,8 +31,9 @@ class HomepageData
         }
         // One shared threshold also controls navigation and promotion; public_launch is unrelated.
         $data['directoryReady'] = $data['organizations_count'] >= max(1, (int) config('organizations.min_directory_count', 1));
+        $data['countryCode'] = $country;
         $data['countryName'] = $country && class_exists(\Locale::class)
-            ? \Locale::getDisplayRegion('und_'.$country, $locale) : ($country ?? __('home.hero.europe'));
+            ? \Locale::getDisplayRegion('und_'.$country, $locale) : ($country ?? __('home.hero.world'));
 
         return $data;
     }
@@ -74,16 +74,13 @@ class HomepageData
                 )).' END')->limit(6)->get();
         }
 
-        $victories = $this->petitions($locale)->where('outcome', 'victory')->whereNotNull('outcome_at')
-            ->orderByDesc('outcome_at')->orderByDesc('petitions.id')->limit(3)->get();
-        $causeCounts = DB::table('cause_organization')->joinSub(Organization::public()->select('id'), 'public_orgs', 'public_orgs.id', '=', 'cause_organization.organization_id')
-            ->selectRaw('cause_id, COUNT(*) AS organization_count')->groupBy('cause_id');
-        $causes = Cause::query()->joinSub($causeCounts, 'counts', 'counts.cause_id', '=', 'causes.id')
-            ->select('causes.*', 'counts.organization_count')->orderBy('causes.id')->limit(20)->get();
+        $victories = $this->petitions($locale)->goalReached()
+            ->orderByDesc('petitions.id')->limit(6)->get();
+        $categories = Category::cachedActive($locale)->filter(fn ($category) => filled($category->tr_name) && filled($category->tr_slug))->values();
 
         return [
             'organizations' => $organizations, 'organizationsTrending' => $organizationsTrending,
-            'campaigns' => $campaigns, 'campaignsTrending' => false, 'victories' => $victories, 'causes' => $causes,
+            'campaigns' => $campaigns, 'campaignsTrending' => false, 'victories' => $victories, 'categories' => $categories,
             'organizations_count' => (int) $stats->organizations_count, 'unclaimed_count' => (int) $stats->unclaimed_count,
             'verified_count' => (int) $stats->verified_count, 'total_signatures' => $totalSignatures,
         ];

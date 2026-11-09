@@ -151,6 +151,12 @@ class Petition extends Model
         return asset('legacy/images/demo-featured.jpg');
     }
 
+    public function scopeGoalReached($query)
+    {
+        return $query->where('petitions.goal_signatures', '>', 0)
+            ->whereColumn('petitions.signature_count', '>=', 'petitions.goal_signatures');
+    }
+
     public function scopeVisible($q)
     {
         return $q->where('status', 'published')

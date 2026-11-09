@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\RefreshHomepageMomentum;
+use App\Models\Category;
 use App\Models\Cause;
 use App\Models\Organization;
 use App\Models\Petition;
@@ -10,6 +11,7 @@ use App\Models\Signature;
 use App\Models\User;
 use App\Services\HomepageData;
 use App\Services\HomepageMagazine;
+use Database\Seeders\CategorySeeder;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\OrganizationCauseSeeder;
 use Database\Seeders\UserLevelSeeder;
@@ -58,7 +60,7 @@ class HomepageOrganizationsTest extends TestCase
             ->assertSee('Anyone can launch a campaign on FreeCause, alone or with their organization.')
             ->assertSee('How it works')->assertSee('/en/search')->assertSee('data-home-organizations', false)
             ->assertSee('data-home-campaigns', false)->assertSee('data-home-victories', false)
-            ->assertSee('No confirmed signatures yet.')->assertSee('No victories have been reported yet.')
+            ->assertSee('No confirmed signatures yet.')->assertSee('No petitions have reached their signature goal yet in this language.')
             ->assertDontSee('data-home-causes', false)->assertDontSee('data-home-claim', false)
             ->assertDontSee('Change the world!')->assertDontSee('Recent User Activities');
     }
@@ -68,7 +70,7 @@ class HomepageOrganizationsTest extends TestCase
         $org = $this->organization();
         $petition = $this->petition(['signature_count' => 1]);
         $response = $this->get('/en')->assertOk()->assertSee($org->name)->assertSee('data-home-campaigns', false)
-            ->assertSee('Public campaign '.$petition->id)->assertSee('No victories have been reported yet.');
+            ->assertSee('Public campaign '.$petition->id)->assertSee('No petitions have reached their signature goal yet in this language.');
         $this->assertTrue($response->viewData('directoryReady'));
         $this->assertCount(1, $response->viewData('organizations'));
         $this->assertCount(1, $response->viewData('campaigns'));
@@ -146,11 +148,55 @@ class HomepageOrganizationsTest extends TestCase
         $public->causes()->attach($cause);
         $private = $this->organization(['status' => 'suspended']);
         $private->causes()->attach($cause);
-        $response = $this->get('/en')->assertOk()->assertSee('data-home-claim', false)->assertSee('data-home-causes', false);
+        $response = $this->get('/en')->assertOk()->assertSee('data-home-claim', false);
         $this->assertSame([$public->id], $response->viewData('organizations')->pluck('id')->all());
-        $this->assertSame(1, (int) $response->viewData('causes')->first()->organization_count);
         $public->update(['status' => 'pending']);
         $this->get('/en')->assertDontSee('data-home-claim', false)->assertSee('Organizations will appear here as they become public.');
+    }
+
+    public function test_homepage_goals_include_personal_and_organization_petitions_only_in_the_current_locale(): void
+    {
+        $personal = $this->petition(['country' => 'US', 'signature_count' => 1000, 'goal_signatures' => 1000, 'created_at' => now()->subYears(13)]);
+        $org = $this->organization(['status' => 'verified', 'owner_user_id' => User::factory()->create()->id]);
+        $organized = $this->petition(['country' => 'BR', 'organization_id' => $org->id, 'signature_count' => 1200, 'goal_signatures' => 1000]);
+        $this->petition(['signature_count' => 999, 'goal_signatures' => 1000, 'outcome' => 'victory', 'outcome_at' => now()]);
+        $this->petition(['signature_count' => 100, 'goal_signatures' => 0]);
+        $this->petition(['signature_count' => 1000, 'status' => 'draft']);
+        $this->petition(['signature_count' => 1000, 'is_active' => false]);
+        $spanish = $this->petition(['signature_count' => 1000], 'es');
+        $response = $this->get('/en')->assertOk()->assertSee('Signature goal reached');
+        $this->assertSame([$organized->id, $personal->id], $response->viewData('victories')->pluck('id')->all());
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $this->assertSame(1, (new \DOMXPath($dom))->query('//section[@data-home-victories]//*[@data-organization-verified]')->length);
+        $this->get('/es')->assertOk()->assertViewHas('victories', fn ($rows) => $rows->pluck('id')->all() === [$spanish->id]);
+    }
+
+    public function test_goal_reached_listing_is_complete_paginated_language_filtered_and_cache_isolated(): void
+    {
+        $winner = $this->petition(['signature_count' => 1000]);
+        $open = $this->petition(['signature_count' => 10]);
+        $this->get('/en/petitions')->assertOk()->assertSee('Public campaign '.$open->id);
+        $filtered = $this->get('/en/petitions?goal=reached')->assertOk()
+            ->assertSee('Public campaign '.$winner->id)->assertDontSee('Public campaign '.$open->id)
+            ->assertSee('name="goal" value="reached"', false);
+        $this->assertSame([$winner->id], $filtered->viewData('petitions')->pluck('id')->all());
+        $this->get('/en/petitions?goal=reached&page=501')->assertOk()->assertViewHas('petitions', fn ($rows) => $rows->currentPage() === 501);
+        $this->get('/en/petitions?goal=reached&sort=signed')->assertOk()->assertViewHas('petitions', fn ($rows) => $rows->pluck('id')->all() === [$winner->id]);
+        $this->get('/en/petitions')->assertOk()->assertSee('Public campaign '.$open->id);
+    }
+
+    public function test_homepage_shows_all_active_petition_categories_even_without_organizations(): void
+    {
+        $this->seed(CategorySeeder::class);
+        $response = $this->get('/it')->assertOk()->assertSee('data-home-categories', false);
+        $categories = $response->viewData('categories');
+        $this->assertSame(Category::where('is_active', true)->count(), $categories->count());
+        foreach ($categories as $category) {
+            $response->assertSee($category->tr_name)->assertSee('/it/petitions/category-'.$category->tr_slug.'-'.$category->id);
+        }
+        $this->assertFalse($response->viewData('directoryReady'));
+        $this->assertDatabaseCount('organizations', 0);
     }
 
     public function test_refresh_counts_only_recent_confirmed_nonspam_and_resets_stale_counters_without_changing_totals(): void
@@ -190,7 +236,7 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue($data['campaigns']->contains('id', $local->id));
         $this->assertTrue($data['campaigns']->contains('id', $other->id));
         $request->attributes->set('country', 'not-a-country');
-        $this->assertSame('Europa', app(HomepageData::class)->forRequest($request)['countryName']);
+        $this->assertSame('mondo', app(HomepageData::class)->forRequest($request)['countryName']);
     }
 
     public function test_homepage_respects_nickname_choice_and_invalidates_it_after_changes(): void

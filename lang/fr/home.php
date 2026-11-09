@@ -1,15 +1,19 @@
 <?php
 
 return [
+    'trending_title_global' => 'En croissance dans le monde cette semaine',
+    'organization_verified' => 'Organisation vérifiée par FreeCause',
+    'goal_reached_petitions' => 'Pétitions ayant atteint leur objectif de signatures',
+    'see_all_victories' => 'Voir tous les objectifs atteints',
     'recently_signed_title' => 'Pétitions récemment signées',
     'recently_signed_subtitle' => 'Par dernière signature confirmée',
     'organizations_empty' => 'Les organisations apparaîtront ici une fois publiques.',
     'campaigns_empty' => 'Aucune signature confirmée pour le moment.',
-    'victories_empty' => 'Aucune victoire déclarée pour le moment.',
+    'victories_empty' => 'Aucune pétition n’a encore atteint son objectif de signatures dans cette langue.',
     'petitions_label' => 'Pétitions',
     'status_verified' => 'Vérifiée',
     'status_unclaimed' => 'Non revendiquée',
-    'victory_badge' => 'Victoire déclarée par les organisateurs',
+    'victory_badge' => 'Objectif de signatures atteint',
 
     'blog_read_more' => 'Lire la suite',
     'blog_subtitle' => 'Actualités et analyses récentes',
@@ -58,6 +62,8 @@ return [
     'what_p4' => 'C’est pourquoi FreeCause est gratuit, indépendant et conçu pour vous.',
     'what_title' => 'Qu’est-ce qu’une pétition en ligne',
     'hero' => [
+        'title_global' => 'Associations, comités et ONG dans le monde : qui sont-ils, pour quoi se battent-ils ?',
+        'world' => 'monde',
         'title' => 'Associations, comités et ONG en :country : qui sont-ils, pour quoi se battent-ils ?',
         'subtitle' => 'Chaque organisation a une page avec ses campagnes, signatures et résultats. Et chacun peut lancer une pétition, seul aussi.',
         'title_petitions' => 'Lancez une pétition, rassemblez des signatures, remettez-les.',
@@ -78,7 +84,7 @@ return [
     'popular_title' => 'Les campagnes les plus soutenues de l’année',
     'popular_subtitle' => 'Pétitions d’organisations et de citoyens, classées par signatures',
     'victories_title' => 'Victoires',
-    'victories_subtitle' => 'Résultats annoncés par les organisateurs',
+    'victories_subtitle' => 'Pétitions de particuliers et d’organisations ayant atteint leur objectif de signatures',
     'causes_title' => 'Explorer par cause',
     'claim_title' => ':count organisations ont déjà une page sur FreeCause. Et la vôtre ?',
     'claim_subtitle' => 'Ces pages proviennent de pétitions publiées depuis plus de 15 ans. Revendiquez la vôtre, vérifiez votre identité et commencez à la gérer.',
