@@ -134,7 +134,7 @@
                     </x-ui.empty>
                 @endforelse
 
-                @include('partials.pagination', ['paginator' => $signatures])
+                <x-ui.pagination :paginator="$signatures" />
 
             </div>
 

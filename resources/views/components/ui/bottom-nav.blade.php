@@ -5,7 +5,7 @@
 @endphp
 
 @if ($items->isNotEmpty())
-    <nav class="fcui-bottom-nav" data-bottom-nav aria-label="{{ __('nav.menu', [], app()->getLocale()) ?: 'FreeCause' }}">
+    <nav class="fcui-bottom-nav" data-bottom-nav aria-label="{{ __('nav.main') }}">
         @foreach ($items as $item)
             @if (! empty($item['href']))
                 <a

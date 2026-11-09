@@ -10,6 +10,7 @@ return [
     'menu' => 'Menu',
     'my_petitions' => 'Mijn petities',
     'logout' => 'Uitloggen',
+    'main' => 'Hoofdnavigatie',
     'magazine' => 'Tijdschrift',
     'magazine_back_home' => 'Terug naar home',
     'magazine_body' => 'Het FreeCause-magazine is in aanbouw. Kom binnenkort terug voor artikelen, gidsen en verhalen over activisme en verandering.',

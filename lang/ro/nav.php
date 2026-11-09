@@ -10,6 +10,7 @@ return [
     'menu' => 'Meniu',
     'my_petitions' => 'Petițiile mele',
     'logout' => 'Deconectare',
+    'main' => 'Navigare principală',
     'magazine' => 'Revistă',
     'magazine_back_home' => 'Înapoi la pagina principală',
     'magazine_body' => 'Revista FreeCause este în construcție. Reveniți în curând pentru articole, ghiduri și povești despre activism și schimbare.',

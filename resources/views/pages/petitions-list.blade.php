@@ -184,7 +184,7 @@
                     @endforelse
                 </div>
 
-                @include('partials.pagination', ['paginator' => $petitions])
+                <x-ui.pagination :paginator="$petitions" />
 
                 {{-- Ads: banner468 (tablet+) --}}
                 <x-ads.slot name="banner468" class="text-center mb-4 hidden md:block" />

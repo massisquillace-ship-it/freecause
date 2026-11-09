@@ -24,7 +24,7 @@
                         data-no-progress data-close-details
                         @if ($lang->code === $locale) aria-current="true" @endif>
                         @if ($lang->flag)
-                            <img class="w-6 h-6 rounded-full" loading="lazy" decoding="async" src="{{ asset($lang->flag) }}" width="20" alt="{{ $lang->name }}">
+                            <img class="w-6 h-6 rounded-full" loading="lazy" decoding="async" src="{{ asset($lang->flag) }}" width="20" alt="">
                         @endif
                         <span class="truncate min-w-0">{{ $lang->name }}</span>
                     </a>
