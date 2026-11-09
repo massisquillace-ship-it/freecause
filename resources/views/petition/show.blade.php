@@ -700,5 +700,6 @@
 @endpush
 
 @push('scripts')
+    <script src="{{ asset('legacy/js-v2/bootstrap.bundle.min.js') }}" defer></script>
     <script src="{{ asset('legacy/js-v2/petition-show.js') }}"></script>
 @endpush

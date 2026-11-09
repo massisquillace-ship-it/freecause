@@ -162,10 +162,6 @@
 
     </main>
 
-    @unless(request()->routeIs('organizations.show'))
-        <script src="{{ asset('legacy/js-v2/bootstrap.bundle.min.js') }}" defer></script>
-    @endunless
-
     <script src="{{ asset('legacy/js-v2/form-busy.js') }}" defer></script>
 
     @stack('scripts')

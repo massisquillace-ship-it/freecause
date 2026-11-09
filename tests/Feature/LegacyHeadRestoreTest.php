@@ -24,4 +24,12 @@ class LegacyHeadRestoreTest extends TestCase
         $this->assertStringContainsString('www.googletagmanager.com', (string) $csp);
         $this->assertStringContainsString('google-analytics.com', (string) $csp);
     }
+
+    public function test_bootstrap_bundle_loads_only_on_pages_that_use_it(): void
+    {
+        $this->withoutMiddleware(SetLocale::class);
+
+        $this->get('/en')->assertOk()->assertDontSee('bootstrap.bundle.min.js', false);
+        $this->get('/en/faqs')->assertOk()->assertSee('bootstrap.bundle.min.js', false);
+    }
 }
