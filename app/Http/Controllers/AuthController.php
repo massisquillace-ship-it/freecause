@@ -8,8 +8,10 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Jobs\CleanupDeletedAccount;
 use App\Jobs\SendWelcomeEmail;
 use App\Mail\VerifyAccountMail;
+use App\Models\AccountDeletionCleanup;
 use App\Models\Language;
 use App\Models\User;
 use App\Models\UserLevel;
@@ -385,21 +387,17 @@ class AuthController extends Controller
         $userEmail = $u->email;
 
         try {
-            $this->wordPressUserDeletion->delete($u);
-        } catch (\Throwable $e) {
-            Log::error('Account deletion aborted because WordPress cleanup failed: '.$e->getMessage());
-
-            return back()->withErrors([
-                'delete_account' => __('profile.account_delete_failed'),
-            ]);
-        }
-
-        try {
-            DB::transaction(function () use ($u) {
+            $cleanup = DB::transaction(function () use ($u) {
+                $cleanup = AccountDeletionCleanup::create([
+                    'user_id' => $u->id,
+                    'email' => $u->email,
+                ]);
                 app(OrganizationLifecycle::class)->suspendForDeletedOwner($u);
                 // SessionGuard rotates the remember token during logout; clear it so it cannot reinsert this deleted model.
                 $u->setRememberToken(null);
                 $u->delete();
+
+                return $cleanup;
             }, 3);
         } catch (\Throwable $e) {
             AppLog::error(
@@ -412,6 +410,17 @@ class AuthController extends Controller
                 'delete_account' => __('profile.account_delete_failed'),
             ]);
         }
+
+        DB::afterCommit(function () use ($cleanup) {
+            try {
+                CleanupDeletedAccount::dispatch($cleanup->id);
+            } catch (\Throwable $e) {
+                Log::warning('Account deletion cleanup dispatch deferred', [
+                    'cleanup_id' => $cleanup->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
 
         Auth::guard('web')->logout();
         $request->session()->invalidate();
