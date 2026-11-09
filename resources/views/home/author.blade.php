@@ -11,12 +11,14 @@
         @if(!($compact ?? false))
         @if($publicOrg->status === 'verified' && $publicOrg->logo_path)<img src="{{ Storage::disk('public')->url($publicOrg->logo_path) }}" width="24" height="24" loading="lazy" class="size-6 rounded-sm object-cover shrink-0" alt="">@else<x-lucide-building class="size-6 shrink-0" aria-hidden="true" />@endif
         @endif
-        <a href="{{ lroute('organizations.show', ['slug'=>$publicOrg->slug]) }}" class="text-muted break-words hover:underline">{{ $publicOrg->name }}</a>
+        <span class="inline-flex items-center gap-1 min-w-0 flex-1">
+        <a href="{{ lroute('organizations.show', ['slug'=>$publicOrg->slug]) }}" class="text-muted break-words hover:underline min-w-0">{{ $publicOrg->name }}</a>
         @if($publicOrg->status === 'verified')
             <span class="inline-flex text-info shrink-0" role="img" aria-label="{{ __('home.organization_verified') }}" title="{{ __('home.organization_verified') }}" data-organization-verified><x-lucide-badge-check class="size-4" aria-hidden="true" /></span>
         @else
-            <span class="text-xs text-muted">{{ __('home.status_unclaimed') }}</span>
+            <span class="text-xs text-muted shrink-0">{{ __('home.status_unclaimed') }}</span>
         @endif
+        </span>
     @else
         @if(!($compact ?? false))<x-lucide-circle-user-round class="size-6 shrink-0" aria-hidden="true" />@endif<span class="break-words">{{ __('home.started_by', ['name'=>$authorName]) }}</span>
     @endif
