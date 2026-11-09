@@ -4,6 +4,7 @@
     $progress = min(100, (int) round($petition->signature_count / $goal * 100));
 @endphp
 <article class="bg-white border border-border rounded-lg shadow-elev-1 p-4 min-w-0 h-full flex flex-col">
+    @if($goalReached ?? false)<span class="bg-success-soft text-ink rounded-full px-2 py-1 text-xs self-start mb-3">{{ __('home.victory_badge') }}</span>@endif
     <h3 class="text-base leading-snug font-semibold break-words mb-3"><a href="{{ $campaignUrl }}" class="text-ink hover:text-brand">{{ $petition->tr_title }}</a></h3>
     @include('home.author', ['petition'=>$petition])
     <div class="mt-auto pt-4">
