@@ -7,6 +7,7 @@ use App\Models\Language;
 use App\Models\Petition;
 use App\Models\Signature;
 use App\Models\User;
+use App\Models\UserLevel;
 use App\Providers\AppServiceProvider;
 use App\Support\Countries;
 use App\Support\Settings;
@@ -590,6 +591,19 @@ class AuthenticationTest extends TestCase
         $this->assertFalse($user->fresh()->verified);
         $this->assertDatabaseHas('signatures', ['id' => $signature->id, 'confirmed' => 0]);
         $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'signature_count' => 0]);
+    }
+
+    public function test_is_banned_is_false_once_banned_until_passed_even_with_the_banned_level(): void
+    {
+        $levelId = UserLevel::where('name', 'banned')->value('id');
+
+        $expired = User::factory()->create(['level_id' => $levelId, 'banned_until' => now()->subMinute()]);
+        $active = User::factory()->create(['level_id' => $levelId, 'banned_until' => now()->addDay()]);
+        $permanent = User::factory()->create(['level_id' => $levelId, 'banned_until' => null]);
+
+        $this->assertFalse($expired->isBanned());
+        $this->assertTrue($active->isBanned());
+        $this->assertTrue($permanent->isBanned());
     }
 
     public function test_user_can_register(): void
