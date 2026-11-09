@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Stäng annons',
     'breadcrumb' => 'Sökväg',
     'pagination' => 'Sidnumrering',
+    'previous_page' => 'Föregående sida',
+    'next_page' => 'Nästa sida',
     'back_to_top' => 'Tillbaka till toppen',
     'offline' => 'Du verkar vara offline. Anslut igen och skicka på nytt.',
 ];
