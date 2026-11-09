@@ -13,8 +13,10 @@ use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
 {
@@ -53,10 +55,14 @@ class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
 
             return;
         }
-        DB::transaction(function () {
+        $claimToken = (string) Str::uuid();
+        $claimed = DB::transaction(function () use ($claimToken) {
             $notice = OrganizationNotification::whereKey($this->notificationId)->lockForUpdate()->first();
-            if (! $notice || $notice->sent_at || $notice->cancelled_at) {
-                return;
+            $claimActive = $notice?->claimed_at
+                && Carbon::parse($notice->claimed_at)->gt(now()->subMinutes(10));
+            if (! $notice || $notice->sent_at || $notice->cancelled_at
+                || $claimActive) {
+                return null;
             }
             $org = Organization::find($notice->organization_id);
             $recipient = $notice->recipient_user_id ? User::find($notice->recipient_user_id) : null;
@@ -66,24 +72,43 @@ class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
             if (! $org || $staleClaimRejection || (! $notice->to_admin && (! $recipient || (! $claimRejection && (int) $org->owner_user_id !== (int) $recipient->id) || $recipient->isBanned()))) {
                 $notice->forceFill(['cancelled_at' => now()])->save();
 
-                return;
+                return null;
             }
             $address = $notice->to_admin ? (config('organizations.admin_email') ?: Settings::get('email_to_staff', '', 'global')) : $recipient->email;
             if (! filter_var($address, FILTER_VALIDATE_EMAIL)) {
                 $this->release(3600);
 
-                return;
+                return null;
             }
             $locale = $notice->to_admin ? Locale::toShort((string) config('organizations.admin_locale', 'en')) : Locale::toShort($recipient->locale);
-            try {
-                Mail::to($address)->send(new OrganizationStatusMail($notice->event, $notice->payload, $locale, $notice->to_admin, $org->id));
-            } catch (\Throwable $e) {
-                if (MailQuota::causedBy($e)) {
-                    MailQuota::trip();
-                }
-                throw $e;
-            }
-            $notice->forceFill(['sent_at' => now()])->save();
+            $notice->forceFill(['claimed_at' => now(), 'claim_token' => $claimToken])->save();
+
+            return [$address, $notice->event, $notice->payload, $locale, $notice->to_admin, $org->id];
         });
+
+        if (! $claimed) {
+            return;
+        }
+
+        try {
+            Mail::to($claimed[0])->send(new OrganizationStatusMail($claimed[1], $claimed[2], $claimed[3], $claimed[4], $claimed[5]));
+        } catch (\Throwable $e) {
+            if (MailQuota::causedBy($e)) {
+                MailQuota::trip();
+            }
+            DB::transaction(fn () => OrganizationNotification::query()
+                ->whereKey($this->notificationId)
+                ->whereNull('sent_at')
+                ->where('claim_token', $claimToken)
+                ->update(['claimed_at' => null, 'claim_token' => null]));
+
+            throw $e;
+        }
+
+        DB::transaction(fn () => OrganizationNotification::query()
+            ->whereKey($this->notificationId)
+            ->whereNull('sent_at')
+            ->where('claim_token', $claimToken)
+            ->update(['sent_at' => now(), 'claimed_at' => null, 'claim_token' => null]));
     }
 }

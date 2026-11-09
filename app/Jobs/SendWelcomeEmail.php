@@ -11,8 +11,10 @@ use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class SendWelcomeEmail implements ShouldBeUnique, ShouldQueue
 {
@@ -52,26 +54,54 @@ class SendWelcomeEmail implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // A row lock also prevents duplicate delivery if an expired unique lock is reacquired.
-        DB::transaction(function () {
+        $claimToken = (string) Str::uuid();
+        $claimed = DB::transaction(function () use ($claimToken) {
             $user = User::query()->lockForUpdate()->find($this->userId);
+            $claimActive = $user?->welcome_email_claimed_at
+                && Carbon::parse($user->welcome_email_claimed_at)->gt(now()->subMinutes(10));
 
             if (! $user || ! $user->welcome_email_pending || $user->welcome_email_sent_at
-                || ! $user->verified || ! $user->hasCompleteProfile()) {
-                return;
+                || ! $user->verified || ! $user->hasCompleteProfile()
+                || $claimActive) {
+                return null;
             }
 
-            try {
-                Mail::to($user->email)->send(new WelcomeAccountMail(Locale::toShort($user->locale)));
-            } catch (\Throwable $e) {
-                if (MailQuota::causedBy($e)) {
-                    MailQuota::trip();
-                }
+            $user->forceFill([
+                'welcome_email_claimed_at' => now(),
+                'welcome_email_claim_token' => $claimToken,
+            ])->save();
 
-                throw $e;
-            }
-
-            $user->forceFill(['welcome_email_sent_at' => now(), 'welcome_email_pending' => false])->save();
+            return [$user->email, Locale::toShort($user->locale)];
         });
+
+        if (! $claimed) {
+            return;
+        }
+
+        try {
+            Mail::to($claimed[0])->send(new WelcomeAccountMail($claimed[1]));
+        } catch (\Throwable $e) {
+            if (MailQuota::causedBy($e)) {
+                MailQuota::trip();
+            }
+            DB::transaction(fn () => User::query()
+                ->whereKey($this->userId)
+                ->whereNull('welcome_email_sent_at')
+                ->where('welcome_email_claim_token', $claimToken)
+                ->update(['welcome_email_claimed_at' => null, 'welcome_email_claim_token' => null]));
+
+            throw $e;
+        }
+
+        DB::transaction(fn () => User::query()
+            ->whereKey($this->userId)
+            ->whereNull('welcome_email_sent_at')
+            ->where('welcome_email_claim_token', $claimToken)
+            ->update([
+                'welcome_email_sent_at' => now(),
+                'welcome_email_pending' => false,
+                'welcome_email_claimed_at' => null,
+                'welcome_email_claim_token' => null,
+            ]));
     }
 }

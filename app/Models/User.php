@@ -101,6 +101,7 @@ class User extends Authenticatable implements HasLocalePreference
         'verified' => 'boolean',
         'welcome_email_pending' => 'boolean',
         'welcome_email_sent_at' => 'datetime',
+        'welcome_email_claimed_at' => 'datetime',
         'preferred_language_confirmed_at' => 'datetime',
         'banned_until' => 'datetime',
         'notify_milestones' => 'boolean',
