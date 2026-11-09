@@ -17,7 +17,7 @@ class RecentActivityPrivacyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_warmed_recent_activity_respects_current_identity_and_guest_names(): void
+    public function test_warmed_homepage_no_longer_publishes_signer_activity(): void
     {
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class]);
         $petition = Petition::factory()->create(['status' => 'published', 'is_active' => true]);
@@ -27,15 +27,14 @@ class RecentActivityPrivacyTest extends TestCase
             Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => $user->id, 'name' => 'Old snapshot', 'confirmed' => true, 'is_spam' => false]);
             cache()->forget(CacheKeys::homeRecent('en'));
             $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
-            $rows = collect(cache()->get(CacheKeys::homeRecent('en')));
-            $this->assertContains($expected, $rows->pluck('display_name'));
-            $this->assertObjectNotHasProperty('user_id', $rows->first());
+            $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
+            $this->get('/en')->assertOk()->assertDontSee($expected)->assertDontSee('Old snapshot');
         }
         Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => null, 'name' => 'Guest public name', 'confirmed' => true, 'is_spam' => false]);
         cache()->forget(CacheKeys::homeRecent('en'));
         $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
-        $this->assertContains('Guest public name', collect(cache()->get(CacheKeys::homeRecent('en')))->pluck('display_name'));
-        $this->get('/en')->assertOk()->assertSee('publicnick');
+        $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
+        $this->get('/en')->assertOk()->assertDontSee('Guest public name')->assertDontSee('publicnick');
     }
 
     public function test_identity_changes_invalidate_public_home_cache(): void
