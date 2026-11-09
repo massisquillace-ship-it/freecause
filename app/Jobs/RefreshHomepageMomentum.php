@@ -39,6 +39,17 @@ class RefreshHomepageMomentum implements ShouldBeUnique, ShouldQueue
             $this->writeCounters('organizations', $organizations);
         });
 
+        // Keep all-time recency separate from the weekly popularity counters.
+        // This aggregation runs in the worker, never during a public request.
+        $recentIds = DB::table('signatures')
+            ->joinSub(Petition::visible()->select('id'), 'public_petitions', 'public_petitions.id', '=', 'signatures.petition_id')
+            ->join('petition_translations as translations', 'translations.petition_id', '=', 'signatures.petition_id')
+            ->whereNotNull('translations.title')
+            ->where('confirmed', true)->where('is_spam', false)->where('signatures.created_at', '<=', now())
+            ->selectRaw('signatures.petition_id, translations.locale, MAX(signatures.created_at) AS latest_signed_at')
+            ->groupBy('signatures.petition_id', 'translations.locale')->orderByDesc('latest_signed_at')->orderByDesc('signatures.petition_id')
+            ->get()->groupBy('locale')->map(fn ($rows) => $rows->take(6)->pluck('petition_id')->map(fn ($id) => (int) $id)->all())->all();
+        Cache::put('homepage:recently-signed', $recentIds, now()->addHours(2));
         Cache::put('homepage:total-signatures', (int) Petition::visible()->sum('signature_count'), now()->addHours(2));
         CacheVersion::bump('home');
     }
