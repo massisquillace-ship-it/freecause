@@ -181,6 +181,7 @@ class HomepageOrganizationsTest extends TestCase
             ->assertSee('Public campaign '.$winner->id)->assertDontSee('Public campaign '.$open->id)
             ->assertSee('name="goal" value="reached"', false);
         $this->assertSame([$winner->id], $filtered->viewData('petitions')->pluck('id')->all());
+        $this->get('/en/petitions?goal=reached&page=501')->assertOk()->assertViewHas('petitions', fn ($rows) => $rows->currentPage() === 501);
         $this->get('/en/petitions?goal=reached&sort=signed')->assertOk()->assertViewHas('petitions', fn ($rows) => $rows->pluck('id')->all() === [$winner->id]);
         $this->get('/en/petitions')->assertOk()->assertSee('Public campaign '.$open->id);
     }
