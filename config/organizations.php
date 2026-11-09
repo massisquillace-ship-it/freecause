@@ -5,7 +5,7 @@ $legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-1
 return [
     // Applications, optional consent capture and notification delivery are independent switches.
     'public_launch' => env('ORGANIZATIONS_PUBLIC_LAUNCH', false),
-    'min_directory_count' => (int) env('ORGANIZATIONS_MIN_DIRECTORY_COUNT', 20),
+    'min_directory_count' => (int) env('ORGANIZATIONS_MIN_DIRECTORY_COUNT', 1),
     'consent_enabled' => env('ORGANIZATIONS_CONSENT_ENABLED', false),
     'applications_open' => env('ORGANIZATIONS_APPLICATIONS_OPEN', false),
     // Keep the accepted version coupled to its immutable, tracked document.

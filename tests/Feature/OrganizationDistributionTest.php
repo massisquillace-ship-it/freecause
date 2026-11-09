@@ -209,7 +209,7 @@ class OrganizationDistributionTest extends TestCase
         $one = $this->org();
         $two = $this->org();
         $pending = $this->org(null, ['status' => 'pending']);
-        $this->get('/en')->assertOk()->assertViewHas('organizations', fn ($orgs) => $orgs->isEmpty());
+        $this->get('/en')->assertOk()->assertViewHas('organizations', fn ($orgs) => $orgs->count() === 2);
         $this->get('/sitemap.xml')->assertSee('sitemap-organizations.xml');
         $this->get('/sitemap-organizations.xml')->assertOk()->assertSee('/en/org/'.$one->slug)->assertSee('/it/org/'.$one->slug)->assertDontSee('/de/org/'.$one->slug)->assertDontSee($pending->slug);
         $pending->update(['status' => 'verified', 'verified_at' => now()]);
@@ -217,7 +217,7 @@ class OrganizationDistributionTest extends TestCase
         $this->get('/en')->assertViewHas('organizations', fn ($orgs) => $orgs->count() === 3);
         $pending->update(['status' => 'suspended']);
         $this->get('/sitemap-organizations.xml')->assertDontSee($pending->slug);
-        $this->get('/en')->assertViewHas('organizations', fn ($orgs) => $orgs->isEmpty());
+        $this->get('/en')->assertViewHas('organizations', fn ($orgs) => $orgs->count() === 2);
     }
 
     public function test_notification_outbox_dispatches_only_after_commit_and_disappears_on_rollback(): void

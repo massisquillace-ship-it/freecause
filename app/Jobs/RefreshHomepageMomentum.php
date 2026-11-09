@@ -39,8 +39,28 @@ class RefreshHomepageMomentum implements ShouldBeUnique, ShouldQueue
             $this->writeCounters('organizations', $organizations);
         });
 
+        Cache::put('homepage:recently-signed', $this->recentPetitions(), now()->addHours(2));
         Cache::put('homepage:total-signatures', (int) Petition::visible()->sum('signature_count'), now()->addHours(2));
         CacheVersion::bump('home');
+    }
+
+    private function recentPetitions(): array
+    {
+        // The covering petition/confirmed/spam/date index supports per-petition MAX.
+        // Aggregate once before joining translations, then return at most six IDs per locale.
+        $latest = DB::table('signatures')->where('confirmed', true)->where('is_spam', false)
+            ->where('created_at', '<=', now())->selectRaw('petition_id, MAX(created_at) AS latest_signed_at')
+            ->groupBy('petition_id');
+        $ranked = Petition::visible()
+            ->joinSub($latest, 'recency', 'recency.petition_id', '=', 'petitions.id')
+            ->join('petition_translations as translations', 'translations.petition_id', '=', 'petitions.id')
+            ->whereNotNull('translations.title')
+            ->select(['recency.petition_id', 'translations.locale'])
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY translations.locale ORDER BY recency.latest_signed_at DESC, recency.petition_id DESC) AS recency_rank');
+
+        return DB::query()->fromSub($ranked, 'ranked')->where('recency_rank', '<=', 6)
+            ->orderBy('locale')->orderBy('recency_rank')->get()
+            ->groupBy('locale')->map(fn ($rows) => $rows->pluck('petition_id')->map(fn ($id) => (int) $id)->all())->all();
     }
 
     private function writeCounters(string $table, $counts): void

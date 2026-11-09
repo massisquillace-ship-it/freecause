@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'recently_signed_title' => 'Recently signed petitions',
+    'recently_signed_subtitle' => 'Ordered by the latest confirmed signature',
+    'organizations_empty' => 'Organizations will appear here as they become public.',
+    'campaigns_empty' => 'No confirmed signatures yet.',
+    'victories_empty' => 'No victories have been reported yet.',
+    'petitions_label' => 'Petitions',
+    'status_verified' => 'Verified',
+    'status_unclaimed' => 'Unclaimed',
+    'victory_badge' => 'Victory reported by organizer',
+
     'blog_read_more' => 'Read More',
     'blog_subtitle' => 'Stay updated with our latest insights and news',
     'blog_title' => 'Latest from Freecause magazine',

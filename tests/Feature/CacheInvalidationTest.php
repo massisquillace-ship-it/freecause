@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RefreshHomepageMomentum;
 use App\Models\Category;
 use App\Models\CategoryTranslation;
 use App\Models\Petition;
 use App\Models\PetitionTranslation;
+use App\Models\Signature;
 use App\Support\CacheVersion;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
@@ -134,6 +136,9 @@ class CacheInvalidationTest extends TestCase
             $other = Petition::factory()->create(['status' => 'published', 'is_active' => true, 'signature_count' => 100]);
             PetitionTranslation::factory()->create(['petition_id' => $other->id, 'locale' => 'en']);
         }
+
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'is_spam' => false]);
+        (new RefreshHomepageMomentum)->handle();
 
         $this->get('/en')
             ->assertOk()

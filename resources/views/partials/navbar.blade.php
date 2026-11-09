@@ -1,7 +1,7 @@
 @php
     $isAuthed = auth()->check();
     $c = $navbarContent ?? [];
-    $explore = $c['nav_explore'] ?? __('nav.explore');
+    $explore = request()->routeIs('home') ? __('home.petitions_label') : ($c['nav_explore'] ?? __('nav.explore'));
     if (preg_match('~^(?:https?://|/)~i', trim($explore))) { $explore = __('nav.explore'); }
     $organizationRoute = request()->routeIs('organizations', 'organizations.*');
     $showOrganizationNav = \App\Models\Organization::directoryReady();
@@ -11,9 +11,9 @@
     $startFree = $showOrganizationNav ? __('organizations.claim_organization') : __('home.start_petition');
     $startTarget = $showOrganizationNav ? lroute('organizations.claim-search') : lroute('petition.create');
 @endphp
-<nav class="navbar navbar-expand-lg bg-white shadow-elev-1">
-    <div class="container">
-        <a class="navbar-brand" href="{{ lroute('home') }}">
+<nav class="navbar navbar-expand-lg bg-white shadow-elev-1 {{ request()->routeIs('home') ? 'fc-home-nav' : '' }}">
+    <div class="{{ request()->routeIs('home') ? 'mx-auto w-full px-3 max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] 2xl:max-w-[1320px] flex items-center justify-between' : 'container' }}">
+        <a class="navbar-brand shrink-0" href="{{ lroute('home') }}">
             <img src="{{ asset('legacy/images/logo7.png') }}" class="img-fluid" width="130" height="21" alt="FreeCause">
         </a>
 
@@ -31,41 +31,43 @@
 
         <div class="collapse navbar-collapse" id="fcNav">
             <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center">
-                @if($showOrganizationNav)<li class="nav-item"><a class="nav-link" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>@endif
+                <li class="nav-item"><a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ lroute('petitions.index') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('petitions.index') }}">
                         {{ $explore }}
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/magazine') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ url('/magazine') }}">
                         {{ $c['nav_magazine'] ?? __('nav.magazine') }}
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ lroute('faqs') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('faqs') }}">
                         {{ $help }}
                     </a>
                 </li>
                 @if (!$isAuthed)
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ lroute('login') }}">
+                        <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('login') }}">
                             {{ $loginLabel }}
                         </a>
                     </li>
                 @else
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ lroute('profile') }}">{{ auth()->user()->display_name }}</a>
+                        <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('profile') }}">{{ auth()->user()->display_name }}</a>
                     </li>
                     <li class="nav-item lg:ms-2 lg:me-3">
                         <form method="POST" action="{{ lroute('logout') }}" class="d-inline">
                             @csrf
-                            <button type="submit" class="nav-link">
+                            <button type="submit" class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}">
                                 {{ $c['nav_logout'] ?? __('nav.logout') }}
                             </button>
                         </form>
                     </li>
                 @endif
+
+                @if($showOrganizationNav)<li class="nav-item mt-2 lg:mt-0 lg:ms-2"><a class="fcui-btn fcui-btn--md fcui-btn--ghost border-border text-ink" href="{{ lroute('petition.create') }}">{{ __('home.start_petition') }}</a></li>@endif
 
                 <li class="nav-item mt-2 lg:mt-0 lg:ms-3">
                     <a class="fcui-btn fcui-btn--md fcui-btn--primary w-100 w-lg-auto" href="{{ $startTarget }}">
@@ -73,7 +75,6 @@
                     </a>
                 </li>
 
-                @if($showOrganizationNav)<li class="nav-item mt-2 lg:mt-0 lg:ms-2"><a class="fcui-btn fcui-btn--md fcui-btn--ghost" href="{{ lroute('petition.create') }}">{{ __('home.start_petition') }}</a></li>@endif
                 <li class="nav-item lg:ms-4 hidden lg:block">
                     @include('partials.language_switch')
                 </li>
@@ -96,7 +97,7 @@
             <x-lucide-circle-help aria-hidden="true" />
             <span>{{ $help }}</span>
         </a>
-        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('organizations.explore') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('home.organizations_label') }}</span></a>@endif
+        <a class="fcui-sheet-list__item" href="{{ lroute('organizations.explore') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('home.organizations_label') }}</span></a>
         <a class="fcui-sheet-list__item" href="{{ url('/magazine') }}">
             <x-lucide-newspaper aria-hidden="true" />
             <span>{{ $c['nav_magazine'] ?? __('nav.magazine') }}</span>

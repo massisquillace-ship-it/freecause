@@ -4,11 +4,12 @@ Implementation reference: [owner brief and gate clarification](specs/homepage-or
 
 ## Data and visibility
 
-- The only directory gate is `organizations.min_directory_count`, default 20 public verified/unclaimed organizations. Navigation, promotional claims, organization cards and causes share it. `public_launch` continues to govern organization indexing and application access only.
-- Below the gate, the hero and primary header action promote personal petitions. Campaigns, victories, how it works, magazine and footer retain their independent visibility rules. Individual creation remains accessible above the gate too, including the mobile bar.
-- Organization cards require at least three public records. Weekly ranking requires three qualifying organizations with at least 20 recent signatures; otherwise the total-signatures fallback is labeled “Most active”. Country-specific weekly headings use that country's organizations; the global fallback does not claim local growth.
-- Campaigns require at least 50 total signatures and three eligible records. Use weekly counters, otherwise most signed campaigns created within the last year. Both personal and organization-attributed campaigns participate. Victories are newest first and disappear when there are none.
-- Proof appears at 50 public organizations, the verified trust count at 10 verified organizations, and the claim banner at 20 unclaimed organizations in addition to the shared gate. Zero-count causes are omitted.
+- Owner override, 9 November: show even one real result. The shared `organizations.min_directory_count` defaults to **1**; there is no second homepage flag. `public_launch` still governs indexing/application access only.
+- Organizations navigation remains visible in desktop, mobile and footer, even before any public organization exists. Below the shared gate the new hero uses petition-centric copy; no legacy homepage blocks return.
+- Organization cards show any public verified/unclaimed records. Weekly ranking accepts one organization with recent signatures; otherwise use the honestly labeled total-signatures fallback.
+- Recently signed petitions show up to six public petitions in the current locale, ordered by their latest confirmed nonspam signature, regardless of age or total signatures. The worker prepares this list across all dates; future timestamps, drafts and inactive petitions are excluded. No signer identities are displayed.
+- Organization, recently signed and victory sections remain visible with translated empty states when no data exists. Victories are newest reported outcomes first; no fictional outcomes are added.
+- Proof/trust counts show actual nonzero values. The claim banner accepts one unclaimed organization; zero-count causes are omitted.
 
 `RefreshHomepageMomentum` runs hourly as a unique queued job. It counts only confirmed, nonspam signatures dated within the previous seven days, using existing date indexes; it resets stale counters and updates petition/organization counters transactionally. Public requests never aggregate raw signatures. Homepage payloads are cached for ten minutes per locale/country with existing home/sitemap invalidation versions. Public author identity is loaded in one fresh batch per request so nickname changes and bulk account deletion cannot leave stale names in a cached campaign card.
 
@@ -49,3 +50,13 @@ The standalone `/en/moderation-policy` URL currently returns 404. The trust-row 
 Use normal CI/Deployer, including its recovery snapshot before the additive two-column migration. Do not alter production application source or schema manually. After deployment, verify `/version`, the single gate, anonymous application behavior and existing transactional email settings. Leave normal mail delivery/retries enabled; the owner revoked the earlier SMTP pause. Only the private preview has outbound email/ads disabled.
 
 The hourly scheduler refreshes momentum counters. An initial queued `RefreshHomepageMomentum` may be dispatched after release to populate them immediately; it sends no email and changes no signature records. Refresh relevant public caches through the existing purge mechanism.
+
+## Latest launch-rule validation — 9 November 2026
+
+After the owner approved showing sparse real data, the integrated suite against main `4ece3a46` passed **1,286 tests / 7,284 assertions**. Targeted homepage/claims/privacy checks passed 37 tests / 343 assertions. Language parity, design-system lint and Vite build passed. IT/EN/FR at 375 and 1280 px pass serious/critical axe checks without horizontal overflow; the separate zero-organization fixture confirms the petition-centric hero and visible empty-state sections. The recency worker additionally passes 14 focused tests / 80 assertions, including independent six-item limits per locale. Its read-only production query returned six IDs for 13 locales and two for Greek in 16.5 seconds; it runs hourly in the worker, never in the public request. A covering-index MAX is computed before translation joins and a window rank returns only the required IDs. Official screenshot checks remain required before merge.
+
+## Visual alignment — 9 November 2026
+
+The owner supplied the [organizations-first visual reference](homepage-organizations-reference.png). Align the homepage with its compact spacing, right-aligned section links, bordered cards and short status badges, inset claim banner, outlined secondary actions and numbered steps. The public empty state uses the same new layout and petition copy. The later owner override above removes the launch-day homepage minimums. Existing logos and locale-dependent content remain authoritative.
+
+Private review data explicitly marks six campaigns, three victories and editorial placeholder cards as fictional; it never enters production. The preview magazine uses a separate SQLite fixture without WordPress users. Validate IT/EN/FR on mobile and desktop, review official-container screenshot changes, and purge both hostnames and slash variants after release.

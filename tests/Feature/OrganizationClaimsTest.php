@@ -79,7 +79,7 @@ class OrganizationClaimsTest extends TestCase
         @$dom->loadHTML($html);
         $this->assertSame(1, (new \DOMXPath($dom))->query('//nav[@data-bottom-nav]//a[contains(@href,"/create-petition")]')->length);
         $view = $this->view('partials.navbar', ['navbarContent' => ['nav_explore' => 'https://www.freecause.com/en/petitions']]);
-        $view->assertDontSee('>https://www.freecause.com/en/petitions<', false)->assertSee(__('nav.explore'));
+        $view->assertDontSee('>https://www.freecause.com/en/petitions<', false)->assertSee(__('home.petitions_label'));
     }
 
     public function test_launch_flag_controls_robots_and_sitemaps_without_stale_cache(): void
@@ -98,14 +98,14 @@ class OrganizationClaimsTest extends TestCase
         $this->get('/sitemap-organizations.xml')->assertOk()->assertSee('/org/'.$org->slug);
     }
 
-    public function test_threshold_hides_navigation_and_explore_has_only_claim_search_until_twenty(): void
+    public function test_navigation_remains_visible_even_when_directory_uses_a_configured_threshold(): void
     {
         config(['organizations.public_launch' => true]);
         for ($i = 0; $i < 19; $i++) {
             $this->org();
         }
         $html = $this->get('/en/organizations/explore')->assertOk()->assertSee('Find your organization')->assertDontSee('No organizations match these filters.')->getContent();
-        $this->assertSame(0, $this->navigationCount($html));
+        $this->assertSame(4, $this->navigationCount($html));
         foreach (['cause', 'country', 'sort'] as $field) {
             $this->assertStringNotContainsString('name="'.$field.'"', $html);
         }

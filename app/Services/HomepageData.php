@@ -20,7 +20,7 @@ class HomepageData
         $locale = app()->getLocale();
         $country = strtoupper((string) $request->attributes->get('country', ''));
         $country = Countries::isValid($country) ? $country : null;
-        $key = 'homepage:v1:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
+        $key = 'homepage:v2:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
 
         $data = Cache::remember($key, 600, fn () => $this->load($locale, $country));
         // Identity choices and account deletion must take effect even while campaign data is cached.
@@ -31,7 +31,7 @@ class HomepageData
             $petition->setRelation('user', $users->get($petition->user_id));
         }
         // One shared threshold also controls navigation and promotion; public_launch is unrelated.
-        $data['directoryReady'] = $data['organizations_count'] >= max(1, (int) config('organizations.min_directory_count', 20));
+        $data['directoryReady'] = $data['organizations_count'] >= max(1, (int) config('organizations.min_directory_count', 1));
         $data['countryName'] = $country && class_exists(\Locale::class)
             ? \Locale::getDisplayRegion('und_'.$country, $locale) : ($country ?? __('home.hero.europe'));
 
@@ -51,10 +51,10 @@ class HomepageData
         $totalSignatures = Cache::remember('homepage:total-signatures', 3600, fn () => (int) Petition::visible()->sum('signature_count'));
 
         $orgQuery = Organization::public()->select('organizations.*')->withCampaignTotals()->with(['causes', 'mainCampaign.translations']);
-        $organizations = (clone $orgQuery)->where('signatures_7d_cache', '>=', 20)
+        $organizations = (clone $orgQuery)->where('signatures_7d_cache', '>', 0)
             ->when($country, fn ($q) => $q->where('country', $country))
             ->orderByDesc('signatures_7d_cache')->orderByDesc('signatures_total')->orderBy('id')->limit(6)->get();
-        $organizationsTrending = $organizations->count() >= 3;
+        $organizationsTrending = $organizations->isNotEmpty();
         if (! $organizationsTrending) {
             $fallback = clone $orgQuery;
             if ($country) {
@@ -62,23 +62,16 @@ class HomepageData
             }
             $organizations = $fallback->orderByDesc('signatures_total')->orderBy('id')->limit(6)->get();
         }
-        if ($organizations->count() < 3) {
-            $organizations = collect();
-        }
 
-        $campaignQuery = $this->petitions($locale)->where('signature_count', '>=', 50);
-        if ($country) {
-            $campaignQuery->orderByRaw('CASE WHEN petitions.country = ? THEN 0 ELSE 1 END', [$country]);
-        }
-        $campaigns = (clone $campaignQuery)->where('signatures_7d_cache', '>', 0)
-            ->orderByDesc('signatures_7d_cache')->orderByDesc('petitions.id')->limit(6)->get();
-        $campaignsTrending = $campaigns->count() >= 3;
-        if (! $campaignsTrending) {
-            $campaigns = (clone $campaignQuery)->where('petitions.created_at', '>=', now()->subYear())
-                ->orderByDesc('signature_count')->orderByDesc('petitions.id')->limit(6)->get();
-        }
-        if ($campaigns->count() < 3) {
-            $campaigns = collect();
+        // The hourly job supplies only petition IDs, never signer identities.
+        $recentIds = (Cache::get('homepage:recently-signed', [])[$locale] ?? []);
+        $campaigns = collect();
+        if ($recentIds !== []) {
+            $campaigns = $this->petitions($locale)->whereIn('petitions.id', $recentIds)
+                ->orderByRaw('CASE petitions.id '.implode(' ', array_map(
+                    fn ($id, $rank) => 'WHEN '.(int) $id.' THEN '.(int) $rank,
+                    $recentIds, array_keys($recentIds)
+                )).' END')->limit(6)->get();
         }
 
         $victories = $this->petitions($locale)->where('outcome', 'victory')->whereNotNull('outcome_at')
@@ -90,7 +83,7 @@ class HomepageData
 
         return [
             'organizations' => $organizations, 'organizationsTrending' => $organizationsTrending,
-            'campaigns' => $campaigns, 'campaignsTrending' => $campaignsTrending, 'victories' => $victories, 'causes' => $causes,
+            'campaigns' => $campaigns, 'campaignsTrending' => false, 'victories' => $victories, 'causes' => $causes,
             'organizations_count' => (int) $stats->organizations_count, 'unclaimed_count' => (int) $stats->unclaimed_count,
             'verified_count' => (int) $stats->verified_count, 'total_signatures' => $totalSignatures,
         ];

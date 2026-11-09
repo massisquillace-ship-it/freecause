@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RefreshHomepageMomentum;
 use App\Models\Petition;
+use App\Models\Signature;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +27,7 @@ class ExampleTest extends TestCase
 
         $response = $this->get('/en');
 
-        $response->assertOk()->assertDontSee('data-home-campaigns', false)
+        $response->assertOk()->assertSee('data-home-campaigns', false)->assertSee('No confirmed signatures yet.')
             ->assertDontSee('featured-petition-tab-pane', false)
             ->assertSee('Start a petition, gather signatures, deliver them.');
     }
@@ -52,6 +54,9 @@ class ExampleTest extends TestCase
             $other = Petition::factory()->create(['status' => 'published', 'is_active' => true, 'signature_count' => 100]);
             $other->translations()->create(['locale' => 'en', 'title' => 'Other campaign '.$i, 'slug' => 'other-campaign-'.$i, 'description' => 'A public campaign.']);
         }
+
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'is_spam' => false]);
+        (new RefreshHomepageMomentum)->handle();
 
         $response = $this->get('/en');
         $expectedUrl = lroute('petition.show', [

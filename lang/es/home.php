@@ -1,6 +1,11 @@
 <?php
 
 return array_replace_recursive(require __DIR__.'/../en/home.php', [
+    'recently_signed_title' => 'Peticiones firmadas recientemente',
+    'recently_signed_subtitle' => 'Por la última firma confirmada',
+    'organizations_empty' => 'Las organizaciones aparecerán aquí cuando sean públicas.',
+    'campaigns_empty' => 'Todavía no hay firmas confirmadas.',
+    'victories_empty' => 'Todavía no se han declarado victorias.',
     'blog_read_more' => 'Leer más',
     'blog_subtitle' => 'Mantente actualizado con nuestras últimas noticias y opiniones',
     'blog_title' => 'Último de la revista Freecause',
