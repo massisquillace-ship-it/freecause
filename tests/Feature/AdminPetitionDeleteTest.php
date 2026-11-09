@@ -166,6 +166,35 @@ class AdminPetitionDeleteTest extends TestCase
         $this->assertDatabaseHas('petitions', ['id' => $petition->id]);
     }
 
+    public function test_delete_rejects_more_than_50_petitions(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petitions = Petition::factory()->count(51)->create();
+        $this->assertCount(51, $petitions);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), [
+            'ids' => $petitions->pluck('id')->all(),
+            'confirmed' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('ids');
+    }
+
+    public function test_delete_removes_45_petitions(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petitions = Petition::factory()->count(45)->create();
+
+        $this->postJson(route('admin.petitions.bulkDelete'), [
+            'ids' => $petitions->pluck('id')->all(),
+            'confirmed' => true,
+        ])->assertOk()->assertJson([
+            'ok' => true,
+            'deleted' => 45,
+            'restorable' => false,
+        ]);
+
+        $this->assertSame(0, Petition::whereKey($petitions->modelKeys())->count());
+    }
+
     public function test_edit_permission_does_not_grant_delete_and_delete_does_not_require_edit(): void
     {
         $level = UserLevel::create(['name' => 'petition_editor', 'visible_name' => 'Editor', 'is_system' => false]);
