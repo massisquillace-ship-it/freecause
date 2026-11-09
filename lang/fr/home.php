@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'trending_title_global' => 'En croissance dans le monde cette semaine',
     'organization_verified' => 'Organisation vérifiée par FreeCause',
     'goal_reached_petitions' => 'Pétitions ayant atteint leur objectif de signatures',
     'see_all_victories' => 'Voir tous les objectifs atteints',
@@ -61,6 +62,8 @@ return [
     'what_p4' => 'C’est pourquoi FreeCause est gratuit, indépendant et conçu pour vous.',
     'what_title' => 'Qu’est-ce qu’une pétition en ligne',
     'hero' => [
+        'title_global' => 'Associations, comités et ONG dans le monde : qui sont-ils, pour quoi se battent-ils ?',
+        'world' => 'monde',
         'title' => 'Associations, comités et ONG en :country : qui sont-ils, pour quoi se battent-ils ?',
         'subtitle' => 'Chaque organisation a une page avec ses campagnes, signatures et résultats. Et chacun peut lancer une pétition, seul aussi.',
         'title_petitions' => 'Lancez une pétition, rassemblez des signatures, remettez-les.',
