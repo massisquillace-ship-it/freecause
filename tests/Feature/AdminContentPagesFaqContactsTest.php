@@ -41,7 +41,7 @@ class AdminContentPagesFaqContactsTest extends TestCase
     {
         $this->get('/en/faqs')
             ->assertOk()
-            ->assertSee('aria-label="breadcrumb"', false)
+            ->assertSee('aria-label="Breadcrumb"', false)
             ->assertSee('accordion-button collapsed', false)
             ->assertSee('data-bs-toggle="collapse"', false);
     }
