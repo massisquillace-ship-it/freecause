@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'trending_title_global' => 'Growing around the world this week',
     'organization_verified' => 'Organization verified by FreeCause',
     'goal_reached_petitions' => 'Petitions that reached their signature goal',
     'see_all_victories' => 'See all goals reached',
@@ -61,6 +62,8 @@ return [
     'what_p4' => 'That’s why we built <span class="red">FreeCause - Online Petition</span>—free, independent, and made for you.',
     'what_title' => 'What is online petition',
     'hero' => [
+        'title_global' => 'Associations, committees and NGOs around the world: who they are, what they fight for.',
+        'world' => 'the world',
         'title' => 'Associations, committees and NGOs in :country: who they are, what they fight for.',
         'subtitle' => 'Every organization has a page with its campaigns, signatures and results. And anyone can start a petition, on their own.',
         'title_petitions' => 'Start a petition, gather signatures, deliver them.',
