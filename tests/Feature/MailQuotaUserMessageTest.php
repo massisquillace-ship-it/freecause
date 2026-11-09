@@ -185,6 +185,9 @@ class MailQuotaUserMessageTest extends TestCase
 
         $this->travel(49)->hours();
         $this->get("/en/verify/{$token}")
+            ->assertOk()
+            ->assertViewHas('expired', true);
+        $this->post("/en/verify/{$token}")
             ->assertRedirect('/en/resend-verification');
 
         $this->assertFalse((bool) $user->fresh()->verified);

@@ -27,7 +27,10 @@
         ['label' => $personalDataTitle, 'href' => lroute('personal-data-processing')],
     ];
     if (\App\Models\Organization::directoryReady()) {
-        $footerLinks[] = ['label' => __('organizations.nav'), 'href' => lroute('organizations')];
+        array_splice($footerLinks, 2, 0, [
+            ['label' => __('home.for_organizations'), 'href' => lroute('organizations')],
+            ['label' => __('organizations.claim_organization'), 'href' => lroute('organizations.claim-search')],
+        ]);
     }
 @endphp
 

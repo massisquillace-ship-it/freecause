@@ -61,6 +61,11 @@ class Organization extends Model
         return $this->hasMany(Petition::class);
     }
 
+    public function mainCampaign()
+    {
+        return $this->hasOne(Petition::class)->ofMany(['signature_count' => 'max', 'id' => 'max'], fn ($q) => $q->visible());
+    }
+
     // Read only denormalized counters; never scan raw signatures on public pages.
     public function scopeWithCampaignTotals($query)
     {

@@ -63,7 +63,7 @@ class OrganizationClaimsTest extends TestCase
         $dom = new \DOMDocument;
         @$dom->loadHTML($html);
 
-        return (new \DOMXPath($dom))->query('//a[normalize-space(.)="For organizations"]')->length;
+        return (new \DOMXPath($dom))->query('//a[normalize-space(.)="For organizations" or normalize-space(.)="Organizations"]')->length;
     }
 
     public function test_shared_header_cookie_anchor_and_contextual_mobile_cta(): void
@@ -112,7 +112,7 @@ class OrganizationClaimsTest extends TestCase
         $this->assertStringNotContainsString('Create Your Account', $html);
         $this->org();
         $html = $this->get('/en/organizations/explore')->assertOk()->assertSee('name="cause"', false)->getContent();
-        $this->assertSame(3, $this->navigationCount($html));
+        $this->assertSame(4, $this->navigationCount($html));
         $this->get('/en/organizations/explore?q=DoesNotExist')->assertOk()->assertSee('No organizations match these filters.')->assertSee('Reset filters');
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive(require __DIR__.'/../en/home.php', [
     'blog_read_more' => 'Meer informatie',
     'blog_subtitle' => 'Blijf op de hoogte van onze laatste inzichten en nieuws',
     'blog_title' => 'Laatste van Freecause magazine',
@@ -47,4 +47,4 @@ return [
     'what_p3' => 'Zonder ruimte om onze oorzaken te bepleiten, hoe klein of dagelijks ze ook lijken, voelt echte vrijheid zich onbereikbaar.',
     'what_p4' => 'Daarom hebben we <span class="red">FreeCause - Online Petition</span>— gratis, onafhankelijk en voor u gemaakt.',
     'what_title' => 'Wat is online petitie',
-];
+]);

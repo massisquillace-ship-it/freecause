@@ -3,7 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION=$(node -p "require('@playwright/test/package.json').version")
-exec docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work -e E2E_VISUAL=1 \
+# Preserve the checkout path so the host-created public/storage symlink also resolves inside Docker.
+exec docker run --rm --platform linux/amd64 -v "$PWD":"$PWD" -w "$PWD" -e E2E_VISUAL=1 \
     "mcr.microsoft.com/playwright:v${VERSION}-noble" bash -c "
         apt-get update -qq >/dev/null &&
         apt-get install -y -qq php-cli php-sqlite3 php-mbstring php-xml php-curl php-gd php-zip php-bcmath php-intl >/dev/null &&

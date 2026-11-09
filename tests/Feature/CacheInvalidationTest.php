@@ -119,6 +119,7 @@ class CacheInvalidationTest extends TestCase
             'status' => 'published',
             'is_active' => true,
             'is_featured' => true,
+            'signature_count' => 100,
         ]);
 
         $translation = PetitionTranslation::factory()->create([
@@ -128,6 +129,11 @@ class CacheInvalidationTest extends TestCase
             'slug' => 'original-homepage-petition-title',
             'is_featured' => true,
         ]);
+
+        for ($i = 0; $i < 2; $i++) {
+            $other = Petition::factory()->create(['status' => 'published', 'is_active' => true, 'signature_count' => 100]);
+            PetitionTranslation::factory()->create(['petition_id' => $other->id, 'locale' => 'en']);
+        }
 
         $this->get('/en')
             ->assertOk()

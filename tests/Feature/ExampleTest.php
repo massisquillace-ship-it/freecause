@@ -19,23 +19,18 @@ class ExampleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_homepage_empty_featured_state_has_no_link(): void
+    public function test_empty_homepage_has_no_placeholder_campaign_block(): void
     {
         $this->seed(LanguageSeeder::class);
 
         $response = $this->get('/en');
 
-        $response->assertOk()->assertSee('no featured petition yet');
-
-        $html = $response->getContent();
-        $start = strpos($html, 'id="featured-petition-tab-pane"');
-        $end = strpos($html, 'id="recent-activities-tab-pane"');
-        $featuredPane = substr($html, $start, $end - $start);
-
-        $this->assertStringNotContainsString('<a ', $featuredPane);
+        $response->assertOk()->assertDontSee('data-home-campaigns', false)
+            ->assertDontSee('featured-petition-tab-pane', false)
+            ->assertSee('Start a petition, gather signatures, deliver them.');
     }
 
-    public function test_homepage_featured_petition_links_to_its_detail_page(): void
+    public function test_homepage_eligible_campaign_links_to_its_detail_page(): void
     {
         $this->seed([LanguageSeeder::class, UserLevelSeeder::class]);
 
@@ -43,6 +38,7 @@ class ExampleTest extends TestCase
             'status' => 'published',
             'is_active' => true,
             'is_featured' => true,
+            'signature_count' => 100,
         ]);
         $translation = $petition->translations()->create([
             'locale' => 'en',
@@ -51,6 +47,11 @@ class ExampleTest extends TestCase
             'description' => 'A featured petition used for homepage regression coverage.',
             'is_featured' => true,
         ]);
+
+        for ($i = 0; $i < 2; $i++) {
+            $other = Petition::factory()->create(['status' => 'published', 'is_active' => true, 'signature_count' => 100]);
+            $other->translations()->create(['locale' => 'en', 'title' => 'Other campaign '.$i, 'slug' => 'other-campaign-'.$i, 'description' => 'A public campaign.']);
+        }
 
         $response = $this->get('/en');
         $expectedUrl = lroute('petition.show', [

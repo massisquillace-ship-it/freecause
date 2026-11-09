@@ -37,6 +37,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetitionController;
 use App\Http\Controllers\PetitionOutcomeController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\VersionController;
@@ -283,6 +284,7 @@ Route::prefix('{locale}')
     ->middleware(['optional.session', 'setLocale', 'block.banned.user'])
     ->group(function () use ($withoutSession) {
         Route::get('/geo/cities', [GeoController::class, 'cities'])->withoutMiddleware($withoutSession)->middleware('throttle:30,1')->name('geo.cities');
+        Route::get('/search', SearchController::class)->withoutMiddleware($withoutSession)->name('search');
         Route::get('/petitions', [PetitionController::class, 'index'])
             ->withoutMiddleware($withoutSession)
             ->name('petitions.index');
@@ -299,6 +301,7 @@ Route::prefix('{locale}')
 Route::prefix('{locale}')
     ->middleware(['setLocale', 'block.banned.user'])
     ->group(function () use ($withoutSession) {
+        Route::get('/search', SearchController::class)->name('search');
         Route::get('/organizations', [OrganizationController::class, 'landing'])->name('organizations');
         Route::get('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'show'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke');
         Route::post('/organization-consent/{token}/revoke', [OrganizationConsentController::class, 'revoke'])->middleware(['signed', 'no.cache', 'throttle:30,1'])->name('organizations.consent.revoke.post');

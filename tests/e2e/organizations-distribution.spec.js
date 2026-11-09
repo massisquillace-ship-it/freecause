@@ -39,20 +39,22 @@ test('saved badge and copyable HTML fit a mobile management page', async ({ page
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 });
 
-test('homepage organization section appears only with three verified profiles', async ({ page }) => {
+test('homepage organization section requires three public verified or unclaimed profiles', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 900 });
-    await page.goto('/en');
-    await expect(page.getByRole('heading', { name: 'Organizations making a difference', exact: true })).toHaveCount(0);
-    db("update organizations set status='verified' where slug='e2e-organization-pending'");
+    db("update organizations set status='pending' where slug='e2e-organization-unclaimed'");
     try {
         await page.goto('/en');
         const section = page.locator('section[aria-labelledby="home-organizations-title"]');
-        await expect(section.getByRole('heading')).toBeVisible();
-        await expect(section.getByRole('link', { name: 'See all organizations', exact: true })).toBeVisible();
+        await expect(section).toHaveCount(0);
+        db("update organizations set status='unclaimed' where slug='e2e-organization-unclaimed'");
+        await page.goto('/en');
+        await expect(section.locator('h2')).toBeVisible();
+        await expect(section.getByRole('heading', { name: 'Unclaimed public test group', exact: true })).toBeVisible();
+        await expect(section.getByRole('link', { name: /^See all organizations/ })).toHaveAttribute('href', /\/en\/organizations\/explore$/);
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
         const result = await new AxeBuilder({ page }).include('section[aria-labelledby="home-organizations-title"]').withTags(['wcag2a', 'wcag2aa']).analyze();
         expect(result.violations.filter((v) => ['serious', 'critical'].includes(v.impact))).toEqual([]);
     } finally {
-        db("update organizations set status='pending' where slug='e2e-organization-pending'");
+        db("update organizations set status='unclaimed' where slug='e2e-organization-unclaimed'");
     }
 });
