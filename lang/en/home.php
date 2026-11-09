@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'petitions_label' => 'Petitions',
+    'status_verified' => 'Verified',
+    'status_unclaimed' => 'Unclaimed',
+    'victory_badge' => 'Victory reported by organizer',
+
     'blog_read_more' => 'Read More',
     'blog_subtitle' => 'Stay updated with our latest insights and news',
     'blog_title' => 'Latest from Freecause magazine',
