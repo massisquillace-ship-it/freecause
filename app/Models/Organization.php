@@ -8,6 +8,7 @@ use App\Support\CacheVersion;
 use App\Support\Settings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class Organization extends Model
@@ -96,7 +97,7 @@ class Organization extends Model
         try {
             $attributes = request()->attributes;
             if (! $attributes->has('organization_directory_count')) {
-                $attributes->set('organization_directory_count', self::public()->count());
+                $attributes->set('organization_directory_count', (int) Cache::remember('organizations:directory-count:'.CacheVersion::get('sitemap'), 300, fn () => self::public()->count()));
             }
 
             return $attributes->get('organization_directory_count') >= max(1, (int) config('organizations.min_directory_count', 20));

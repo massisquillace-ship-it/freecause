@@ -76,6 +76,22 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue($response->viewData('victories')->contains('id', $victory->id));
     }
 
+    public function test_directory_count_query_runs_once_across_requests_and_refreshes_on_approval(): void
+    {
+        config(['organizations.min_directory_count' => 2]);
+        $this->organization();
+        $pending = $this->organization(['status' => 'pending']);
+        $count = fn () => collect(DB::getQueryLog())->filter(fn ($q) => preg_match('/count\(\*\).*from\s+["`]?organizations["`]?/i', $q['query']))->count();
+        DB::enableQueryLog();
+        $this->assertFalse(Organization::directoryReady());
+        request()->attributes->remove('organization_directory_count');
+        $this->assertFalse(Organization::directoryReady());
+        $this->assertSame(1, $count());
+        $pending->update(['status' => 'verified', 'owner_user_id' => User::factory()->create()->id]);
+        request()->attributes->remove('organization_directory_count');
+        $this->assertTrue(Organization::directoryReady());
+    }
+
     public function test_momentum_filters_private_and_small_campaigns_and_uses_cached_weekly_order(): void
     {
         $lower = $this->petition(['signature_count' => 9000, 'signatures_7d_cache' => 21]);
