@@ -39,13 +39,14 @@ test('saved badge and copyable HTML fit a mobile management page', async ({ page
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 });
 
-test('homepage organization section requires three public verified or unclaimed profiles', async ({ page }) => {
+test('homepage organization section remains visible with sparse public profiles', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 900 });
     db("update organizations set status='pending' where slug='e2e-organization-unclaimed'");
     try {
         await page.goto('/en');
         const section = page.locator('section[aria-labelledby="home-organizations-title"]');
-        await expect(section).toHaveCount(0);
+        await expect(section.locator('h2')).toBeVisible();
+        await expect(section.getByRole('heading', { name: 'Unclaimed public test group', exact: true })).toHaveCount(0);
         db("update organizations set status='unclaimed' where slug='e2e-organization-unclaimed'");
         await page.goto('/en');
         await expect(section.locator('h2')).toBeVisible();
