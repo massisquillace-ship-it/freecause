@@ -604,6 +604,7 @@ class AuthenticationTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'newuser@example.com',
+            'locale' => 'en_US',
         ]);
     }
 
