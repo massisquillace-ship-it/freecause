@@ -20,7 +20,7 @@ class SafeExternalImageUrl implements ValidationRule
 
     private int $connectTimeout = 4;
 
-    private int $totalTimeout = 6;
+    private int $totalTimeout = 3;
 
     private int $maxRedirects = 3;
 
@@ -245,7 +245,7 @@ class SafeExternalImageUrl implements ValidationRule
                 return $this->result('unreachable');
             }
 
-            if ($this->staticChecks($current) !== null) {
+            if ($this->shapeChecks($current) !== null) {
                 return $this->result('blocked');
             }
 
