@@ -172,14 +172,14 @@ class AdminHoldExportSearchFixesTest extends TestCase
         $this->assertSame(0, Signature::where('petition_id', $p->id)->where('user_id', $signer->id)->count());
         $this->assertDatabaseHas('spam_logs', ['type' => 'signature']);
 
-        $sig = Signature::factory()->create(['petition_id' => $p->id, 'user_id' => $signer->id, 'confirmed' => true, 'text' => 'ok']);
-        $this->actingAs($signer)->post("/en/petition/my-petition/{$p->id}/shoutbox", ['comment' => 'free money here']);
-        $this->assertSame('ok', $sig->fresh()->text);
-
         $cat = Category::factory()->create(['is_active' => true]);
         $this->actingAs($owner)->post("/en/petition/my-petition/{$p->id}/edit", ['title' => 'Buy viagra today', 'description' => '<p>Enough description text here for validation to pass.</p>', 'goal_signatures' => 100, 'category_id' => $cat->id])
             ->assertSessionHasErrors('title');
         $this->assertSame('My petition', $p->translations()->value('title'));
+
+        $sig = Signature::factory()->create(['petition_id' => $p->id, 'user_id' => $signer->id, 'confirmed' => true, 'text' => 'ok']);
+        $this->actingAs($signer)->post("/en/petition/my-petition/{$p->id}/shoutbox", ['comment' => 'free money here']);
+        $this->assertSame('ok', $sig->fresh()->text);
     }
 
     public function test_translate_missing_survives_slug_clash_in_target_locale(): void
