@@ -51,6 +51,10 @@ Use normal CI/Deployer, including its recovery snapshot before the additive two-
 
 The hourly scheduler refreshes momentum counters. An initial queued `RefreshHomepageMomentum` may be dispatched after release to populate them immediately; it sends no email and changes no signature records. Refresh relevant public caches through the existing purge mechanism.
 
+## Latest launch-rule validation — 9 November 2026
+
+After the owner approved showing sparse real data, the integrated suite against main `4ece3a46` passed **1,286 tests / 7,284 assertions**. Targeted homepage/claims/privacy checks passed 37 tests / 343 assertions. Language parity, design-system lint and Vite build passed. IT/EN/FR at 375 and 1280 px pass serious/critical axe checks without horizontal overflow; the separate zero-organization fixture confirms the petition-centric hero and visible empty-state sections. Official screenshot checks remain required before merge.
+
 ## Visual alignment — 9 November 2026
 
 The owner supplied the [organizations-first visual reference](homepage-organizations-reference.png). Align the homepage with its compact spacing, right-aligned section links, bordered cards and short status badges, inset claim banner, outlined secondary actions and numbered steps. The public empty state uses the same new layout and petition copy. The later owner override above removes the launch-day homepage minimums. Existing logos and locale-dependent content remain authoritative.
