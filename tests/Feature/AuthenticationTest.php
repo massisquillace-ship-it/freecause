@@ -7,6 +7,7 @@ use App\Models\Language;
 use App\Models\Petition;
 use App\Models\Signature;
 use App\Models\User;
+use App\Models\UserLevel;
 use App\Providers\AppServiceProvider;
 use App\Support\Countries;
 use App\Support\Settings;
@@ -198,6 +199,22 @@ class AuthenticationTest extends TestCase
 
         $response->assertRedirect('/en');
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_is_banned_is_false_once_banned_until_has_passed_even_with_the_banned_level(): void
+    {
+        $user = User::factory()->create([
+            'level_id' => UserLevel::where('name', 'banned')->value('id'),
+            'banned_until' => now()->subMinute(),
+        ]);
+
+        $this->assertFalse($user->fresh()->isBanned());
+
+        $user->forceFill(['banned_until' => now()->addDay()])->save();
+        $this->assertTrue($user->fresh()->isBanned());
+
+        $user->forceFill(['banned_until' => null])->save();
+        $this->assertTrue($user->fresh()->isBanned());
     }
 
     public function test_banned_user_with_wrong_password_gets_invalid_credentials_response(): void

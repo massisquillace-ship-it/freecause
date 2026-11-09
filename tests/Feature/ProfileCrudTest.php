@@ -280,6 +280,34 @@ class ProfileCrudTest extends TestCase
         Queue::assertPushed(CleanupDeletedAccount::class, fn ($job) => $job->cleanupId === $cleanup->id);
     }
 
+    public function test_verify_link_shows_email_taken_when_the_address_is_claimed_between_check_and_save(): void
+    {
+        Mail::fake();
+        Queue::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser(['email' => 'old-address@example.com']);
+        $this->requestEmailChange($user, 'race@example.com')->assertSessionHasNoErrors();
+        $token = $user->fresh()->verification_token;
+
+        $claimed = false;
+        User::saving(function (User $saving) use ($user, &$claimed) {
+            if ($saving->id === $user->id && ! $claimed) {
+                $claimed = true;
+                User::withoutEvents(fn () => User::factory()->create(['email' => 'race@example.com']));
+            }
+        });
+
+        $this->post('/en/verify/'.$token)->assertRedirect('/en');
+
+        $user->refresh();
+        $this->assertSame('old-address@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+        $this->assertNull($user->verification_token);
+        $this->assertSame(0, AccountDeletionCleanup::where('user_id', $user->id)->count());
+        $this->assertSame(__('profile.email_taken'), session('toast.message'));
+    }
+
     public function test_second_email_change_queues_a_second_cleanup(): void
     {
         Mail::fake();
