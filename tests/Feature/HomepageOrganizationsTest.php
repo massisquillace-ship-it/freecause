@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\RefreshHomepageMomentum;
+use App\Models\Category;
 use App\Models\Cause;
 use App\Models\Organization;
 use App\Models\Petition;
@@ -155,9 +156,9 @@ class HomepageOrganizationsTest extends TestCase
 
     public function test_homepage_goals_include_personal_and_organization_petitions_only_in_the_current_locale(): void
     {
-        $personal = $this->petition(['signature_count' => 1000, 'goal_signatures' => 1000, 'created_at' => now()->subYears(13)]);
+        $personal = $this->petition(['country' => 'US', 'signature_count' => 1000, 'goal_signatures' => 1000, 'created_at' => now()->subYears(13)]);
         $org = $this->organization(['status' => 'verified', 'owner_user_id' => User::factory()->create()->id]);
-        $organized = $this->petition(['organization_id' => $org->id, 'signature_count' => 1200, 'goal_signatures' => 1000]);
+        $organized = $this->petition(['country' => 'BR', 'organization_id' => $org->id, 'signature_count' => 1200, 'goal_signatures' => 1000]);
         $this->petition(['signature_count' => 999, 'goal_signatures' => 1000, 'outcome' => 'victory', 'outcome_at' => now()]);
         $this->petition(['signature_count' => 100, 'goal_signatures' => 0]);
         $this->petition(['signature_count' => 1000, 'status' => 'draft']);
@@ -189,7 +190,7 @@ class HomepageOrganizationsTest extends TestCase
         $this->seed(CategorySeeder::class);
         $response = $this->get('/it')->assertOk()->assertSee('data-home-categories', false);
         $categories = $response->viewData('categories');
-        $this->assertSame(\App\Models\Category::where('is_active', true)->count(), $categories->count());
+        $this->assertSame(Category::where('is_active', true)->count(), $categories->count());
         foreach ($categories as $category) {
             $response->assertSee($category->tr_name)->assertSee('/it/petitions/category-'.$category->tr_slug.'-'.$category->id);
         }
@@ -234,7 +235,7 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue($data['campaigns']->contains('id', $local->id));
         $this->assertTrue($data['campaigns']->contains('id', $other->id));
         $request->attributes->set('country', 'not-a-country');
-        $this->assertSame('Europa', app(HomepageData::class)->forRequest($request)['countryName']);
+        $this->assertSame('mondo', app(HomepageData::class)->forRequest($request)['countryName']);
     }
 
     public function test_homepage_respects_nickname_choice_and_invalidates_it_after_changes(): void
