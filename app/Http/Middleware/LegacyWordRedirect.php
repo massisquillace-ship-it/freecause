@@ -156,6 +156,10 @@ class LegacyWordRedirect
             return $next($request);
         }
 
+        if ($family === 'search' && $first === 'search' && $tail === []) {
+            return $next($request);
+        }
+
         return match ($family) {
             'list' => $this->list($request, $next, $locale, $tail, $first === 'petitions'),
             'petition' => $this->petition($request, $next, $locale, $tail, $first === 'petition'),
