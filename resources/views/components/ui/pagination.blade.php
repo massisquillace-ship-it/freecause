@@ -7,7 +7,7 @@
         $item = 'fcui-pagination__item';
     @endphp
 
-    <nav aria-label="pagination" {{ $attributes->merge(['class' => 'fcui-pagination']) }}>
+    <nav aria-label="{{ __('ui.pagination') }}" {{ $attributes->merge(['class' => 'fcui-pagination']) }}>
         @if ($paginator->onFirstPage())
             <span class="{{ $item }} {{ $item }}--disabled" aria-hidden="true">«</span>
         @else

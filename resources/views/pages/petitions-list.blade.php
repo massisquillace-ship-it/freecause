@@ -6,7 +6,7 @@
     <section class="fc-section">
         <x-ui.container>
 
-            <nav aria-label="breadcrumb" class="mb-4">
+            <nav aria-label="{{ __('ui.breadcrumb') }}" class="mb-4">
                 <ol class="breadcrumb text-sm mb-0">
                     <li class="breadcrumb-item">
                         <a href="{{ lroute('home') }}" class="text-brand">{{ __('show.breadcrumb_home') }}</a>
@@ -196,5 +196,5 @@
         </x-ui.container>
     </section>
 
-    <button type="button" class="fcui-scrolltop" data-scroll-top aria-label="Back to top">↑</button>
+    <button type="button" class="fcui-scrolltop" data-scroll-top aria-label="{{ __('ui.back_to_top') }}">↑</button>
 @endsection

@@ -13,4 +13,11 @@ return [
     'confirm' => 'Confirm',
     'cancel' => 'Cancel',
     'dismiss' => 'Dismiss',
+    'skip_to_content' => 'Skip to content',
+    'advertisement' => 'Advertisement',
+    'close_advertisement' => 'Close advertisement',
+    'breadcrumb' => 'Breadcrumb',
+    'pagination' => 'Pagination',
+    'back_to_top' => 'Back to top',
+    'offline' => 'You appear to be offline. Reconnect and submit again.',
 ];

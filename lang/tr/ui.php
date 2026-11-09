@@ -13,4 +13,11 @@ return [
     'confirm' => 'Onayla',
     'cancel' => 'İptal',
     'dismiss' => 'Kapat',
+    'skip_to_content' => 'İçeriğe geç',
+    'advertisement' => 'Reklam',
+    'close_advertisement' => 'Reklamı kapat',
+    'breadcrumb' => 'Gezinti yolu',
+    'pagination' => 'Sayfalama',
+    'back_to_top' => 'Başa dön',
+    'offline' => 'Çevrimdışı görünüyorsunuz. Yeniden bağlanın ve tekrar gönderin.',
 ];

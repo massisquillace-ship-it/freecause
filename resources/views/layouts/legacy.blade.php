@@ -111,16 +111,16 @@
     @include('partials.analytics')
 </head>
 
-<body class="fc-public @yield('body_class', '')">
-    <a href="#fc-main" class="fc-skip-link">{{ __('Skip to content') }}</a>
+<body class="fc-public @yield('body_class', '')" data-offline-text="{{ __('ui.offline') }}">
+    <a href="#fc-main" class="fc-skip-link">{{ __('ui.skip_to_content') }}</a>
     @include('partials.navbar')
 
     @php
         $anchorSlot = \App\Support\Ads::pick('anchor');
     @endphp
     @if ($anchorSlot)
-        <div id="fc-ad-anchor" class="fc-ad-anchor" role="complementary" aria-label="Advertisement">
-            <button type="button" class="fc-ad-anchor__close" data-ad-anchor-close aria-label="Close advertisement">
+        <div id="fc-ad-anchor" class="fc-ad-anchor" role="complementary" aria-label="{{ __('ui.advertisement') }}">
+            <button type="button" class="fc-ad-anchor__close" data-ad-anchor-close aria-label="{{ __('ui.close_advertisement') }}">
                 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l12 12M14 2L2 14" /></svg>
             </button>
             <x-ads.slot :name="$anchorSlot" sticky class="mx-auto" />
@@ -129,7 +129,7 @@
     @endif
     @unless (isset($exception))
         @if (\App\Support\Ads::canShow('skyscraper') && \App\Support\Ads::renderOnce('skyscraper'))
-            <aside id="fc-ad-rail" class="fc-ad-rail" aria-label="Advertisement">
+            <aside id="fc-ad-rail" class="fc-ad-rail" aria-label="{{ __('ui.advertisement') }}">
                 <x-ads.slot name="skyscraper" claimed />
             </aside>
         @endif
