@@ -31,6 +31,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -500,6 +501,9 @@ class PetitionController extends Controller
 
     public function store(PetitionRequest $request, string $locale)
     {
+        $dailyKey = 'petition-create-daily:'.auth()->id();
+        abort_if(RateLimiter::tooManyAttempts($dailyKey, 10), 429);
+
         $data = $request->validated();
         $petitionText = implode(' ', [
             $data['title'] ?? '',
@@ -521,7 +525,7 @@ class PetitionController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($request, $data, $locale, &$newCoverImage, $reviewMatches) {
+            $response = DB::transaction(function () use ($request, $data, $locale, &$newCoverImage, $reviewMatches) {
 
                 $tags = $this->normalizeTags($data['tags'] ?? null);
 
@@ -602,6 +606,10 @@ class PetitionController extends Controller
                     'id' => $petition->id,
                 ])->with('petition_mode', 'created');
             });
+
+            RateLimiter::hit($dailyKey, 86400);
+
+            return $response;
         } catch (\Throwable $e) {
             if ($newCoverImage) {
                 Storage::disk('public')->delete($newCoverImage);
@@ -795,7 +803,7 @@ class PetitionController extends Controller
         $this->requireOwner($petition);
         abort_unless($petition->status === 'published', 403);
 
-        // Reversible: the public page falls back to the offline view; FlushesListingCaches bumps the listing cache.
+        // The owner cannot undo this; an admin restores it via the admin petition form.
         $petition->is_active = 0;
         $petition->save();
 
@@ -835,6 +843,9 @@ class PetitionController extends Controller
 
         $oldCoverImage = $petition->cover_image;
         $newCoverImage = null;
+        if ($request->hasFile('image')) {
+            $newCoverImage = $this->storeCoverImage($request->file('image'));
+        }
 
         try {
             $urlsBefore = EdgeCachePurge::petitionUrls([$petition->id]);
@@ -844,7 +855,7 @@ class PetitionController extends Controller
         }
 
         try {
-            $response = DB::transaction(function () use ($request, $data, $petition, $tr, $reviewMatches, &$newCoverImage) {
+            $response = DB::transaction(function () use ($request, $data, $petition, $tr, $reviewMatches, $newCoverImage) {
                 $locked = Petition::query()->lockForUpdate()->findOrFail($petition->id);
                 $this->requireEditable($locked);
                 $petition->setRawAttributes($locked->getAttributes(), true);
@@ -868,9 +879,7 @@ class PetitionController extends Controller
 
                 $petition->image_url = $data['image_url'] ?? null;
 
-                if ($request->hasFile('image')) {
-                    $newCoverImage = $this->storeCoverImage($request->file('image'));
-
+                if ($newCoverImage) {
                     $petition->cover_image = $newCoverImage;
                     $petition->image_url = null;
                 } elseif ($request->boolean('remove_image')) {

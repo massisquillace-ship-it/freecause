@@ -80,7 +80,7 @@ export function init() {
             Swal.fire({
                 icon: 'warning',
                 title: d.confirmTitle || 'Withdraw this petition?',
-                text: d.confirmText || 'It will be taken offline and no longer appear in listings.',
+                text: d.confirmText || 'It will be taken offline and no longer appear in listings. You cannot undo this yourself: to restore it, contact support.',
                 showCancelButton: true,
                 confirmButtonText: d.confirmOk || 'Yes, withdraw',
                 cancelButtonText: d.confirmCancel || 'Cancel',

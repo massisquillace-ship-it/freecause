@@ -20,6 +20,7 @@ use App\Support\ImageVariants;
 use App\Support\Locale;
 use App\Support\ReviewKeywords;
 use App\Support\Slug;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -329,11 +330,15 @@ class AdminPetitionsController extends Controller
         }
 
         $petitionUpdate = [
-            'goal_signatures' => $data['goal_signatures'] ?? 100,
             'status' => $data['status'],
             'held_by_admin' => $data['status'] === 'draft',
             'is_active' => $request->boolean('is_active'),
+            'updated_at' => now(),
         ];
+
+        if ($request->filled('goal_signatures')) {
+            $petitionUpdate['goal_signatures'] = $data['goal_signatures'];
+        }
 
         foreach (['category_id', 'tags', 'youtube_url', 'target', 'community', 'community_url', 'city'] as $field) {
             if ($request->has($field)) {
@@ -395,6 +400,11 @@ class AdminPetitionsController extends Controller
             $isFeatured = $request->boolean('is_featured');
 
             DB::transaction(function () use ($data, $petitionUpdate, $isFeatured) {
+                $translationExists = DB::table('petition_translations')
+                    ->where('petition_id', $data['id'])
+                    ->where('locale', $data['locale'])
+                    ->exists();
+
                 DB::table('petitions')
                     ->where('id', $data['id'])
                     ->update($petitionUpdate);
@@ -410,13 +420,19 @@ class AdminPetitionsController extends Controller
                             'slug' => $data['slug'],
                             'description' => sanitizePetitionHtml($data['text'] ?? ''),
                             'is_featured' => $isFeatured,
-                        ]
+                            'updated_at' => now(),
+                        ] + ($translationExists ? [] : ['created_at' => now()])
                     );
             });
         } catch (\Throwable $e) {
             if ($newImagePath) {
                 Storage::disk('public')->delete($newImagePath);
                 ImageVariants::purge($newImagePath);
+            }
+
+            if ($e instanceof QueryException && ($e->errorInfo[0] ?? null) === '23000'
+                && preg_match('/locale_slug_unique|petition_translations\.slug/', (string) ($e->errorInfo[2] ?? ''))) {
+                return back()->withErrors(['slug' => 'Slug already used'])->withInput();
             }
 
             throw $e;

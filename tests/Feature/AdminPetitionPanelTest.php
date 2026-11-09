@@ -281,6 +281,44 @@ class AdminPetitionPanelTest extends TestCase
         $this->assertSame(250, (int) DB::table('petitions')->where('id', $petitionId)->value('goal_signatures'));
     }
 
+    public function test_save_with_blank_goal_keeps_the_stored_goal_and_bumps_updated_at(): void
+    {
+        $admin = $this->petitionsEditor();
+        $petitionId = $this->createPetitionViaDb('Blank Goal', 'en', 'blank-goal');
+        DB::table('petitions')->where('id', $petitionId)->update(['goal_signatures' => 250, 'updated_at' => '2020-01-01 00:00:00']);
+
+        $this->actingAs($admin, 'admin')
+            ->post('/admin/petitions/save', [
+                'id' => $petitionId,
+                'locale' => 'en',
+                'status' => 'published',
+                'title' => 'Blank Goal',
+                'slug' => 'blank-goal',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $row = DB::table('petitions')->where('id', $petitionId)->first();
+        $this->assertSame(250, (int) $row->goal_signatures);
+        $this->assertNotSame('2020-01-01 00:00:00', (string) $row->updated_at);
+    }
+
+    public function test_save_rejects_a_non_http_community_url(): void
+    {
+        $admin = $this->petitionsEditor();
+        $petitionId = $this->createPetitionViaDb('Community', 'en', 'community');
+
+        $this->actingAs($admin, 'admin')
+            ->post('/admin/petitions/save', [
+                'id' => $petitionId,
+                'locale' => 'en',
+                'status' => 'published',
+                'title' => 'Community',
+                'slug' => 'community',
+                'community_url' => 'ftp://example.com/group',
+            ])
+            ->assertSessionHasErrors('community_url');
+    }
+
     private function createPetitionViaDb(string $title, string $locale, string $slug): int
     {
         $id = DB::table('petitions')->insertGetId([

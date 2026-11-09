@@ -116,9 +116,6 @@ class AppServiceProvider extends ServiceProvider
 
                 return $limits;
             });
-            RateLimiter::for('petition-create-daily', function (Request $request) {
-                return Limit::perDay(10)->by('user:'.$request->user()->getAuthIdentifier());
-            });
         } catch (\Throwable $e) {
             Log::warning('bootRateLimiting failed: '.$e->getMessage());
         }
