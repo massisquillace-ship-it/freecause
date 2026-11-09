@@ -243,7 +243,9 @@ class User extends Authenticatable implements HasLocalePreference
             return true;
         }
 
-        return $this->level?->name === 'banned';
+        $bannedLevelId = Cache::remember('level:banned_id', 3600, fn () => UserLevel::where('name', 'banned')->value('id'));
+
+        return $bannedLevelId !== null && $this->level_id === $bannedLevelId;
     }
 
     public function ensureUnsubscribeToken(): string
