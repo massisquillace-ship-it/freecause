@@ -323,7 +323,7 @@ class AuthController extends Controller
         }
 
         try {
-            DB::transaction(fn () => $u->save());
+            $u->save();
         } catch (\Throwable $e) {
             AppLog::error(
                 'Profile update failed',
@@ -409,16 +409,14 @@ class AuthController extends Controller
             ]);
         }
 
-        DB::afterCommit(function () use ($cleanup) {
-            try {
-                CleanupDeletedAccount::dispatch($cleanup->id);
-            } catch (\Throwable $e) {
-                Log::warning('Account deletion cleanup dispatch deferred', [
-                    'cleanup_id' => $cleanup->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        });
+        try {
+            CleanupDeletedAccount::dispatch($cleanup->id);
+        } catch (\Throwable $e) {
+            Log::warning('Account deletion cleanup dispatch deferred', [
+                'cleanup_id' => $cleanup->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Auth::guard('web')->logout();
         $request->session()->invalidate();
@@ -579,7 +577,7 @@ class AuthController extends Controller
 
         try {
             $user->google_id = null;
-            DB::transaction(fn () => $user->save());
+            $user->save();
         } catch (\Throwable $e) {
             AppLog::error(
                 'Google unlink failed',
