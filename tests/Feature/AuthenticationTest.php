@@ -442,6 +442,34 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
     }
 
+    public function test_password_reset_caps_password_at_72_characters(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'cap-reset@example.com',
+            'verified' => true,
+            'country' => 'NL',
+            'gender' => 'female',
+        ]);
+
+        $tooLong = str_repeat('a', 73);
+        $this->post('/en/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => 'cap-reset@example.com',
+            'password' => $tooLong,
+            'password_confirmation' => $tooLong,
+        ])->assertSessionHasErrors('password');
+
+        $max = str_repeat('a', 72);
+        $this->post('/en/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => 'cap-reset@example.com',
+            'password' => $max,
+            'password_confirmation' => $max,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertTrue(Hash::check($max, $user->fresh()->password));
+    }
+
     public function test_password_reset_verifies_user_and_confirms_pending_signatures(): void
     {
         $user = User::factory()->create([
