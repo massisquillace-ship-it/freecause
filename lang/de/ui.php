@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Werbung schließen',
     'breadcrumb' => 'Brotkrumennavigation',
     'pagination' => 'Seitennavigation',
+    'previous_page' => 'Vorherige Seite',
+    'next_page' => 'Nächste Seite',
     'back_to_top' => 'Nach oben',
     'offline' => 'Du scheinst offline zu sein. Stelle die Verbindung wieder her und sende erneut.',
 ];

@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Close advertisement',
     'breadcrumb' => 'Breadcrumb',
     'pagination' => 'Pagination',
+    'previous_page' => 'Previous page',
+    'next_page' => 'Next page',
     'back_to_top' => 'Back to top',
     'offline' => 'You appear to be offline. Reconnect and submit again.',
 ];
