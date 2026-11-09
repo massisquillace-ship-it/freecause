@@ -425,7 +425,7 @@ class AuthenticationTest extends TestCase
 
         $user = User::where('email', 'pending@example.com')->firstOrFail();
 
-        $this->get("/en/verify/{$user->verification_token}")
+        $this->post("/en/verify/{$user->verification_token}", [])
             ->assertRedirectContains('/en/profile');
 
         $this->assertAuthenticatedAs($user->fresh());
@@ -451,10 +451,35 @@ class AuthenticationTest extends TestCase
 
         $this->flushSession();
 
-        $this->get("/en/verify/{$token}")
+        $this->post("/en/verify/{$token}", [])
             ->assertRedirect('/en/email-verified');
 
         $this->assertGuest();
+    }
+
+    public function test_verification_get_is_passive_and_post_consumes_token_once(): void
+    {
+        $user = User::factory()->create([
+            'verified' => false,
+            'verification_token' => 'passive-token',
+            'verification_token_sent_at' => now(),
+        ]);
+
+        $this->get('/en/verify/passive-token')
+            ->assertOk()
+            ->assertSee(__('auth.verify_confirm_heading'));
+
+        $this->assertFalse((bool) $user->fresh()->verified);
+        $this->assertSame('passive-token', $user->fresh()->verification_token);
+
+        $this->post('/en/verify/passive-token')
+            ->assertRedirect('/en/email-verified');
+
+        $this->assertTrue((bool) $user->fresh()->verified);
+        $this->assertNull($user->fresh()->verification_token);
+
+        $this->post('/en/verify/passive-token')
+            ->assertRedirect('/en');
     }
 
     public function test_password_reset_auto_logs_in_and_returns_to_the_intended_url(): void

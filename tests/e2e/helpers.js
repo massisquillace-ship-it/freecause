@@ -98,7 +98,10 @@ export async function newUser(page, prefix = 'u') {
     const email = `${uniq(prefix)}@e2e.test`;
     await register(page, { email });
     const token = userToken(email);
-    if (token) await page.goto(`/en/verify/${token}`);
+    if (token) {
+        await page.goto(`/en/verify/${token}`);
+        await page.getByRole('button', { name: /verify email/i }).click();
+    }
     await login(page, email);
     await page.goto('/en/profile');
     await page.locator('#country').selectOption({ index: 1 });

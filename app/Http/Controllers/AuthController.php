@@ -435,6 +435,23 @@ class AuthController extends Controller
         return redirect()->to("/{$locale}")->with('success', __('profile.account_deleted_success'));
     }
 
+    public function showVerifyConfirmation(string $locale, string $token)
+    {
+        $user = User::where('verification_token', $token)->first();
+
+        if (! $user) {
+            toast(__('auth.verify_invalid'), 'error');
+
+            return redirect()->to("/{$locale}");
+        }
+
+        return view('auth.verify-confirmation', [
+            'locale' => $locale,
+            'token' => $token,
+            'expired' => (bool) ($user->verification_token_sent_at?->lt(now()->subHours(48))),
+        ]);
+    }
+
     public function verify(Request $request, string $locale, string $token)
     {
         $user = User::where('verification_token', $token)->first();

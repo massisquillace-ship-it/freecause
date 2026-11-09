@@ -1037,7 +1037,7 @@ class PetitionTest extends TestCase
         ]);
         $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'signature_count' => 0]);
 
-        $this->get("/en/verify/{$user->verification_token}")->assertRedirect('/en/email-verified');
+        $this->post("/en/verify/{$user->verification_token}", [])->assertRedirect('/en/email-verified');
 
         $this->assertDatabaseHas('users', ['id' => $user->id, 'verified' => true]);
         $this->assertDatabaseHas('signatures', [
@@ -1081,7 +1081,7 @@ class PetitionTest extends TestCase
             ->assertRedirect("/en/petition/existing-account-petition/{$petition->id}/thanks");
         $this->assertSame(1, Signature::where('petition_id', $petition->id)->count());
 
-        $this->get("/en/verify/{$user->verification_token}")->assertRedirect('/en/email-verified');
+        $this->post("/en/verify/{$user->verification_token}", [])->assertRedirect('/en/email-verified');
 
         $this->assertDatabaseHas('signatures', [
             'petition_id' => $petition->id,
@@ -1132,7 +1132,7 @@ class PetitionTest extends TestCase
             ]);
             $url = (new VerifyAccountMail($user, $locale))->render();
             $this->assertStringContainsString('/'.$locale.'/verify/'.$user->verification_token, $url);
-            $this->get('/'.$locale.'/verify/'.$user->verification_token)->assertRedirect('/'.$locale.'/email-verified');
+            $this->post('/'.$locale.'/verify/'.$user->verification_token)->assertRedirect('/'.$locale.'/email-verified');
         }
     }
 

@@ -26,6 +26,7 @@ test('guest signature stays pending until the email is verified, then counts', a
     expect(petitionRow(petition)).toBe('1');
 
     await page.goto(`/en/verify/${userToken(email)}`);
+    await page.getByRole('button', { name: /verify email/i }).click();
     expect(db(`select confirmed from signatures where email='${email}'`)).toBe('1');
     expect(petitionRow(petition)).toBe('2');
 });

@@ -24,6 +24,7 @@ test('register requires email verification, then verify link logs in', async ({ 
     await expect(page).not.toHaveURL(/\/profile|\/en\/?$/);
 
     await page.goto(`/en/verify/${userToken(email)}`);
+    await page.getByRole('button', { name: /verify email/i }).click();
     expect(db(`select verified from users where email='${email}'`)).toBe('1');
 });
 
@@ -36,6 +37,7 @@ test('profile saves country, preferred language and gender without touching the 
     const email = `${uniq('prof')}@e2e.test`;
     await register(page, { email });
     await page.goto(`/en/verify/${userToken(email)}`);
+    await page.getByRole('button', { name: /verify email/i }).click();
     await login(page, email);
     await page.goto('/en/profile');
     await expect(page.locator('#locale')).toHaveValue('');

@@ -329,7 +329,8 @@ Route::prefix('{locale}')
         Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:5,1');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-        Route::get('/verify/{token}', [AuthController::class, 'verify'])->name('verify.account');
+        Route::get('/verify/{token}', [AuthController::class, 'showVerifyConfirmation'])->name('verify.account');
+        Route::post('/verify/{token}', [AuthController::class, 'verify'])->name('verify.account.confirm')->middleware('throttle:10,1');
 
         Route::get('/user/{slug}/{id}', [UserProfileController::class, 'show'])->name('user.profile');
 
