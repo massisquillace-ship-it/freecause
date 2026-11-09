@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Mail\ContactMail;
 use App\Mail\PetitionDigestMail;
+use App\Mail\PetitionMilestoneMail;
+use App\Models\Petition;
 use App\Models\User;
 use App\Support\MailQuota;
 use App\Support\MailQuotaGate;
@@ -85,6 +87,16 @@ class MailQuotaGuardTest extends TestCase
 
         $this->assertNull($thrown);
         $this->assertFalse($reached);
+        Queue::assertPushed(SendQueuedMailable::class);
+    }
+
+    public function test_tripped_flag_defers_milestone_mail(): void
+    {
+        MailQuota::trip();
+
+        [$thrown] = $this->gate(new PetitionMilestoneMail(new Petition, new User, 100), fn () => $this->fail('SMTP reached'));
+
+        $this->assertNull($thrown);
         Queue::assertPushed(SendQueuedMailable::class);
     }
 
