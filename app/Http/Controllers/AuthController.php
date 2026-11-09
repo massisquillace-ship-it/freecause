@@ -451,39 +451,57 @@ class AuthController extends Controller
         }
 
         if ($user->pending_email) {
-            $expired = $user->verification_token_sent_at && $user->verification_token_sent_at->lt(now()->subHours(48));
-            // The address may have been registered or claimed since the link was sent.
-            $taken = ! $expired && User::where('email', strtolower($user->pending_email))->whereKeyNot($user->id)->exists();
-
-            $oldEmail = null;
-
-            if (! $expired && ! $taken) {
-                $oldEmail = $user->email;
-                $user->email = $user->pending_email;
-            }
-
-            $user->pending_email = null;
-            $user->verification_token = null;
+            $expired = false;
+            $taken = false;
+            $cleanup = null;
 
             try {
-                $user->save();
-            } catch (UniqueConstraintViolationException $e) {
-                if ($oldEmail === null) {
-                    throw $e;
-                }
+                $cleanup = DB::transaction(function () use (&$user, $token, &$expired, &$taken) {
+                    $locked = User::where('verification_token', $token)->lockForUpdate()->first();
 
-                $user->email = $oldEmail;
-                $oldEmail = null;
+                    if (! $locked || ! $locked->pending_email) {
+                        $user = null;
+
+                        return null;
+                    }
+
+                    $user = $locked;
+                    $expired = $locked->verification_token_sent_at && $locked->verification_token_sent_at->lt(now()->subHours(48));
+                    $taken = ! $expired && User::where('email', strtolower($locked->pending_email))->whereKeyNot($locked->id)->exists();
+
+                    $oldEmail = null;
+
+                    if (! $expired && ! $taken) {
+                        $oldEmail = $locked->email;
+                        $locked->email = $locked->pending_email;
+                    }
+
+                    $locked->pending_email = null;
+                    $locked->verification_token = null;
+                    $locked->save();
+
+                    if ($oldEmail === null || strtolower($oldEmail) === strtolower($locked->email)) {
+                        return null;
+                    }
+
+                    return AccountDeletionCleanup::create([
+                        'user_id' => $locked->id,
+                        'email' => $oldEmail,
+                    ]);
+                });
+            } catch (UniqueConstraintViolationException) {
                 $taken = true;
-                $user->save();
+                User::whereKey($user->id)->update(['pending_email' => null, 'verification_token' => null]);
+                $user->refresh();
             }
 
-            if ($oldEmail !== null && strtolower($oldEmail) !== strtolower($user->email)) {
-                $cleanup = AccountDeletionCleanup::create([
-                    'user_id' => $user->id,
-                    'email' => $oldEmail,
-                ]);
+            if (! $user) {
+                toast(__('auth.verify_invalid'), 'error');
 
+                return redirect()->to("/{$locale}");
+            }
+
+            if ($cleanup) {
                 try {
                     CleanupDeletedAccount::dispatch($cleanup->id);
                 } catch (\Throwable $e) {
