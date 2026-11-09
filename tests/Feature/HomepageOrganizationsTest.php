@@ -76,6 +76,37 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertTrue($response->viewData('victories')->contains('id', $victory->id));
     }
 
+    public function test_directory_count_query_runs_once_across_requests(): void
+    {
+        config(['organizations.min_directory_count' => 1]);
+        $this->organization();
+
+        DB::enableQueryLog();
+        $this->app->instance('request', Request::create('/en'));
+        Organization::directoryReady();
+        $this->app->instance('request', Request::create('/it'));
+        Organization::directoryReady();
+        $counts = collect(DB::getQueryLog())->filter(
+            fn ($q) => str_contains($q['query'], 'count(*)') && str_contains($q['query'], 'organizations')
+        );
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $counts);
+    }
+
+    public function test_approving_an_organization_refreshes_the_directory_count(): void
+    {
+        config(['organizations.min_directory_count' => 2]);
+        $this->organization(['status' => 'unclaimed']);
+        $pending = $this->organization(['status' => 'pending']);
+
+        $this->assertFalse(Organization::directoryReady());
+
+        $pending->update(['status' => 'verified', 'owner_user_id' => User::factory()->create()->id]);
+
+        $this->assertTrue(Organization::directoryReady());
+    }
+
     public function test_momentum_filters_private_and_small_campaigns_and_uses_cached_weekly_order(): void
     {
         $lower = $this->petition(['signature_count' => 9000, 'signatures_7d_cache' => 21]);
