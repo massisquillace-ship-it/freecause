@@ -35,6 +35,10 @@ class AdminAuthController extends Controller
             ->first();
 
         if (! $user) {
+            static $dummyHash = null;
+            $dummyHash ??= Hash::make('dummy-password');
+            Hash::check($password, $dummyHash);
+
             return back()->withErrors(['login' => 'Invalid credentials.'])->withInput();
         }
 
