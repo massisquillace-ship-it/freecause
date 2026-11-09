@@ -12,6 +12,7 @@ use App\Support\ReviewKeywords;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PetitionReviewKeywordsTest extends TestCase
@@ -160,6 +161,29 @@ class PetitionReviewKeywordsTest extends TestCase
 
         $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'status' => 'draft']);
         $this->assertDatabaseHas('spam_logs', ['type' => 'petition.review']);
+    }
+
+    public function test_editing_a_draft_with_a_keyword_shows_review_notice_without_logging_again(): void
+    {
+        $this->actingAs($this->user)->post('/en/create-petition', $this->payload([
+            'title' => 'Stop casino advertising',
+        ]))->assertRedirect();
+
+        $petition = Petition::latest('id')->firstOrFail();
+        $slug = $petition->translations()->where('locale', 'en')->value('slug');
+        DB::table('spam_logs')->delete();
+
+        $response = $this->actingAs($this->user)->post("/en/petition/{$slug}/{$petition->id}/edit", $this->payload([
+            'title' => 'Free spins and betting bonus',
+        ]));
+
+        $response->assertRedirect()
+            ->assertSessionHas('toast', [
+                'message' => __('petition.review_required'),
+                'type' => 'warning',
+            ]);
+        $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'status' => 'draft']);
+        $this->assertDatabaseMissing('spam_logs', ['type' => 'petition.review']);
     }
 
     public function test_hard_block_word_with_review_word_is_rejected_on_create(): void
