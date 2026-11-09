@@ -49,3 +49,9 @@ The standalone `/en/moderation-policy` URL currently returns 404. The trust-row 
 Use normal CI/Deployer, including its recovery snapshot before the additive two-column migration. Do not alter production application source or schema manually. After deployment, verify `/version`, the single gate, anonymous application behavior and existing transactional email settings. Leave normal mail delivery/retries enabled; the owner revoked the earlier SMTP pause. Only the private preview has outbound email/ads disabled.
 
 The hourly scheduler refreshes momentum counters. An initial queued `RefreshHomepageMomentum` may be dispatched after release to populate them immediately; it sends no email and changes no signature records. Refresh relevant public caches through the existing purge mechanism.
+
+## Visual alignment — 9 November 2026
+
+The owner supplied the [organizations-first visual reference](homepage-organizations-reference.png). Align the homepage with its compact spacing, right-aligned section links, bordered cards and short status badges, inset claim banner, outlined secondary actions and numbered steps. The public empty state uses the same layout and the existing petition copy; the single directory gate and all data thresholds remain unchanged. Existing logos and locale-dependent content remain authoritative.
+
+Private review data explicitly marks six campaigns, three victories and editorial placeholder cards as fictional; it never enters production. The preview magazine uses a separate SQLite fixture without WordPress users. Validate IT/EN/FR on mobile and desktop, review official-container screenshot changes, and purge both hostnames and slash variants after release.
