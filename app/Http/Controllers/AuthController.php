@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\UserLevel;
 use App\Services\OrganizationLifecycle;
 use App\Services\PetitionSigning;
+use App\Services\WordPressUserDeletionService;
 use App\Support\AppLog;
 use App\Support\Countries;
 use App\Support\Locale;
@@ -37,6 +38,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly WordPressUserDeletionService $wordPressUserDeletion) {}
+
     public function showLogin(string $locale)
     {
         if (Auth::check()) {
