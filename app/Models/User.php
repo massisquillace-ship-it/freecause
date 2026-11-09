@@ -8,6 +8,7 @@ use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -55,6 +56,18 @@ class User extends Authenticatable implements HasLocalePreference
     public function scopeSynthetic($query)
     {
         return $query->where('email_domain', self::SYNTHETIC_DOMAIN);
+    }
+
+    public const VERIFICATION_TTL_HOURS = 48;
+
+    public static function verificationCutoff(): Carbon
+    {
+        return now()->subHours(self::VERIFICATION_TTL_HOURS);
+    }
+
+    public function verificationExpired(): bool
+    {
+        return $this->verification_token_sent_at !== null && $this->verification_token_sent_at->lt(self::verificationCutoff());
     }
 
     protected $fillable = [
