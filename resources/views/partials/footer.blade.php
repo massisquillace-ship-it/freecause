@@ -17,6 +17,7 @@
     $footerLinks = [
         ['label' => __('nav.home'), 'href' => lroute('home')],
         ['label' => __('nav.explore'), 'href' => lroute('petitions.index')],
+        ['label' => __('home.organizations_label'), 'href' => lroute('organizations.explore')],
         ['label' => __('pages.how_to_write_a_petition'), 'href' => lroute('how-to-write-a-petition')],
         ['label' => __('pages.donations'), 'href' => lroute('donations')],
         ['label' => __('pages.faqs'), 'href' => lroute('faqs')],
@@ -28,7 +29,6 @@
     ];
     if (\App\Models\Organization::directoryReady()) {
         array_splice($footerLinks, 2, 0, [
-            ['label' => __('home.for_organizations'), 'href' => lroute('organizations')],
             ['label' => __('organizations.claim_organization'), 'href' => lroute('organizations.claim-search')],
         ]);
     }
