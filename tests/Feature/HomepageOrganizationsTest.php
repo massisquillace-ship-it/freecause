@@ -15,6 +15,7 @@ use Database\Seeders\OrganizationCauseSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -121,6 +122,21 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertSame([$latest->id, $older->id], $response->viewData('campaigns')->pluck('id')->all());
         $this->assertFalse(collect(DB::getQueryLog())->contains(fn ($q) => preg_match('/from\s+["`]?signatures["`]?\b/i', $q['query'])));
         DB::disableQueryLog();
+    }
+
+    public function test_recent_signature_cache_keeps_six_campaigns_per_locale_independently(): void
+    {
+        $petitions = collect();
+        for ($i = 0; $i < 8; $i++) {
+            $petitions->push($this->petition());
+        }
+        $first = $petitions->first();
+        $first->translations()->create(['locale' => 'es', 'title' => 'Primera campaña', 'slug' => 'primera-campana', 'description' => 'Una campaña pública.']);
+        (new RefreshHomepageMomentum)->handle();
+        $lists = Cache::get('homepage:recently-signed');
+        $this->assertSame($petitions->reverse()->take(6)->pluck('id')->values()->all(), $lists['en']);
+        $this->assertSame([$first->id], $lists['es']);
+        $this->get('/es')->assertOk()->assertSee('Primera campaña');
     }
 
     public function test_one_public_organization_and_one_unclaimed_page_enable_cards_causes_and_claim_banner(): void
