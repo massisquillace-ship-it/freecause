@@ -273,6 +273,43 @@ class GoogleOAuthStateTest extends TestCase
         User::factory()->create(['google_id' => 'synthetic-google-user']);
     }
 
+    public function test_google_login_refuses_an_unverified_google_email(): void
+    {
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser(false);
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors('oauth');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_google_signup_with_a_concurrent_duplicate_email_does_not_error(): void
+    {
+        $triggered = false;
+        User::creating(function (User $creating) use (&$triggered): void {
+            if (! $triggered && $creating->google_id === 'synthetic-google-user') {
+                $triggered = true;
+                User::withoutEvents(fn () => User::factory()->create([
+                    'email' => 'google-state@example.test',
+                    'google_id' => null,
+                ]));
+            }
+        });
+
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->queueGoogleUser();
+
+        $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors('oauth');
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 1);
+    }
+
     public function test_google_login_race_rejects_duplicate_without_changing_the_account(): void
     {
         $user = User::factory()->create([
@@ -552,7 +589,7 @@ class GoogleOAuthStateTest extends TestCase
         $this->assertCount(0, $this->googleRequests);
     }
 
-    private function queueGoogleUser(): void
+    private function queueGoogleUser(bool $emailVerified = true): void
     {
         $this->googleResponses->append(
             new Response(200, ['Content-Type' => 'application/json'], json_encode([
@@ -564,7 +601,7 @@ class GoogleOAuthStateTest extends TestCase
                 'sub' => 'synthetic-google-user',
                 'name' => 'Google State User',
                 'email' => 'google-state@example.test',
-                'email_verified' => true,
+                'email_verified' => $emailVerified,
             ])),
         );
     }
