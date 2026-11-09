@@ -31,36 +31,36 @@
 
         <div class="collapse navbar-collapse" id="fcNav">
             <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center">
-                @if($showOrganizationNav)<li class="nav-item"><a class="nav-link" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>@endif
+                @if($showOrganizationNav)<li class="nav-item"><a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>@endif
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ lroute('petitions.index') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('petitions.index') }}">
                         {{ $explore }}
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/magazine') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ url('/magazine') }}">
                         {{ $c['nav_magazine'] ?? __('nav.magazine') }}
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ lroute('faqs') }}">
+                    <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('faqs') }}">
                         {{ $help }}
                     </a>
                 </li>
                 @if (!$isAuthed)
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ lroute('login') }}">
+                        <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('login') }}">
                             {{ $loginLabel }}
                         </a>
                     </li>
                 @else
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ lroute('profile') }}">{{ auth()->user()->display_name }}</a>
+                        <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('profile') }}">{{ auth()->user()->display_name }}</a>
                     </li>
                     <li class="nav-item lg:ms-2 lg:me-3">
                         <form method="POST" action="{{ lroute('logout') }}" class="d-inline">
                             @csrf
-                            <button type="submit" class="nav-link">
+                            <button type="submit" class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}">
                                 {{ $c['nav_logout'] ?? __('nav.logout') }}
                             </button>
                         </form>
