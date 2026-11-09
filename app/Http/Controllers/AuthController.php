@@ -439,13 +439,24 @@ class AuthController extends Controller
             // The address may have been registered or claimed since the link was sent.
             $taken = ! $expired && User::where('email', strtolower($user->pending_email))->whereKeyNot($user->id)->exists();
 
+            $oldEmail = null;
+
             if (! $expired && ! $taken) {
+                $oldEmail = $user->email;
                 $user->email = $user->pending_email;
             }
 
             $user->pending_email = null;
             $user->verification_token = null;
             $user->save();
+
+            if ($oldEmail !== null && strtolower($oldEmail) !== strtolower($user->email)) {
+                try {
+                    $this->wordPressUserDeletion->delete((new User)->forceFill(['email' => $oldEmail]));
+                } catch (\Throwable $e) {
+                    Log::error('WordPress cleanup of the old email failed: '.$e->getMessage());
+                }
+            }
 
             // A still-unverified account that just proved its (new) address falls through to markVerified().
             if ($expired || $taken || $user->verified) {

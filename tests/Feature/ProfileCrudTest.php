@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\VerifyAccountMail;
 use App\Models\User;
 use App\Models\UserLevel;
+use App\Services\WordPressUserDeletionService;
 use App\Support\MailQuota;
 use App\Support\Settings;
 use Database\Seeders\LanguageSeeder;
@@ -12,6 +13,8 @@ use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class ProfileCrudTest extends TestCase
@@ -252,6 +255,40 @@ class ProfileCrudTest extends TestCase
         $this->assertNull($user->pending_email);
         $this->assertNull($user->verification_token);
         $this->assertTrue((bool) $user->verified);
+    }
+
+    public function test_verify_link_deletes_the_wordpress_user_of_the_old_email_once(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $wordPress = Mockery::mock(WordPressUserDeletionService::class);
+        $wordPress->shouldReceive('delete')->once()->withArgs(fn (User $u) => $u->email === 'old-address@example.com');
+        $this->app->instance(WordPressUserDeletionService::class, $wordPress);
+
+        $user = $this->passwordUser(['email' => 'old-address@example.com']);
+        $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
+
+        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+
+        $this->assertSame('moved@example.com', $user->fresh()->email);
+    }
+
+    public function test_wordpress_cleanup_failure_does_not_block_the_email_swap(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $wordPress = Mockery::mock(WordPressUserDeletionService::class);
+        $wordPress->shouldReceive('delete')->once()->andThrow(new RuntimeException('boom'));
+        $this->app->instance(WordPressUserDeletionService::class, $wordPress);
+
+        $user = $this->passwordUser();
+        $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
+
+        $this->get('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+
+        $this->assertSame('moved@example.com', $user->fresh()->email);
     }
 
     public function test_pending_email_cannot_be_registered_or_claimed_by_another_account(): void
