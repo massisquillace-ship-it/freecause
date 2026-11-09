@@ -2,7 +2,24 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect, PETITION } from './helpers.js';
 import { ADMIN_STATE } from './env.js';
 
-const PUBLIC = ['/en', '/en/petitions', PETITION, '/en/create-petition', '/en/login', '/en/register', '/__components'];
+const PUBLIC = [
+    '/en',
+    '/en/petitions',
+    PETITION,
+    '/en/create-petition',
+    '/en/login',
+    '/en/register',
+    '/__components',
+    '/de/login',
+    '/el/petitions',
+    '/ru/create-petition',
+    '/en/forgot-password',
+    `${PETITION}/thanks`,
+    '/en/organizations',
+    '/en/organizations/explore',
+    '/en/organizations/terms',
+];
+const ENGLISH_LABELS = ['Pagination', 'Previous page', 'Next page', 'Breadcrumb', 'Dismiss', 'Close'];
 const ADMIN = [
     '/admin/dashboard',
     '/admin/options/global',
@@ -37,6 +54,13 @@ async function check(page, path, width) {
         .filter((v) => ['serious', 'critical'].includes(v.impact))
         .map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' , ')}`);
     expect(blocking, `${path} at ${width}px`).toEqual([]);
+    if (/^\/(de|el|ru)\//.test(path)) {
+        const english = await page.evaluate(
+            (labels) => [...document.querySelectorAll('[aria-label]')].map((el) => el.getAttribute('aria-label')).filter((l) => labels.includes(l)),
+            ENGLISH_LABELS,
+        );
+        expect(english, `English aria-label on ${path}`).toEqual([]);
+    }
 }
 
 for (const width of WIDTHS) {
