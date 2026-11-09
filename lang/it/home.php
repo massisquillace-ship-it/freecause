@@ -1,15 +1,18 @@
 <?php
 
 return [
+    'organization_verified' => 'Organizzazione verificata da FreeCause',
+    'goal_reached_petitions' => 'Petizioni che hanno raggiunto l’obiettivo di firme',
+    'see_all_victories' => 'Vedi tutti gli obiettivi raggiunti',
     'recently_signed_title' => 'Petizioni firmate di recente',
     'recently_signed_subtitle' => 'In ordine di ultima firma confermata',
     'organizations_empty' => 'Le organizzazioni appariranno qui quando saranno pubbliche.',
     'campaigns_empty' => 'Non ci sono ancora firme confermate.',
-    'victories_empty' => 'Non sono ancora state dichiarate vittorie.',
+    'victories_empty' => 'Nessuna petizione ha ancora raggiunto l’obiettivo di firme in questa lingua.',
     'petitions_label' => 'Petizioni',
     'status_verified' => 'Verificata',
     'status_unclaimed' => 'Non rivendicata',
-    'victory_badge' => 'Vittoria dichiarata dal promotore',
+    'victory_badge' => 'Obiettivo di firme raggiunto',
 
     'blog_read_more' => 'Leggi di più',
     'blog_subtitle' => 'Aggiornamenti e approfondimenti recenti',
@@ -78,7 +81,7 @@ return [
     'popular_title' => 'Le campagne più sostenute dell’ultimo anno',
     'popular_subtitle' => 'Petizioni di organizzazioni e cittadini, ordinate per firme',
     'victories_title' => 'Vittorie',
-    'victories_subtitle' => 'Risultati comunicati dai promotori',
+    'victories_subtitle' => 'Petizioni di persone e organizzazioni che hanno raggiunto l’obiettivo di firme',
     'causes_title' => 'Esplora per causa',
     'claim_title' => ':count organizzazioni hanno già una pagina su FreeCause. C’è anche la tua?',
     'claim_subtitle' => 'Le pagine nascono da petizioni pubblicate in oltre 15 anni. Rivendica la tua, verifica la tua identità e inizia a gestirla.',
