@@ -9,9 +9,12 @@ use App\Models\PetitionTranslation;
 use App\Models\User;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use PDOException;
 use Tests\TestCase;
 
 class PetitionCreateFlowTest extends TestCase
@@ -168,6 +171,45 @@ class PetitionCreateFlowTest extends TestCase
 
         $this->actingAs($this->user)->post($url, $this->payload(['title' => 'Save the Old Town Now']))->assertRedirect();
         $this->assertDatabaseHas('petition_translations', ['petition_id' => $petition->id, 'slug' => 'save-the-old-town-now']);
+    }
+
+    public function test_title_update_retries_after_first_slug_collision(): void
+    {
+        $petition = Petition::factory()->create([
+            'user_id' => $this->user->id,
+            'category_id' => $this->category->id,
+            'status' => 'published',
+            'is_active' => true,
+        ]);
+        PetitionTranslation::create([
+            'petition_id' => $petition->id,
+            'locale' => 'en',
+            'title' => 'Original Petition Title',
+            'slug' => 'original-petition-title',
+            'description' => 'Original description.',
+        ]);
+
+        $firstSave = true;
+        Event::listen('eloquent.saving: '.PetitionTranslation::class, function () use (&$firstSave): void {
+            if ($firstSave) {
+                $firstSave = false;
+                $pdoException = new PDOException('UNIQUE constraint failed');
+                $pdoException->errorInfo = ['23000', 19, 'UNIQUE constraint failed'];
+                throw new QueryException('sqlite', 'insert into petition_translations', [], $pdoException);
+            }
+        });
+
+        $this->actingAs($this->user)
+            ->post('/en/petition/original-petition-title/'.$petition->id.'/edit', $this->payload([
+                'title' => 'Updated Petition Title',
+            ]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('petition_translations', [
+            'petition_id' => $petition->id,
+            'slug' => 'updated-petition-title-1',
+            'title' => 'Updated Petition Title',
+        ]);
     }
 
     public function test_edit_form_previews_legacy_bare_image_name_from_storage_url(): void
