@@ -13,6 +13,7 @@ require_once __DIR__ . '/wp-load.php';
 
 // Validate and sanitise the redirect target — only relative paths allowed.
 $redirect = $_GET['r'] ?? '/';
+$signedRedirect = is_string($redirect) ? $redirect : '';
 if (!is_string($redirect) || !preg_match('#^/[^/]#', $redirect)) {
     $redirect = '/';
 }
@@ -34,7 +35,7 @@ if (!$payload || !$sig || !defined('SSO_SECRET') || !SSO_SECRET) {
 }
 
 // Verify HMAC signature.
-if (!hash_equals(hash_hmac('sha256', $payload, SSO_SECRET), $sig)) {
+if (!hash_equals(hash_hmac('sha256', $payload . '|' . $signedRedirect, SSO_SECRET), $sig)) {
     wp_redirect($redirect);
     exit;
 }
@@ -51,6 +52,13 @@ if ((int) $data['x'] < time()) {
     wp_redirect($redirect);
     exit;
 }
+
+$nonce = (string) ($data['j'] ?? '');
+if ($nonce === '' || get_transient('fc_sso_' . $nonce)) {
+    wp_redirect($redirect);
+    exit;
+}
+set_transient('fc_sso_' . $nonce, 1, 300);
 
 $email       = strtolower(trim((string) $data['e']));
 $displayName = $data['n'] ?? '';
