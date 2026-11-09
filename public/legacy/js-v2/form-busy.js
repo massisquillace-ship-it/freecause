@@ -2,7 +2,7 @@
 (function () {
     'use strict';
 
-    var offlineText = 'You appear to be offline. Reconnect and submit again.';
+    var offlineText = (document.body && document.body.getAttribute('data-offline-text')) || 'You appear to be offline. Reconnect and submit again.';
     var pending = new Map();
 
     function errorNode(form, selector) {

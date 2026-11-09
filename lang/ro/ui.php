@@ -13,4 +13,11 @@ return [
     'confirm' => 'Confirmă',
     'cancel' => 'Anulează',
     'dismiss' => 'Închide',
+    'skip_to_content' => 'Salt la conținut',
+    'advertisement' => 'Reclamă',
+    'close_advertisement' => 'Închide reclama',
+    'breadcrumb' => 'Cale de navigare',
+    'pagination' => 'Paginare',
+    'back_to_top' => 'Înapoi sus',
+    'offline' => 'Pari să fii offline. Reconectează-te și trimite din nou.',
 ];
