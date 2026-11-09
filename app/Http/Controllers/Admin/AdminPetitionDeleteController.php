@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Petition;
 use App\Support\CacheVersion;
 use App\Support\EdgeCachePurge;
 use App\Support\ImageVariants;
@@ -37,8 +38,13 @@ class AdminPetitionDeleteController extends Controller
                 }
             }
 
-            // Legacy short links have no foreign key; the remaining children cascade.
+            // Legacy short links, outcome events, and reports have no foreign key cascade.
             DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
+            DB::table('petition_outcome_events')->whereIn('petition_id', $ids)->delete();
+            DB::table('reports')
+                ->where('reportable_type', Petition::class)
+                ->whereIn('reportable_id', $ids)
+                ->delete();
             $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
 
             return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
