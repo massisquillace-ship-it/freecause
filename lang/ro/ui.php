@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Închide reclama',
     'breadcrumb' => 'Cale de navigare',
     'pagination' => 'Paginare',
+    'previous_page' => 'Pagina anterioară',
+    'next_page' => 'Pagina următoare',
     'back_to_top' => 'Înapoi sus',
     'offline' => 'Pari să fii offline. Reconectează-te și trimite din nou.',
 ];

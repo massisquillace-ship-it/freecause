@@ -18,6 +18,8 @@ return [
     'close_advertisement' => 'Luk annonce',
     'breadcrumb' => 'Brødkrumme',
     'pagination' => 'Sideinddeling',
+    'previous_page' => 'Forrige side',
+    'next_page' => 'Næste side',
     'back_to_top' => 'Til toppen',
     'offline' => 'Du ser ud til at være offline. Opret forbindelse igen, og send igen.',
 ];
