@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Support\WpSso;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 abstract class Controller
@@ -51,5 +54,14 @@ abstract class Controller
         }
 
         return $profile.'?'.http_build_query(['return' => $dest]);
+    }
+
+    public static function redirectViaSso(User $user, string $locale, string $dest): RedirectResponse
+    {
+        if (! $user->hasCompleteProfile()) {
+            $dest = self::profileCompletionTarget($locale, $dest);
+        }
+
+        return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
     }
 }
