@@ -12,43 +12,60 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class AdminPetitionDeleteController extends Controller
 {
     public function __invoke(Request $request)
     {
         $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1', 'max:500'],
-            'ids.*' => ['required', 'integer', 'distinct', 'exists:petitions,id'],
+            'ids' => ['required', 'array', 'min:1', 'max:50'],
+            'ids.*' => ['required', 'integer', 'distinct'],
             'confirmed' => ['required', 'accepted'],
         ]);
 
-        [$deleted, $shortLinks, $urls, $imagePaths] = DB::transaction(function () use ($data) {
-            $rows = DB::table('petitions')->whereIn('id', $data['ids'])
-                ->orderBy('id')->lockForUpdate()->get(['id', 'cover_image', 'image_url']);
-            $ids = $rows->pluck('id')->all();
-            $shortLinks = DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->pluck('short_link')->all();
-            $urls = EdgeCachePurge::petitionUrls($ids);
-            $imagePaths = [];
-            foreach ($rows as $row) {
-                foreach ([$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null] as $path) {
-                    if ($path && str_starts_with($path, 'petitions/') && ! str_contains($path, '..')) {
-                        $imagePaths[] = $path;
+        if (DB::table('petitions')->whereIn('id', $data['ids'])->count() !== count($data['ids'])) {
+            throw ValidationException::withMessages([
+                'ids' => 'One or more selected petitions no longer exist.',
+            ]);
+        }
+
+        $deleted = 0;
+        $shortLinks = [];
+        $urls = [];
+        $imagePaths = [];
+        foreach (array_chunk($data['ids'], 20) as $chunk) {
+            [$chunkDeleted, $chunkShortLinks, $chunkUrls, $chunkImagePaths] = DB::transaction(function () use ($chunk) {
+                $rows = DB::table('petitions')->whereIn('id', $chunk)
+                    ->orderBy('id')->lockForUpdate()->get(['id', 'cover_image', 'image_url']);
+                $ids = $rows->pluck('id')->all();
+                $shortLinks = DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->pluck('short_link')->all();
+                $urls = EdgeCachePurge::petitionUrls($ids);
+                $imagePaths = [];
+                foreach ($rows as $row) {
+                    foreach ([$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null] as $path) {
+                        if ($path && str_starts_with($path, 'petitions/') && ! str_contains($path, '..')) {
+                            $imagePaths[] = $path;
+                        }
                     }
                 }
-            }
 
-            // Legacy short links, outcome events, and reports have no foreign key cascade.
-            DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
-            DB::table('petition_outcome_events')->whereIn('petition_id', $ids)->delete();
-            DB::table('reports')
-                ->where('reportable_type', Petition::class)
-                ->whereIn('reportable_id', $ids)
-                ->delete();
-            $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
+                // Legacy short links, outcome events, and reports have no foreign key cascade.
+                DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
+                DB::table('petition_outcome_events')->whereIn('petition_id', $ids)->delete();
+                DB::table('reports')
+                    ->where('reportable_type', Petition::class)
+                    ->whereIn('reportable_id', $ids)
+                    ->delete();
+                $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
 
-            return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
-        });
+                return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
+            });
+            $deleted += $chunkDeleted;
+            $shortLinks = [...$shortLinks, ...$chunkShortLinks];
+            $urls = [...$urls, ...$chunkUrls];
+            $imagePaths = [...$imagePaths, ...$chunkImagePaths];
+        }
 
         try {
             $keep = array_flip(DB::table('petitions')
