@@ -7,7 +7,6 @@ use App\Models\UserLevel;
 use App\Services\PetitionSigning;
 use App\Support\AppLog;
 use App\Support\Locale;
-use App\Support\WpSso;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -409,11 +408,7 @@ class GoogleAuthController extends Controller
             ]);
             $dest = parse_url($dest, PHP_URL_PATH).'?'.http_build_query(['oauth_logged_in' => 1]);
 
-            if (! $user->hasCompleteProfile()) {
-                $dest = self::profileCompletionTarget($destLocale, $dest);
-            }
-
-            return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
+            return self::redirectViaSso($user, $destLocale, $dest);
         }
 
         $dest = $ctx['redirect'] ?? '';
@@ -421,11 +416,7 @@ class GoogleAuthController extends Controller
             $dest = '/'.Locale::toShort($user->locale);
         }
 
-        if (! $user->hasCompleteProfile()) {
-            $dest = self::profileCompletionTarget($destLocale, $dest);
-        }
-
-        return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
+        return self::redirectViaSso($user, $destLocale, $dest);
     }
 
     private static function isGoogleIdUniqueViolation(QueryException $exception): bool

@@ -174,11 +174,7 @@ class AuthController extends Controller
 
         $dest = self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}");
 
-        if (! $user->hasCompleteProfile()) {
-            $dest = self::profileCompletionTarget($locale, $dest);
-        }
-
-        return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
+        return self::redirectViaSso($user, $locale, $dest);
     }
 
     public function login(LoginRequest $request, string $locale)
@@ -247,11 +243,7 @@ class AuthController extends Controller
                 $dest = '/'.Locale::toShort($user->locale);
             }
 
-            if (! $user->hasCompleteProfile()) {
-                $dest = self::profileCompletionTarget($locale, $dest);
-            }
-
-            return redirect()->to(WpSso::loginUrl($user->email, $user->name, $dest));
+            return self::redirectViaSso($user, $locale, $dest);
         }
 
         return back()->withErrors(['email' => __('auth.err_invalid_credentials')])->onlyInput('email', 'auth_form');
