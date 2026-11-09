@@ -10,5 +10,5 @@ class OrganizationNotification extends Model
 
     protected $hidden = ['payload'];
 
-    protected $casts = ['payload' => 'array', 'to_admin' => 'boolean', 'sent_at' => 'datetime', 'cancelled_at' => 'datetime'];
+    protected $casts = ['payload' => 'array', 'to_admin' => 'boolean', 'sent_at' => 'datetime', 'cancelled_at' => 'datetime', 'claimed_at' => 'datetime'];
 }

@@ -54,6 +54,14 @@ class AdminPetitionDeleteTest extends TestCase
         }
         Signature::factory()->create(['petition_id' => $petition->id]);
         $keptSignature = Signature::factory()->create(['petition_id' => $kept->id]);
+        DB::table('petition_outcome_events')->insert([
+            ['petition_id' => $petition->id, 'actor_user_id' => $owner->id, 'before' => '{}', 'after' => '{}', 'created_at' => now()],
+            ['petition_id' => $kept->id, 'actor_user_id' => $owner->id, 'before' => '{}', 'after' => '{}', 'created_at' => now()],
+        ]);
+        DB::table('reports')->insert([
+            ['reportable_type' => Petition::class, 'reportable_id' => $petition->id, 'reason' => 'spam', 'status' => 'open', 'created_at' => now(), 'updated_at' => now()],
+            ['reportable_type' => Petition::class, 'reportable_id' => $kept->id, 'reason' => 'spam', 'status' => 'open', 'created_at' => now(), 'updated_at' => now()],
+        ]);
         DB::table('petition_views')->insert(['petition_id' => $petition->id, 'viewed_on' => '2026-10-31', 'views' => 1]);
         DB::table('legacy_shortlinks')->insert(['petition_id' => $petition->id, 'short_link' => 'DEL123']);
         Cache::put('legacy_shortlink:DEL123', (object) ['petition_id' => $petition->id], 3600);
@@ -64,11 +72,20 @@ class AdminPetitionDeleteTest extends TestCase
             ->assertOk()->assertJson(['ok' => true, 'deleted' => 1, 'restorable' => false]);
 
         $this->assertDatabaseMissing('petitions', ['id' => $petition->id]);
-        foreach (['petition_translations', 'signatures', 'petition_views', 'legacy_shortlinks'] as $table) {
+        foreach (['petition_translations', 'signatures', 'petition_views', 'legacy_shortlinks', 'petition_outcome_events'] as $table) {
             $this->assertDatabaseMissing($table, ['petition_id' => $petition->id]);
         }
+        $this->assertDatabaseMissing('reports', [
+            'reportable_type' => Petition::class,
+            'reportable_id' => $petition->id,
+        ]);
         $this->assertDatabaseHas('petitions', ['id' => $kept->id]);
         $this->assertDatabaseHas('signatures', ['id' => $keptSignature->id]);
+        $this->assertDatabaseHas('petition_outcome_events', ['petition_id' => $kept->id]);
+        $this->assertDatabaseHas('reports', [
+            'reportable_type' => Petition::class,
+            'reportable_id' => $kept->id,
+        ]);
         $this->assertDatabaseHas('users', ['id' => $owner->id]);
         $this->assertNull(Cache::get('legacy_shortlink:DEL123'));
         $this->assertNotSame($before, CacheVersion::get('sitemap'));
@@ -164,6 +181,35 @@ class AdminPetitionDeleteTest extends TestCase
         $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$petition->id, 999999999], 'confirmed' => true])
             ->assertUnprocessable();
         $this->assertDatabaseHas('petitions', ['id' => $petition->id]);
+    }
+
+    public function test_delete_rejects_more_than_50_petitions(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petitions = Petition::factory()->count(51)->create();
+        $this->assertCount(51, $petitions);
+
+        $this->postJson(route('admin.petitions.bulkDelete'), [
+            'ids' => $petitions->pluck('id')->all(),
+            'confirmed' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('ids');
+    }
+
+    public function test_delete_removes_45_petitions(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $petitions = Petition::factory()->count(45)->create();
+
+        $this->postJson(route('admin.petitions.bulkDelete'), [
+            'ids' => $petitions->pluck('id')->all(),
+            'confirmed' => true,
+        ])->assertOk()->assertJson([
+            'ok' => true,
+            'deleted' => 45,
+            'restorable' => false,
+        ]);
+
+        $this->assertSame(0, Petition::whereKey($petitions->modelKeys())->count());
     }
 
     public function test_edit_permission_does_not_grant_delete_and_delete_does_not_require_edit(): void

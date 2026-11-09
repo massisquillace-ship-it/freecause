@@ -8,8 +8,10 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Jobs\CleanupDeletedAccount;
 use App\Jobs\SendWelcomeEmail;
 use App\Mail\VerifyAccountMail;
+use App\Models\AccountDeletionCleanup;
 use App\Models\Language;
 use App\Models\User;
 use App\Models\UserLevel;
@@ -189,19 +191,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user) {
-            if ($user->isBanned()) {
-                AppLog::warning(
-                    'Banned user attempted login',
-                    'User ID: '.$user->id.' | IP: '.$request->ip(),
-                    'auth.login'
-                );
-                toast(__('auth.err_suspended'), 'error');
-
-                return back()->withInput();
-            }
-        }
-
         $legacyHash = $user && filled($user->password) && str_contains($user->password, ':');
 
         try {
@@ -217,6 +206,19 @@ class AuthController extends Controller
         }
 
         if ($loggedIn) {
+            if ($user->isBanned()) {
+                Auth::guard('web')->logout();
+
+                AppLog::warning(
+                    'Banned user attempted login',
+                    'User ID: '.$user->id.' | IP: '.$request->ip(),
+                    'auth.login'
+                );
+                toast(__('auth.err_suspended'), 'error');
+
+                return back()->withInput();
+            }
+
             if (! $user->verified) {
                 Auth::guard('web')->logout();
 
@@ -385,19 +387,17 @@ class AuthController extends Controller
         $userEmail = $u->email;
 
         try {
-            $this->wordPressUserDeletion->delete($u);
-        } catch (\Throwable $e) {
-            Log::error('Account deletion aborted because WordPress cleanup failed: '.$e->getMessage());
-
-            return back()->withErrors([
-                'delete_account' => __('profile.account_delete_failed'),
-            ]);
-        }
-
-        try {
-            DB::transaction(function () use ($u) {
+            $cleanup = DB::transaction(function () use ($u) {
+                $cleanup = AccountDeletionCleanup::create([
+                    'user_id' => $u->id,
+                    'email' => $u->email,
+                ]);
                 app(OrganizationLifecycle::class)->suspendForDeletedOwner($u);
-                User::query()->whereKey($u->getKey())->delete();
+                // SessionGuard rotates the remember token during logout; clear it so it cannot reinsert this deleted model.
+                $u->setRememberToken(null);
+                $u->delete();
+
+                return $cleanup;
             }, 3);
         } catch (\Throwable $e) {
             AppLog::error(
@@ -411,6 +411,17 @@ class AuthController extends Controller
             ]);
         }
 
+        DB::afterCommit(function () use ($cleanup) {
+            try {
+                CleanupDeletedAccount::dispatch($cleanup->id);
+            } catch (\Throwable $e) {
+                Log::warning('Account deletion cleanup dispatch deferred', [
+                    'cleanup_id' => $cleanup->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -422,6 +433,23 @@ class AuthController extends Controller
         );
 
         return redirect()->to("/{$locale}")->with('success', __('profile.account_deleted_success'));
+    }
+
+    public function showVerifyConfirmation(string $locale, string $token)
+    {
+        $user = User::where('verification_token', $token)->first();
+
+        if (! $user) {
+            toast(__('auth.verify_invalid'), 'error');
+
+            return redirect()->to("/{$locale}");
+        }
+
+        return view('auth.verify-confirmation', [
+            'locale' => $locale,
+            'token' => $token,
+            'expired' => (bool) ($user->verification_token_sent_at?->lt(now()->subHours(48))),
+        ]);
     }
 
     public function verify(Request $request, string $locale, string $token)

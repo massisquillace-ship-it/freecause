@@ -554,25 +554,17 @@ class PetitionController extends Controller
                 $petition->save();
                 $petition->causes()->sync($data['causes'] ?? []);
 
-                $slug = $this->makeUniqueSlug($data['title'], $locale);
-
-                $tries = 0;
-                while (true) {
-                    try {
-                        $petition->translations()->create([
-                            'locale' => $locale,
-                            'title' => $data['title'],
-                            'slug' => $slug,
-                            'description' => sanitizePetitionHtml($data['description']),
-                        ]);
-                        break;
-                    } catch (QueryException $e) {
-                        if (($e->errorInfo[0] ?? null) !== '23000' || ++$tries >= 5) {
-                            throw $e;
-                        }
-                        $slug = Slug::dedupe($data['title'].'-'.$tries, fn () => false, 'petition', 255);
-                    }
-                }
+                $slug = $this->saveTranslationWithSlugRetry(
+                    $data['title'],
+                    $locale,
+                    null,
+                    fn (string $slug) => $petition->translations()->create([
+                        'locale' => $locale,
+                        'title' => $data['title'],
+                        'slug' => $slug,
+                        'description' => sanitizePetitionHtml($data['description']),
+                    ])
+                );
 
                 $user = auth()->user();
 
@@ -896,15 +888,23 @@ class PetitionController extends Controller
 
                 $petition->save();
 
-                // Keep a legacy slug when the title is unchanged.
-                if ($data['title'] !== $tr->title) {
-                    $tr->slug = $this->makeUniqueSlug($data['title'], $tr->locale, $tr->id);
-                }
                 $oldTitle = $tr->title;
                 $oldDescription = $tr->description;
                 $tr->title = $data['title'];
                 $tr->description = sanitizePetitionHtml($data['description']);
-                $tr->save();
+                if ($data['title'] !== $oldTitle) {
+                    $this->saveTranslationWithSlugRetry(
+                        $data['title'],
+                        $tr->locale,
+                        $tr->id,
+                        function (string $slug) use ($tr): void {
+                            $tr->slug = $slug;
+                            $tr->save();
+                        }
+                    );
+                } else {
+                    $tr->save();
+                }
 
                 PetitionTranslation::where('petition_id', $petition->id)
                     ->where('id', '!=', $tr->id)
@@ -918,7 +918,9 @@ class PetitionController extends Controller
                         'title' => $data['title'],
                         'keywords' => $reviewMatches,
                     ]));
+                }
 
+                if ($reviewMatches !== []) {
                     toast(__('petition.review_required'), 'warning');
                 } else {
                     toast(__('create.toast_updated'), 'success');
@@ -1111,6 +1113,29 @@ class PetitionController extends Controller
             'petition',
             255
         );
+    }
+
+    private function saveTranslationWithSlugRetry(
+        string $title,
+        string $locale,
+        ?int $ignoreTranslationId,
+        \Closure $save
+    ): string {
+        $slug = $this->makeUniqueSlug($title, $locale, $ignoreTranslationId);
+        $tries = 0;
+
+        while (true) {
+            try {
+                $save($slug);
+
+                return $slug;
+            } catch (QueryException $e) {
+                if (($e->errorInfo[0] ?? null) !== '23000' || ++$tries >= 5) {
+                    throw $e;
+                }
+                $slug = Slug::dedupe($title.'-'.$tries, fn () => false, 'petition', 255);
+            }
+        }
     }
 
     public function signatures(Request $request, string $locale, string $slug, int $id)

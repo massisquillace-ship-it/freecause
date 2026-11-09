@@ -32,7 +32,7 @@ class WelcomeOnboardingTest extends TestCase
     {
         return User::factory()->create(array_merge([
             'verified' => true,
-            'google_id' => 'synthetic-google-id',
+            'google_id' => 'synthetic-google-id-'.fake()->uuid(),
             'locale' => 'en_US',
             'country' => null,
             'gender' => null,
@@ -183,6 +183,23 @@ class WelcomeOnboardingTest extends TestCase
         }
         $this->assertTrue($user->fresh()->welcome_email_pending);
         $this->assertNull($user->fresh()->welcome_email_sent_at);
+        $this->assertNull($user->fresh()->welcome_email_claimed_at);
+    }
+
+    public function test_active_claim_blocks_a_concurrent_welcome_and_expired_claim_can_retry(): void
+    {
+        $user = $this->newUser(['country' => 'IT', 'gender' => 'female', 'preferred_language_confirmed_at' => now()]);
+        $user->forceFill([
+            'welcome_email_claimed_at' => now(),
+            'welcome_email_claim_token' => 'active-claim',
+        ])->save();
+        (new SendWelcomeEmail($user->id))->handle();
+        Mail::assertNothingSent();
+
+        $user->forceFill(['welcome_email_claimed_at' => now()->subMinutes(11)])->save();
+        (new SendWelcomeEmail($user->id))->handle();
+        Mail::assertSentCount(1);
+        $this->assertNull($user->fresh()->welcome_email_claimed_at);
     }
 
     public function test_exhausted_quota_defers_welcome_instead_of_dropping_it(): void

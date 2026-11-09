@@ -43,7 +43,7 @@ class SafeExternalImageUrl implements ValidationRule
             return;
         }
 
-        if (app()->runningUnitTests() || ! config('petition.verify_external_image', true)) {
+        if (! config('petition.verify_external_image', true)) {
             return;
         }
 
@@ -148,11 +148,50 @@ class SafeExternalImageUrl implements ValidationRule
 
     private function isPublicIp(string $ip): bool
     {
+        foreach ([
+            '100.64.0.0/10',
+            '192.0.0.0/24',
+            '198.18.0.0/15',
+            '64:ff9b::/96',
+            '2002::/16',
+        ] as $range) {
+            if ($this->ipInCidr($ip, $range)) {
+                return false;
+            }
+        }
+
         return (bool) filter_var(
             $ip,
             FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
         );
+    }
+
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        [$network, $prefix] = explode('/', $cidr, 2);
+        $addressBinary = inet_pton($ip);
+        $networkBinary = inet_pton($network);
+
+        if ($addressBinary === false || $networkBinary === false
+            || strlen($addressBinary) !== strlen($networkBinary)) {
+            return false;
+        }
+
+        $prefix = (int) $prefix;
+        $wholeBytes = intdiv($prefix, 8);
+        if ($wholeBytes > 0 && substr($addressBinary, 0, $wholeBytes) !== substr($networkBinary, 0, $wholeBytes)) {
+            return false;
+        }
+
+        $remainingBits = $prefix % 8;
+        if ($remainingBits === 0) {
+            return true;
+        }
+
+        $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
+
+        return (ord($addressBinary[$wholeBytes]) & $mask) === (ord($networkBinary[$wholeBytes]) & $mask);
     }
 
     private function inspect(string $url): string

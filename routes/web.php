@@ -332,7 +332,8 @@ Route::prefix('{locale}')
         Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:5,1');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-        Route::get('/verify/{token}', [AuthController::class, 'verify'])->name('verify.account');
+        Route::get('/verify/{token}', [AuthController::class, 'showVerifyConfirmation'])->name('verify.account');
+        Route::post('/verify/{token}', [AuthController::class, 'verify'])->name('verify.account.confirm')->middleware('throttle:10,1');
 
         Route::get('/user/{slug}/{id}', [UserProfileController::class, 'show'])->name('user.profile');
 
@@ -358,7 +359,7 @@ Route::prefix('{locale}')
 
             Route::post('/account/unlink/google', [AuthController::class, 'unlinkGoogle'])->name('account.unlink.google');
 
-            Route::post('/create-petition', [PetitionController::class, 'store'])->name('petition.store')->middleware('throttle:5,1');
+            Route::post('/create-petition', [PetitionController::class, 'store'])->name('petition.store')->middleware(['throttle:5,1', 'throttle:petition-create-daily']);
 
             Route::get('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'edit'])->name('petition.outcome');
             Route::post('/petition/{slug}/{id}/outcome', [PetitionOutcomeController::class, 'update'])->name('petition.outcome.update');

@@ -2,14 +2,14 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\PetitionNewSignaturesMail;
+use App\Jobs\SendPetitionNewSignaturesNotification;
 use App\Models\Petition;
+use App\Models\PetitionSignatureNotification;
 use App\Support\AppLog;
 use App\Support\MailQuota;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class SendPetitionNewSignatures extends Command
@@ -115,18 +115,35 @@ class SendPetitionNewSignatures extends Command
                     ]);
 
                 if (! $dryRun) {
+                    $notification = PetitionSignatureNotification::query()
+                        ->where('petition_id', $petitionId)
+                        ->whereIn('status', ['pending', 'failed'])
+                        ->latest('id')
+                        ->first();
+
+                    if ($notification?->status === 'pending') {
+                        $skipped++;
+
+                        continue;
+                    }
+
                     try {
-                        Mail::to($owner->email)->queue(new PetitionNewSignaturesMail($petition, $owner, (int) $total, $signers));
+                        DB::transaction(function () use ($petitionId, $cutoff, $total, $signers, $notification) {
+                            $notification ??= PetitionSignatureNotification::create([
+                                'petition_id' => $petitionId,
+                                'cutoff_at' => $cutoff,
+                                'total' => (int) $total,
+                                'signers' => $signers->all(),
+                            ]);
+
+                            SendPetitionNewSignaturesNotification::dispatch($notification->id);
+                        });
                     } catch (\Throwable $e) {
                         AppLog::error('New-signatures email failed', 'Petition ID: '.$petitionId.' | '.$e->getMessage(), 'emails.new-signatures');
                         $skipped++;
 
                         continue;
                     }
-                }
-
-                if (! $dryRun) {
-                    DB::afterCommit(fn () => DB::table('petitions')->where('id', $petitionId)->update(['last_notified_at' => $cutoff]));
                 }
                 $sent++;
             }

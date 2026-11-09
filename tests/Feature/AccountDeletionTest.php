@@ -2,12 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\CleanupDeletedAccount;
+use App\Models\AccountDeletionCleanup;
 use App\Models\User;
+use App\Models\UserLevel;
+use App\Services\OrganizationLifecycle;
 use App\Services\WordPressUserDeletionService;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use RuntimeException;
 use Tests\TestCase;
@@ -22,6 +28,7 @@ class AccountDeletionTest extends TestCase
 
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class]);
 
+        Queue::fake();
         $wordPressDeletion = Mockery::mock(WordPressUserDeletionService::class);
         $wordPressDeletion->shouldReceive('delete')->byDefault();
         $this->app->instance(WordPressUserDeletionService::class, $wordPressDeletion);
@@ -106,6 +113,26 @@ class AccountDeletionTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
+    public function test_account_deletion_clears_user_level_counts_cache(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'password_changed_at' => now(),
+            'google_id' => null,
+            'level_id' => UserLevel::where('name', 'user')->value('id'),
+        ]);
+        Cache::put('level:user_counts', ['user' => 1], 3600);
+
+        $this->actingAs($user)
+            ->post('/en/account/delete', [
+                'password' => 'correct-password',
+                'confirm_delete' => '1',
+            ])
+            ->assertRedirect('/en');
+
+        $this->assertFalse(Cache::has('level:user_counts'));
+    }
+
     public function test_google_only_user_cannot_unlink_their_only_login_method(): void
     {
         $user = $this->googleOnlyUser();
@@ -117,7 +144,7 @@ class AccountDeletionTest extends TestCase
         $this->assertSame('google-account-id', $user->fresh()->google_id);
     }
 
-    public function test_wordpress_deletion_failure_keeps_user_authenticated_and_local_data_intact(): void
+    public function test_wordpress_deletion_failure_leaves_local_deletion_committed_and_pending(): void
     {
         $user = User::factory()->create([
             'password' => Hash::make('correct-password'),
@@ -127,10 +154,38 @@ class AccountDeletionTest extends TestCase
 
         $wordPressDeletion = Mockery::mock(WordPressUserDeletionService::class);
         $wordPressDeletion->shouldReceive('delete')
-            ->once()
-            ->withArgs(fn (User $candidate) => $candidate->is($user))
             ->andThrow(new RuntimeException('Synthetic WordPress failure'));
         $this->app->instance(WordPressUserDeletionService::class, $wordPressDeletion);
+
+        $this->actingAs($user)
+            ->post('/en/account/delete', [
+                'password' => 'correct-password',
+                'confirm_delete' => '1',
+            ])
+            ->assertRedirect('/en');
+
+        $cleanup = AccountDeletionCleanup::where('user_id', $user->id)->firstOrFail();
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+
+        try {
+            (new CleanupDeletedAccount($cleanup->id))->handle($wordPressDeletion);
+        } catch (RuntimeException) {
+        }
+
+        $this->assertSame('Synthetic WordPress failure', $cleanup->fresh()->last_error);
+    }
+
+    public function test_local_failure_does_not_record_cleanup_or_delete_user(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'password_changed_at' => now(),
+            'google_id' => null,
+        ]);
+        $lifecycle = Mockery::mock(OrganizationLifecycle::class);
+        $lifecycle->shouldReceive('suspendForDeletedOwner')->once()->andThrow(new RuntimeException('Synthetic local failure'));
+        $this->app->instance(OrganizationLifecycle::class, $lifecycle);
 
         $this->actingAs($user)
             ->from('/en/profile')
@@ -143,6 +198,51 @@ class AccountDeletionTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertDatabaseMissing('account_deletion_cleanups', ['user_id' => $user->id]);
+    }
+
+    public function test_successful_deletion_queues_cleanup_after_local_commit(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'password_changed_at' => now(),
+            'google_id' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->post('/en/account/delete', [
+                'password' => 'correct-password',
+                'confirm_delete' => '1',
+            ])
+            ->assertRedirect('/en');
+
+        $cleanup = AccountDeletionCleanup::where('user_id', $user->id)->firstOrFail();
+        Queue::assertPushed(CleanupDeletedAccount::class, fn ($job) => $job->cleanupId === $cleanup->id);
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    public function test_cleanup_retries_after_wordpress_failure_and_completes(): void
+    {
+        $cleanup = AccountDeletionCleanup::create([
+            'user_id' => 999,
+            'email' => 'deleted@example.com',
+        ]);
+        $wordPressDeletion = Mockery::mock(WordPressUserDeletionService::class);
+        $wordPressDeletion->shouldReceive('delete')
+            ->once()
+            ->andThrow(new RuntimeException('Temporary WordPress failure'));
+        $wordPressDeletion->shouldReceive('delete')->once();
+
+        try {
+            (new CleanupDeletedAccount($cleanup->id))->handle($wordPressDeletion);
+        } catch (RuntimeException) {
+        }
+        (new CleanupDeletedAccount($cleanup->id))->handle($wordPressDeletion);
+
+        $cleanup = $cleanup->fresh();
+        $this->assertSame(2, $cleanup->attempts);
+        $this->assertNotNull($cleanup->completed_at);
+        $this->assertNull($cleanup->last_error);
     }
 
     private function googleOnlyUser(): User
