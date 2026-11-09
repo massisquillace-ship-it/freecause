@@ -106,7 +106,7 @@ class AuthController extends Controller
                 'email' => strtolower(trim($data['email'])),
                 'password' => Hash::make($data['password']),
                 'password_changed_at' => now(),
-                'locale' => $locale,
+                'locale' => Locale::toFull($locale),
                 'ip' => $request->ip(),
                 'level_id' => $userLevel?->id,
                 'nickname' => $data['nickname'] ?? null,
@@ -136,36 +136,16 @@ class AuthController extends Controller
             'auth.register'
         );
 
-        if ($needsVerif && $smtpEnabled) {
-            try {
+        if ($needsVerif) {
+            if ($smtpEnabled) {
                 Mail::to($user->email)->queue(new VerifyAccountMail($user, $locale));
-            } catch (\Exception $e) {
-                AppLog::error(
-                    'Mail sending failed',
-                    $e->getMessage(),
-                    'auth.register'
-                );
-
-                $this->markPendingVerification($request, $user, $locale);
-
-                return redirect()
-                    ->route('verification.notice', ['locale' => $locale])
-                    ->with('error', __('auth.register_failed'));
             }
 
             $this->markPendingVerification($request, $user, $locale);
 
             return redirect()
                 ->route('verification.notice', ['locale' => $locale])
-                ->with('success', __('auth.register_check_email'));
-        }
-
-        if ($needsVerif && ! $smtpEnabled) {
-            $this->markPendingVerification($request, $user, $locale);
-
-            return redirect()
-                ->route('verification.notice', ['locale' => $locale])
-                ->with('success', __('auth.register_pending'));
+                ->with('success', __($smtpEnabled ? 'auth.register_check_email' : 'auth.register_pending'));
         }
 
         auth()->login($user);
