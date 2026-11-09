@@ -260,6 +260,8 @@ class AdminUsersController extends Controller
             ])->withInput();
         }
 
+        $oldEmail = $user->email;
+
         try {
             DB::transaction(function () use ($request, $data, $user, $levelChangesRequested, $needsReverification, $nowVerified, $wasVerified, $emailChanged) {
                 if ($levelChangesRequested) {
@@ -304,6 +306,14 @@ class AdminUsersController extends Controller
             });
         } catch (\Throwable $e) {
             return back()->withInput()->withErrors(['id' => 'Could not save user.']);
+        }
+
+        if ($emailChanged) {
+            try {
+                app(WordPressUserDeletionService::class)->delete((new User)->forceFill(['email' => $oldEmail]));
+            } catch (\Throwable $e) {
+                AppLog::error('WordPress cleanup of the old email failed', 'User ID: '.$user->id.' | '.$e->getMessage(), 'admin.users');
+            }
         }
 
         if (! $wasVerified && $nowVerified) {
