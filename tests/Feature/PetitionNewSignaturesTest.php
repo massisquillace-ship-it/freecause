@@ -3,15 +3,20 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendPetitionNewSignaturesNotification;
+use App\Mail\PetitionNewSignaturesMail;
 use App\Models\Petition;
 use App\Models\PetitionSignatureNotification;
 use App\Models\PetitionTranslation;
 use App\Models\Signature;
 use App\Models\User;
+use App\Support\MailQuota;
+use App\Support\MailQuotaGate;
 use App\Support\Settings;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
+use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\SendQueuedMailable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -174,5 +179,42 @@ class PetitionNewSignaturesTest extends TestCase
 
         Queue::assertPushed(SendPetitionNewSignaturesNotification::class, fn ($job) => $job->notificationId === $notification->id);
         $this->assertSame(1, PetitionSignatureNotification::where('petition_id', $petition->id)->count());
+    }
+
+    public function test_quota_exhausted_defers_the_mail_instead_of_dropping_it(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+
+        MailQuota::trip();
+        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+
+        $sent = null;
+        Queue::assertPushed(SendQueuedMailable::class, function ($job) use (&$sent) {
+            $sent = $job;
+
+            return $job->mailable instanceof PetitionNewSignaturesMail;
+        });
+
+        $this->assertTrue($sent->mailable->transactional);
+        $this->assertInstanceOf(MailQuotaGate::class, $sent->middleware[0]);
+        $this->assertSame('delivered', $notification->fresh()->status);
+        $this->assertNotNull($petition->fresh()->last_notified_at);
+
+        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+        Queue::assertPushed(SendQueuedMailable::class, 1);
+
+        $inner = $this->createMock(Job::class);
+        $inner->expects($this->once())->method('delete');
+        $sent->job = $inner;
+        Queue::fake();
+        $sent->middleware[0]->handle($sent, fn () => $this->fail('SMTP reached'));
+
+        Queue::assertPushed(SendQueuedMailable::class, fn ($job) => $job->mailable instanceof PetitionNewSignaturesMail);
     }
 }
