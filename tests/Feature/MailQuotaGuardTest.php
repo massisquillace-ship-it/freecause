@@ -32,6 +32,17 @@ class MailQuotaGuardTest extends TestCase
         )));
     }
 
+    public function test_per_recipient_mailbox_quota_errors_are_not_global(): void
+    {
+        $this->assertFalse(MailQuota::causedBy(new RuntimeException(
+            'Expected response code "250/251/252" but got code "552", with message "552 5.2.2 Mailbox quota exceeded".'
+        )));
+
+        $this->assertFalse(MailQuota::causedBy(new RuntimeException(
+            'Expected response code "354" but got code "452", with message "452 4.2.2 Mailbox full, over quota".'
+        )));
+    }
+
     public function test_worker_quota_failure_trips_the_abort_flag(): void
     {
         Event::dispatch(new JobExceptionOccurred(
