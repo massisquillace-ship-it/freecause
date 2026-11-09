@@ -108,7 +108,8 @@ test('public profile mobile menu and language controls work without legacy widge
     await page.goto('/en/org/e2e-organization-images');
     await page.locator('[data-sheet-open="mobile-menu"]:visible').first().click();
     await expect(page.locator('#mobile-menu')).toBeVisible();
-    await expect(page.locator('#mobile-menu').getByRole('link', { name: 'For organizations' })).toBeVisible();
+    await expect(page.locator('#mobile-menu').getByRole('link', { name: 'Organizations', exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-menu').getByRole('link', { name: 'Organizations', exact: true })).toHaveAttribute('href', /\/en\/organizations\/explore$/);
     await page.keyboard.press('Escape');
     await expect(page.locator('#mobile-menu')).not.toBeVisible();
     await page.locator('nav details:visible summary').first().click();
