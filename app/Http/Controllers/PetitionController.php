@@ -502,7 +502,7 @@ class PetitionController extends Controller
     public function store(PetitionRequest $request, string $locale)
     {
         $dailyKey = 'petition-create-daily:'.auth()->id();
-        abort_if(RateLimiter::tooManyAttempts($dailyKey, 10), 429);
+        abort_if(RateLimiter::hit($dailyKey, 86400) > 10, 429);
 
         $data = $request->validated();
         $petitionText = implode(' ', [
@@ -606,8 +606,6 @@ class PetitionController extends Controller
                     'id' => $petition->id,
                 ])->with('petition_mode', 'created');
             });
-
-            RateLimiter::hit($dailyKey, 86400);
 
             return $response;
         } catch (\Throwable $e) {
