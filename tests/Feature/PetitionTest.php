@@ -14,6 +14,7 @@ use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -2228,5 +2229,112 @@ class PetitionTest extends TestCase
         $this->get('/en/petitions?q='.urlencode('&'))
             ->assertOk()
             ->assertSee('Fish <mark>&amp;</mark> Chips', false);
+    }
+
+    private function ownedPetition(array $attributes = []): Petition
+    {
+        $petition = Petition::factory()->create([
+            'user_id' => $this->user->id,
+            'category_id' => $this->category->id,
+            'is_active' => true,
+        ] + $attributes);
+        PetitionTranslation::create([
+            'petition_id' => $petition->id,
+            'locale' => 'en',
+            'title' => 'Held Petition Title',
+            'slug' => 'held-petition-title',
+            'description' => 'Original petition description.',
+        ]);
+
+        return $petition;
+    }
+
+    private function editPayload(string $body): array
+    {
+        return [
+            'title' => 'Held Petition Title',
+            'description' => $body,
+            'category_id' => $this->category->id,
+        ];
+    }
+
+    public function test_update_does_not_auto_publish_a_draft_held_by_admin(): void
+    {
+        $petition = $this->ownedPetition(['status' => 'draft', 'held_by_admin' => true]);
+
+        $this->actingAs($this->user)
+            ->post("/en/petition/held-petition-title/{$petition->id}/edit", $this->editPayload('<p>This updated description contains enough meaningful content.</p>'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('draft', $petition->fresh()->status);
+    }
+
+    public function test_review_keyword_edit_drafts_a_published_petition_and_removing_it_publishes_again(): void
+    {
+        $petition = $this->ownedPetition(['status' => 'published', 'held_by_admin' => false]);
+        $url = "/en/petition/held-petition-title/{$petition->id}/edit";
+
+        $this->actingAs($this->user)
+            ->post($url, $this->editPayload('<p>Stop casino advertising near schools in our town today.</p>'))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('draft', $petition->fresh()->status);
+
+        $this->actingAs($this->user)
+            ->post($url, $this->editPayload('<p>Stop noisy advertising near schools in our town today.</p>'))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('published', $petition->fresh()->status);
+    }
+
+    public function test_same_title_petitions_get_distinct_slugs(): void
+    {
+        foreach ([1, 2] as $_) {
+            $this->actingAs($this->user)->post('/en/create-petition', [
+                'title' => 'Identical Petition Title',
+                'description' => '<p>This is a test petition with enough content to pass validation.</p>',
+                'goal_signatures' => 100,
+                'category_id' => $this->category->id,
+            ])->assertSessionHasNoErrors();
+        }
+
+        $slugs = PetitionTranslation::where('title', 'Identical Petition Title')->pluck('slug');
+        $this->assertCount(2, $slugs);
+        $this->assertCount(2, $slugs->unique());
+    }
+
+    public function test_failed_validation_does_not_consume_the_daily_create_limit(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        foreach (range(1, 11) as $_) {
+            $this->actingAs($this->user)->post('/en/create-petition', ['title' => ''])->assertSessionHasErrors('title');
+        }
+
+        $this->actingAs($this->user)->post('/en/create-petition', [
+            'title' => 'Valid After Failures',
+            'description' => '<p>This is a test petition with enough content to pass validation.</p>',
+            'goal_signatures' => 100,
+            'category_id' => $this->category->id,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+    }
+
+    public function test_eleventh_successful_create_in_a_day_is_rate_limited(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        foreach (range(1, 10) as $i) {
+            $this->actingAs($this->user)->post('/en/create-petition', [
+                'title' => 'Daily Limit Petition '.$i,
+                'description' => '<p>This is a test petition with enough content to pass validation.</p>',
+                'goal_signatures' => 100,
+                'category_id' => $this->category->id,
+            ])->assertRedirect();
+        }
+
+        $this->actingAs($this->user)->post('/en/create-petition', [
+            'title' => 'Daily Limit Petition 11',
+            'description' => '<p>This is a test petition with enough content to pass validation.</p>',
+            'goal_signatures' => 100,
+            'category_id' => $this->category->id,
+        ])->assertStatus(429);
     }
 }

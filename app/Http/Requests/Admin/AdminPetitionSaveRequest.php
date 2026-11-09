@@ -44,7 +44,7 @@ class AdminPetitionSaveRequest extends FormRequest
             'youtube_url' => $youtube,
             'target' => ['nullable', 'string', 'max:255'],
             'community' => ['nullable', 'string', 'max:255'],
-            'community_url' => ['nullable', 'url', 'max:500'],
+            'community_url' => ['nullable', 'url', 'max:500', 'regex:/^https?:\/\//i'],
             'city' => ['nullable', 'string', 'max:120'],
             'created_at' => ['nullable', 'date'],
             'cover_image' => ['nullable', 'image', 'max:8192', 'mimes:jpg,jpeg,png,gif,webp'],
