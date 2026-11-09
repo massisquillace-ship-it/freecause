@@ -35,4 +35,29 @@ class UserDeleteKeepsPetitionsTest extends TestCase
             ->assertOk()
             ->assertSee('Orphan petition');
     }
+
+    public function test_deleting_a_signer_keeps_the_signature_but_drops_personal_data(): void
+    {
+        $this->seed([UserLevelSeeder::class, LanguageSeeder::class]);
+        $signer = User::factory()->create();
+        $petition = Petition::factory()->create();
+        $signature = Signature::factory()->create([
+            'petition_id' => $petition->id,
+            'user_id' => $signer->id,
+            'name' => 'Jane Roe',
+            'email' => 'jane@example.com',
+            'ip_address' => '203.0.113.9',
+        ]);
+        $other = Signature::factory()->create(['petition_id' => $petition->id, 'name' => 'Other', 'email' => 'other@example.com']);
+
+        $signer->delete();
+
+        $fresh = $signature->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertNull($fresh->user_id);
+        $this->assertSame('', $fresh->name);
+        $this->assertNull($fresh->email);
+        $this->assertNull($fresh->ip_address);
+        $this->assertSame('other@example.com', $other->fresh()->email);
+    }
 }
