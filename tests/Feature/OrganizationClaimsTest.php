@@ -79,7 +79,7 @@ class OrganizationClaimsTest extends TestCase
         @$dom->loadHTML($html);
         $this->assertSame(1, (new \DOMXPath($dom))->query('//nav[@data-bottom-nav]//a[contains(@href,"/create-petition")]')->length);
         $view = $this->view('partials.navbar', ['navbarContent' => ['nav_explore' => 'https://www.freecause.com/en/petitions']]);
-        $view->assertDontSee('>https://www.freecause.com/en/petitions<', false)->assertSee(__('nav.explore'));
+        $view->assertDontSee('>https://www.freecause.com/en/petitions<', false)->assertSee(__('home.petitions_label'));
     }
 
     public function test_launch_flag_controls_robots_and_sitemaps_without_stale_cache(): void
