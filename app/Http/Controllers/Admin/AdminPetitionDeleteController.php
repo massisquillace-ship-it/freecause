@@ -37,6 +37,8 @@ class AdminPetitionDeleteController extends Controller
         $failure = null;
         try {
             foreach (array_chunk($data['ids'], 1) as $chunk) {
+                DB::table('petitions')->whereIn('id', $chunk)->update(['is_active' => 0, 'status' => 'draft', 'held_by_admin' => 1, 'updated_at' => now()]);
+                $urls = [...$urls, ...EdgeCachePurge::petitionUrls($chunk)];
                 do {
                     $removed = DB::table('signatures')->whereIn('petition_id', $chunk)->limit(5000)->delete();
                 } while ($removed > 0);
@@ -117,6 +119,12 @@ class AdminPetitionDeleteController extends Controller
         }
 
         if ($failure) {
+            Log::warning('Admin petition deletion failed: '.$failure->getMessage(), [
+                'admin_id' => $request->user('admin')?->id,
+                'petition_ids' => $data['ids'],
+                'deleted' => $deleted,
+            ]);
+
             throw $failure;
         }
 
