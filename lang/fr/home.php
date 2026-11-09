@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'recently_signed_title' => 'Pétitions récemment signées',
+    'recently_signed_subtitle' => 'Par dernière signature confirmée',
+    'organizations_empty' => 'Les organisations apparaîtront ici une fois publiques.',
+    'campaigns_empty' => 'Aucune signature confirmée pour le moment.',
+    'victories_empty' => 'Aucune victoire déclarée pour le moment.',
     'petitions_label' => 'Pétitions',
     'status_verified' => 'Vérifiée',
     'status_unclaimed' => 'Non revendiquée',
