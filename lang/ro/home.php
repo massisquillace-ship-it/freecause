@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive(require __DIR__.'/../en/home.php', [
     'blog_read_more' => 'Citește mai mult',
     'blog_subtitle' => 'Rămâi actualizat cu cele mai recente informații și știri',
     'blog_title' => 'Ultimul din revista Freecause',
@@ -47,4 +47,4 @@ return [
     'what_p3' => 'Fără un spaţiu pentru a ne apăra cauzele, oricât de mici sau de zilnic ar putea părea, adevărata libertate se simte în afara razii.',
     'what_p4' => 'De aceea am construit <span class="red">FreeCause - Petition</span>- gratuit, independent și făcut pentru tine.',
     'what_title' => 'Ce este petiția online',
-];
+]);
