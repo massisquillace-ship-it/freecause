@@ -8,13 +8,13 @@
     $help = $c['nav_help'] ?? __('nav.help');
     $loginLabel = $c['nav_login'] ?? __('auth.login');
     $accountLabel = $isAuthed ? auth()->user()->display_name : $loginLabel;
-    $startFree = ($organizationRoute && $showOrganizationNav) ? __('organizations.claim_organization') : ($c['nav_startfree'] ?? __('nav.startfree'));
-    $startTarget = ($organizationRoute && $showOrganizationNav) ? lroute('organizations.claim-search') : lroute('petition.create');
+    $startFree = $showOrganizationNav ? __('organizations.claim_organization') : __('home.start_petition');
+    $startTarget = $showOrganizationNav ? lroute('organizations.claim-search') : lroute('petition.create');
 @endphp
 <nav class="navbar navbar-expand-lg bg-white shadow-elev-1">
     <div class="container">
         <a class="navbar-brand" href="{{ lroute('home') }}">
-            <img src="{{ asset('legacy/images/logo7.png') }}" class="img-fluid" loading="lazy" alt="FreeCause">
+            <img src="{{ asset('legacy/images/logo7.png') }}" class="img-fluid" width="130" height="21" alt="FreeCause">
         </a>
 
         <div class="flex items-center gap-2 lg:hidden ms-auto">
@@ -31,12 +31,12 @@
 
         <div class="collapse navbar-collapse" id="fcNav">
             <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center">
+                @if($showOrganizationNav)<li class="nav-item"><a class="nav-link" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>@endif
                 <li class="nav-item">
                     <a class="nav-link" href="{{ lroute('petitions.index') }}">
                         {{ $explore }}
                     </a>
                 </li>
-                @if($showOrganizationNav)<li class="nav-item"><a class="nav-link" href="{{ lroute('organizations') }}">{{ __('organizations.nav') }}</a></li>@endif
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/magazine') }}">
                         {{ $c['nav_magazine'] ?? __('nav.magazine') }}
@@ -73,6 +73,7 @@
                     </a>
                 </li>
 
+                @if($showOrganizationNav)<li class="nav-item mt-2 lg:mt-0 lg:ms-2"><a class="fcui-btn fcui-btn--md fcui-btn--ghost" href="{{ lroute('petition.create') }}">{{ __('home.start_petition') }}</a></li>@endif
                 <li class="nav-item lg:ms-4 hidden lg:block">
                     @include('partials.language_switch')
                 </li>
@@ -95,7 +96,7 @@
             <x-lucide-circle-help aria-hidden="true" />
             <span>{{ $help }}</span>
         </a>
-        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('organizations') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('organizations.nav') }}</span></a>@endif
+        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('organizations.explore') }}"><x-lucide-building aria-hidden="true" /><span>{{ __('home.organizations_label') }}</span></a>@endif
         <a class="fcui-sheet-list__item" href="{{ url('/magazine') }}">
             <x-lucide-newspaper aria-hidden="true" />
             <span>{{ $c['nav_magazine'] ?? __('nav.magazine') }}</span>
@@ -130,6 +131,7 @@
             </form>
         @endif
 
+        @if($showOrganizationNav)<a class="fcui-sheet-list__item" href="{{ lroute('petition.create') }}"><x-lucide-plus aria-hidden="true" /><span>{{ __('home.start_petition') }}</span></a>@endif
         <a class="fcui-sheet-list__item" href="{{ $startTarget }}">
             <x-lucide-megaphone aria-hidden="true" />
             <span>{{ $startFree }}</span>
