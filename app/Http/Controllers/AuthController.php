@@ -139,15 +139,19 @@ class AuthController extends Controller
         );
 
         if ($needsVerif) {
-            if ($smtpEnabled) {
+            $quotaOut = $smtpEnabled && MailQuota::tripped();
+
+            if ($smtpEnabled && ! $quotaOut) {
                 Mail::to($user->email)->queue(new VerifyAccountMail($user, $locale));
             }
 
             $this->markPendingVerification($request, $user, $locale);
 
-            return redirect()
-                ->route('verification.notice', ['locale' => $locale])
-                ->with('success', __($smtpEnabled ? 'auth.register_check_email' : 'auth.register_pending'));
+            $redirect = redirect()->route('verification.notice', ['locale' => $locale]);
+
+            return $quotaOut
+                ? $redirect->with('error', __('auth.email_try_later'))
+                : $redirect->with('success', __($smtpEnabled ? 'auth.register_check_email' : 'auth.register_pending'));
         }
 
         auth()->login($user);

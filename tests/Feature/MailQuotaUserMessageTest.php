@@ -187,6 +187,27 @@ class MailQuotaUserMessageTest extends TestCase
         });
     }
 
+    public function test_registration_says_try_later_and_queues_nothing_when_tripped(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+        MailQuota::trip();
+
+        $this->post('/en/register', [
+            'name' => 'Pending',
+            'surname' => 'User',
+            'email' => 'pending@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email')
+            ->assertSessionHas('error', __('auth.email_try_later'))
+            ->assertSessionMissing('success');
+
+        Mail::assertNotQueued(VerifyAccountMail::class);
+        $this->assertDatabaseHas('users', ['email' => 'pending@example.com']);
+    }
+
     public function test_deferred_verification_keeps_the_original_expiry(): void
     {
         Settings::set('require_email_verification', true);
