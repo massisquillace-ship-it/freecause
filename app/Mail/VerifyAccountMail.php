@@ -26,7 +26,7 @@ class VerifyAccountMail extends Mailable implements ShouldQueue
     public function __construct($user, string $locale, public array $organizationConsentLinks = [])
     {
         $this->firstName = $user->first_name ?? '';
-        $this->verificationToken = $user->verification_token ?? '';
+        $this->verificationToken = $user->plainVerificationToken ?? '';
         $this->locale = Locale::toShort($user->locale ?: $locale);
         $this->isEmailChange = ! empty($user->pending_email);
     }

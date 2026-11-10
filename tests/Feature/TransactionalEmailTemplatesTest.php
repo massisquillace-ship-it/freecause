@@ -46,7 +46,8 @@ class TransactionalEmailTemplatesTest extends TestCase
     {
         $petition = Petition::factory()->create();
         foreach (Locale::supported() as $locale) {
-            $user = User::factory()->create(['locale' => Locale::toFull($locale), 'verified' => true, 'verification_token' => 'synthetic-token']);
+            $user = User::factory()->create(['locale' => Locale::toFull($locale), 'verified' => true]);
+            $user->issueVerificationToken();
             $mails = [new VerifyAccountMail($user, 'en'), new WelcomeAccountMail($locale),
                 new PetitionMilestoneMail($petition, $user, 100),
                 new PetitionNewSignaturesMail($petition, $user, 5, collect()),

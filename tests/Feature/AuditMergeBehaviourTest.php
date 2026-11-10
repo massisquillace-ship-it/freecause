@@ -77,7 +77,7 @@ class AuditMergeBehaviourTest extends TestCase
 
     public function test_verifying_an_email_counts_only_non_spam_pending_signatures(): void
     {
-        $user = User::factory()->create(['verified' => false, 'verification_token' => 'merge-token', 'verification_token_sent_at' => now()]);
+        $user = User::factory()->create(['verified' => false, 'verification_token' => User::hashVerificationToken('merge-token'), 'verification_token_sent_at' => now()]);
         $clean = Petition::factory()->create(['signature_count' => 0]);
         $spam = Petition::factory()->create(['signature_count' => 0]);
         Signature::factory()->create(['petition_id' => $clean->id, 'user_id' => $user->id, 'confirmed' => false]);

@@ -128,11 +128,9 @@ class PetitionSigning
             if (! $existingUser->verified && $needsVerification && Settings::get('smtp_enabled', false)
                 && (! $sentAt || $existingUser->verificationExpired())) {
                 try {
-                    $existingUser->forceFill([
-                        'pending_email' => null, // token goes to the current address, not a pending one
-                        'verification_token' => Str::random(64),
-                        'verification_token_sent_at' => now(),
-                    ])->save();
+                    $existingUser->pending_email = null; // token goes to the current address, not a pending one
+                    $existingUser->issueVerificationToken();
+                    $existingUser->save();
                     Mail::to($existingUser->email)->queue(new VerifyAccountMail($existingUser, $locale, $request->attributes->get('organization_consent_links', [])));
                 } catch (\Throwable $e) {
                     AppLog::error('Verification email failed', $e->getMessage(), 'petition.sign');
@@ -167,12 +165,13 @@ class PetitionSigning
                     'ip' => request()->ip(),
                     'level_id' => $userLevel?->id,
                     'verified' => ! $needsVerification,
-                    'verification_token' => Str::random(64),
+                    'verification_token' => User::hashVerificationToken($plainToken = Str::random(64)),
                     'verification_token_sent_at' => now(),
                 ]);
 
                 if ($needsVerification && Settings::get('smtp_enabled', false)) {
                     $mailUser = $user->fresh();
+                    $mailUser->plainVerificationToken = $plainToken;
                 }
 
                 $sig = Signature::firstOrCreate(

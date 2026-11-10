@@ -65,6 +65,29 @@ class User extends Authenticatable implements HasLocalePreference
         return now()->subHours(self::VERIFICATION_TTL_HOURS);
     }
 
+    public ?string $plainVerificationToken = null;
+
+    public static function hashVerificationToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    public function scopeWhereVerificationToken($query, string $token)
+    {
+        return $query->where('verification_token', self::hashVerificationToken($token));
+    }
+
+    public function issueVerificationToken(): string
+    {
+        $token = Str::random(64);
+
+        $this->plainVerificationToken = $token;
+        $this->verification_token = self::hashVerificationToken($token);
+        $this->verification_token_sent_at = now();
+
+        return $token;
+    }
+
     public function verificationExpired(): bool
     {
         return $this->verification_token_sent_at !== null && $this->verification_token_sent_at->lt(self::verificationCutoff());
