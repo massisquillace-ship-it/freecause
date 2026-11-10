@@ -19,7 +19,7 @@ class HomepageData
         $locale = app()->getLocale();
         $country = strtoupper((string) $request->attributes->get('country', ''));
         $country = Countries::isValid($country) ? $country : null;
-        $key = 'homepage:v3:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
+        $key = 'homepage:v4:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
 
         $data = Cache::remember($key, 600, fn () => $this->load($locale, $country));
         // Identity choices and account deletion must take effect even while campaign data is cached.
@@ -41,7 +41,7 @@ class HomepageData
     private function petitions(string $locale)
     {
         return PetitionController::listingQuery($locale)
-            ->addSelect(['petitions.user_id', 'petitions.organization_id', 'petitions.country', 'petitions.created_at', 'petitions.signatures_7d_cache', 'petitions.outcome', 'petitions.outcome_at', 'petitions.outcome_summary'])
+            ->addSelect(['petitions.image_url', 'petitions.user_id', 'petitions.organization_id', 'petitions.country', 'petitions.created_at', 'petitions.signatures_7d_cache', 'petitions.outcome', 'petitions.outcome_at', 'petitions.outcome_summary'])
             ->with(['organization.causes']);
     }
 
