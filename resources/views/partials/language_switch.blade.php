@@ -16,7 +16,7 @@
         <x-lucide-chevron-down class="size-3 text-muted" aria-hidden="true" />
     </summary>
 
-    <div class="absolute end-0 top-full mt-2 {{ $mobile ? 'w-64 max-w-[calc(100vw-5rem)]' : 'w-max min-w-64 max-w-[calc(100vw-2rem)]' }} max-h-[70vh] overflow-y-auto rounded-lg shadow-elev-2 bg-surface border border-border z-sticky p-2">
+    <div class="absolute end-0 top-full mt-2 {{ $mobile ? 'w-64 max-w-[calc(100vw-5rem)]' : 'w-80 max-w-[calc(100vw-2rem)]' }} max-h-[70vh] overflow-y-auto rounded-lg shadow-elev-2 bg-surface border border-border z-sticky p-2">
         <div class="flex {{ $mobile ? 'flex-col gap-1' : 'flex-wrap gap-2' }}">
                 @foreach ($languages as $lang)
                     <a class="flex min-w-0 max-w-full items-center gap-2 px-2 py-1 min-h-11 rounded-lg bg-white border border-border text-sm text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand {{ $lang->code === $locale ? 'border-brand bg-brand/5' : '' }}"
