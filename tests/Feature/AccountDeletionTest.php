@@ -239,10 +239,7 @@ class AccountDeletionTest extends TestCase
         }
         (new CleanupDeletedAccount($cleanup->id))->handle($wordPressDeletion);
 
-        $cleanup = $cleanup->fresh();
-        $this->assertSame(2, $cleanup->attempts);
-        $this->assertNotNull($cleanup->completed_at);
-        $this->assertNull($cleanup->last_error);
+        $this->assertDatabaseMissing('account_deletion_cleanups', ['id' => $cleanup->id]);
     }
 
     private function googleOnlyUser(): User

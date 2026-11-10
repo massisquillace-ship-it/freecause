@@ -355,7 +355,6 @@ class AuthController extends Controller
         }
 
         $userId = $u->id;
-        $userEmail = $u->email;
 
         try {
             $cleanup = DB::transaction(function () use ($u) {
@@ -397,7 +396,7 @@ class AuthController extends Controller
 
         AppLog::warning(
             'User account deleted',
-            'User ID: '.$userId.' | Email: '.$userEmail,
+            'User ID: '.$userId,
             'auth.delete'
         );
 

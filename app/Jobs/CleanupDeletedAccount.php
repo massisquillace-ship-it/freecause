@@ -58,9 +58,6 @@ class CleanupDeletedAccount implements ShouldQueue
             throw $e;
         }
 
-        $cleanup->forceFill([
-            'completed_at' => now(),
-            'last_error' => null,
-        ])->save();
+        $cleanup->delete();
     }
 }
