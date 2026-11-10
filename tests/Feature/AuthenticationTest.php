@@ -433,6 +433,29 @@ class AuthenticationTest extends TestCase
         $this->assertTrue((bool) $user->fresh()->verified);
     }
 
+    public function test_register_stops_after_per_email_cap(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+
+        $payload = [
+            'name' => 'Capped',
+            'surname' => 'User',
+            'email' => 'capped@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ];
+
+        $this->post('/en/register', $payload)->assertRedirect('/en/verify-email');
+        $this->post('/en/register', $payload);
+        $this->post('/en/register', $payload);
+        $this->post('/en/register', $payload)->assertSessionHasErrors(['email' => 'Too many attempts. Please try again in a minute.']);
+
+        Mail::assertQueued(VerifyAccountMail::class, 1);
+        $this->assertSame(1, User::where('email', 'capped@example.com')->count());
+    }
+
     public function test_verify_link_in_a_fresh_session_lands_on_the_verified_page(): void
     {
         Settings::set('require_email_verification', true);
