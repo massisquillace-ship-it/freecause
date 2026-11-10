@@ -10,7 +10,6 @@ use App\Models\User;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TransactionalMailLocalizationTest extends TestCase
@@ -29,9 +28,9 @@ class TransactionalMailLocalizationTest extends TestCase
         $user = User::factory()->create([
             'locale' => 'it',
             'verified' => false,
-            'verification_token' => Str::random(64),
         ]);
 
+        $user->issueVerificationToken();
         $mail = new VerifyAccountMail($user, 'it');
         $mail->render();
 
@@ -62,10 +61,10 @@ class TransactionalMailLocalizationTest extends TestCase
         $user = User::factory()->create([
             'locale' => 'en',
             'verified' => false,
-            'verification_token' => Str::random(64),
             'pending_email' => 'new-address@example.com',
         ]);
 
+        $user->issueVerificationToken();
         $html = (new VerifyAccountMail($user, 'en'))->render();
 
         $this->assertStringNotContainsString('Thank you for joining FreeCause', $html);
@@ -77,9 +76,9 @@ class TransactionalMailLocalizationTest extends TestCase
         $user = User::factory()->create([
             'locale' => 'en',
             'verified' => false,
-            'verification_token' => Str::random(64),
         ]);
 
+        $user->issueVerificationToken();
         $html = (new VerifyAccountMail($user, 'en'))->render();
 
         $this->assertStringContainsString('Thank you for joining FreeCause', $html);

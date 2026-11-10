@@ -115,7 +115,7 @@ class AuthController extends Controller
 
                 'welcome_email_pending' => true,
                 'verified' => $needsVerif ? false : true,
-                'verification_token' => $token,
+                'verification_token' => $token ? User::hashVerificationToken($token) : null,
                 'verification_token_sent_at' => $needsVerif ? now() : null,
             ]);
         } catch (\Throwable $e) {
@@ -129,6 +129,8 @@ class AuthController extends Controller
                 'email' => __('auth.register_failed'),
             ]);
         }
+
+        $user->plainVerificationToken = $token;
 
         AppLog::info(
             'User registered',
@@ -287,8 +289,7 @@ class AuthController extends Controller
 
             // email/verified stay until the link proves the new address (see verify()).
             $u->pending_email = $newEmail;
-            $u->verification_token = Str::random(64);
-            $u->verification_token_sent_at = now();
+            $u->issueVerificationToken();
             $emailChanged = true;
         }
 
@@ -411,7 +412,7 @@ class AuthController extends Controller
 
     public function showVerifyConfirmation(string $locale, string $token)
     {
-        $user = User::where('verification_token', $token)->first();
+        $user = User::whereVerificationToken($token)->first();
 
         if (! $user) {
             toast(__('auth.verify_invalid'), 'error');
@@ -428,7 +429,7 @@ class AuthController extends Controller
 
     public function verify(Request $request, string $locale, string $token)
     {
-        $user = User::where('verification_token', $token)->first();
+        $user = User::whereVerificationToken($token)->first();
 
         if (! $user) {
             toast(__('auth.verify_invalid'), 'error');
@@ -457,7 +458,7 @@ class AuthController extends Controller
 
         try {
             $cleanup = DB::transaction(function () use (&$user, $token, &$expired, &$taken) {
-                $locked = User::where('verification_token', $token)->lockForUpdate()->first();
+                $locked = User::whereVerificationToken($token)->lockForUpdate()->first();
 
                 if (! $locked || ! $locked->pending_email) {
                     $user = null;
@@ -722,8 +723,7 @@ class AuthController extends Controller
         try {
             // This token goes to the current address, so it must not confirm a pending change.
             $user->pending_email = null;
-            $user->verification_token = Str::random(64);
-            $user->verification_token_sent_at = now();
+            $user->issueVerificationToken();
             $user->save();
         } catch (\Throwable $e) {
             AppLog::error(

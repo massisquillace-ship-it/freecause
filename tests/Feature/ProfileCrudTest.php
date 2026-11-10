@@ -250,7 +250,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser();
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
 
-        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
 
         $user->refresh();
         $this->assertSame('moved@example.com', $user->email);
@@ -266,7 +266,7 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['email' => 'old-address@example.com']);
         $this->requestEmailChange($user, 'raced@example.com')->assertSessionHasNoErrors();
-        $token = $user->fresh()->verification_token;
+        $token = $this->knownVerificationToken($user);
 
         $raced = false;
         User::saving(function (User $saving) use (&$raced, $user) {
@@ -314,7 +314,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser(['email' => 'old-address@example.com']);
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
 
-        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
 
         $this->assertSame('moved@example.com', $user->fresh()->email);
         $cleanup = AccountDeletionCleanup::where('user_id', $user->id)->sole();
@@ -330,7 +330,7 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['email' => 'old@example.com']);
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
-        $token = $user->fresh()->verification_token;
+        $token = $this->knownVerificationToken($user);
 
         $this->post('/en/verify/'.$token)->assertRedirect('/en');
         $this->post('/en/verify/'.$token)->assertRedirect('/en');
@@ -347,7 +347,7 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['email' => 'old@example.com']);
         $this->requestEmailChange($user, 'moved@example.com')->assertSessionHasNoErrors();
-        $token = $user->fresh()->verification_token;
+        $token = $this->knownVerificationToken($user);
 
         $claimed = false;
         User::saving(function (User $saving) use (&$claimed, $user) {
@@ -373,9 +373,9 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['email' => 'first@example.com']);
         $this->requestEmailChange($user, 'second@example.com')->assertSessionHasNoErrors();
-        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
         $this->requestEmailChange($user->fresh(), 'third@example.com')->assertSessionHasNoErrors();
-        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
 
         $this->assertEqualsCanonicalizing(
             ['first@example.com', 'second@example.com'],
@@ -413,7 +413,7 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['verified' => false, 'email' => 'old@example.com']);
         $this->requestEmailChange($user, 'pending@example.com')->assertSessionHasNoErrors();
-        $oldToken = $user->fresh()->verification_token;
+        $oldToken = $this->knownVerificationToken($user);
         $this->assertSame('pending@example.com', $user->fresh()->pending_email);
 
         $user->forceFill(['verification_token_sent_at' => now()->subMinutes(11)])->save();
@@ -424,7 +424,7 @@ class ProfileCrudTest extends TestCase
 
         $user->refresh();
         $this->assertNull($user->pending_email);
-        $this->assertNotSame($oldToken, $user->verification_token);
+        $this->assertNotSame(User::hashVerificationToken($oldToken), $user->verification_token);
 
         $this->post("/en/verify/{$oldToken}", []);
         $this->assertSame('old@example.com', $user->fresh()->email);
@@ -437,7 +437,7 @@ class ProfileCrudTest extends TestCase
 
         $user = $this->passwordUser(['email' => 'kept@example.com']);
         $this->requestEmailChange($user, 'late@example.com')->assertSessionHasNoErrors();
-        $token = $user->fresh()->verification_token;
+        $token = $this->knownVerificationToken($user);
 
         $this->travel(49)->hours();
         $this->post("/en/verify/{$token}", [])->assertRedirect('/en/profile');
@@ -528,7 +528,7 @@ class ProfileCrudTest extends TestCase
         // e.g. a Google sign-up or guest signature created the account directly.
         $this->passwordUser(['email' => 'raced@example.com']);
 
-        $this->post('/en/verify/'.$user->fresh()->verification_token)->assertRedirect('/en');
+        $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
 
         $user->refresh();
         $this->assertSame($originalEmail, $user->email);

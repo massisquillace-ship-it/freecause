@@ -295,8 +295,7 @@ class AdminUsersController extends Controller
                 }
 
                 if ($needsReverification) {
-                    $user->verification_token = Str::random(64);
-                    $user->verification_token_sent_at = now();
+                    $user->issueVerificationToken();
                 } elseif ($nowVerified) {
                     $user->verification_token = null;
                     $user->verification_token_sent_at = null;
@@ -353,8 +352,7 @@ class AdminUsersController extends Controller
 
         try {
             $user->pending_email = null; // token goes to the current address, not a pending one
-            $user->verification_token = Str::random(64);
-            $user->verification_token_sent_at = now();
+            $user->issueVerificationToken();
             $user->save();
 
             Mail::to($user->email)->queue(new VerifyAccountMail($user, $user->locale ?: default_locale()));

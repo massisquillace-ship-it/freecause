@@ -180,7 +180,8 @@ class MailQuotaUserMessageTest extends TestCase
         $this->assertNotNull($user->verification_token_sent_at);
         Mail::assertQueued(VerifyAccountMail::class, function (VerifyAccountMail $mail) use ($user) {
             $this->assertFalse($mail->transactional);
-            $this->assertSame($user->verification_token, $mail->verificationToken);
+            $this->assertSame($user->verification_token, User::hashVerificationToken($mail->verificationToken));
+            $this->assertNotSame($user->verification_token, $mail->verificationToken);
 
             return true;
         });
@@ -203,7 +204,7 @@ class MailQuotaUserMessageTest extends TestCase
         ])->assertRedirect('/en/verify-email');
 
         $user = User::where('email', 'expiry@example.com')->firstOrFail();
-        $token = $user->verification_token;
+        $token = $this->knownVerificationToken($user);
         $sentAt = $user->verification_token_sent_at;
 
         $this->travel(49)->hours();

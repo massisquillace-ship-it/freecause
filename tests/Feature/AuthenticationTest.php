@@ -464,7 +464,7 @@ class AuthenticationTest extends TestCase
 
         $user = User::where('email', 'pending@example.com')->firstOrFail();
 
-        $this->post("/en/verify/{$user->verification_token}", [])
+        $this->post('/en/verify/'.$this->knownVerificationToken($user), [])
             ->assertRedirectContains('/en/profile');
 
         $this->assertAuthenticatedAs($user->fresh());
@@ -509,7 +509,7 @@ class AuthenticationTest extends TestCase
         ])->assertRedirect('/en/verify-email');
 
         $user = User::where('email', 'pending@example.com')->firstOrFail();
-        $token = $user->verification_token;
+        $token = $this->knownVerificationToken($user);
 
         $this->flushSession();
 
@@ -519,11 +519,44 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_verification_token_is_stored_hashed_and_the_emailed_link_still_works(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+
+        $this->post('/en/register', [
+            'name' => 'Hashed',
+            'surname' => 'User',
+            'email' => 'hashed@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email');
+
+        $user = User::where('email', 'hashed@example.com')->firstOrFail();
+        $emailed = null;
+        Mail::assertQueued(VerifyAccountMail::class, function (VerifyAccountMail $mail) use (&$emailed) {
+            $emailed = $mail->verificationToken;
+
+            return true;
+        });
+
+        $this->assertNotSame($emailed, $user->verification_token);
+        $this->assertSame(hash('sha256', $emailed), $user->verification_token);
+
+        $this->flushSession();
+        $this->post('/en/verify/'.$user->verification_token)->assertRedirect('/en');
+        $this->assertFalse((bool) $user->fresh()->verified);
+
+        $this->post('/en/verify/'.$emailed)->assertRedirect('/en/email-verified');
+        $this->assertTrue((bool) $user->fresh()->verified);
+    }
+
     public function test_verification_get_is_passive_and_post_consumes_token_once(): void
     {
         $user = User::factory()->create([
             'verified' => false,
-            'verification_token' => 'passive-token',
+            'verification_token' => User::hashVerificationToken('passive-token'),
             'verification_token_sent_at' => now(),
         ]);
 
@@ -532,7 +565,7 @@ class AuthenticationTest extends TestCase
             ->assertSee(__('auth.verify_confirm_heading'));
 
         $this->assertFalse((bool) $user->fresh()->verified);
-        $this->assertSame('passive-token', $user->fresh()->verification_token);
+        $this->assertSame(User::hashVerificationToken('passive-token'), $user->fresh()->verification_token);
 
         $this->post('/en/verify/passive-token')
             ->assertRedirect('/en/email-verified');
@@ -804,7 +837,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create([
             'email' => 'pending@example.com',
             'verified' => false,
-            'verification_token' => 'old-token',
+            'verification_token' => User::hashVerificationToken('old-token'),
             'verification_token_sent_at' => now()->subDay(),
         ]);
 
@@ -813,7 +846,7 @@ class AuthenticationTest extends TestCase
         ])->assertSessionHas('success', 'If the account needs activation, a new email has been sent.');
 
         $user->refresh();
-        $this->assertNotSame('old-token', $user->verification_token);
+        $this->assertNotSame(User::hashVerificationToken('old-token'), $user->verification_token);
         $this->assertTrue($user->verification_token_sent_at->isToday());
         Mail::assertQueued(VerifyAccountMail::class);
     }

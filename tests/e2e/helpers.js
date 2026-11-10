@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { E2E_DB } from './env.js';
 
 const ORIGIN = 'http://127.0.0.1:8099';
@@ -59,7 +60,13 @@ export const uniq = (prefix) => `${prefix}${Date.now().toString(36)}${Math.rando
 
 export const db = (sql) => execFileSync('sqlite3', ['-cmd', '.timeout 5000', E2E_DB, sql], { encoding: 'utf8' }).trim();
 
-export const userToken = (email) => db(`select verification_token from users where email='${email}'`);
+export const userToken = (email) => {
+    if (!db(`select verification_token from users where email='${email}'`)) return '';
+    const token = uniq('vt');
+    const hash = createHash('sha256').update(token).digest('hex');
+    db(`update users set verification_token='${hash}' where email='${email}'`);
+    return token;
+};
 
 export async function setRequireVerification(page, on) {
     await adminLogin(page);
