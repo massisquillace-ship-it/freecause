@@ -11,8 +11,25 @@ export function init(ctx) {
         image.src = fallback;
     };
     document.addEventListener('error', (event) => recoverPetitionCover(event.target), true);
+    const watchCover = function (image) {
+        const timer = window.setTimeout(function () {
+            if (!image.complete || image.naturalWidth === 0) recoverPetitionCover(image);
+        }, 8000);
+        image.addEventListener('load', () => window.clearTimeout(timer), { once: true });
+    };
+    const coverObserver = window.IntersectionObserver ? new window.IntersectionObserver((entries) => {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            watchCover(entry.target);
+            coverObserver.unobserve(entry.target);
+        });
+    }, { rootMargin: '200px' }) : null;
     document.querySelectorAll('img[data-home-petition-cover]').forEach(function (image) {
         if (image.complete && image.naturalWidth === 0) recoverPetitionCover(image);
+        else if (!image.complete) {
+            if (coverObserver) coverObserver.observe(image);
+            else watchCover(image);
+        }
     });
 
     document.addEventListener('click', function (event) {
