@@ -7,6 +7,7 @@ use App\Mail\ContactMail;
 use App\Support\AppLog;
 use App\Support\Settings;
 use App\Support\Spam;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
@@ -45,6 +46,21 @@ class ContactController extends Controller
             toast('Suspicious activity detected.', 'error');
 
             return back()->withInput();
+        }
+
+        $capKey = 'mail:contact:'.today()->toDateString();
+        Cache::add($capKey, 0, now()->endOfDay());
+
+        if (Cache::increment($capKey) > 30) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Failed to send message. Please try again later.'], 500);
+            }
+
+            toast('Failed to send message. Please try again later.', 'error');
+
+            return back()
+                ->withInput()
+                ->withErrors(['email' => 'Failed to send message. Please try again later.']);
         }
 
         $adminEmail = Settings::get('email_to_staff', '', 'global') ?: config('mail.from.address');

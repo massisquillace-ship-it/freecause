@@ -59,4 +59,26 @@ class ContactNoJsTest extends TestCase
 
         Mail::assertQueued(ContactMail::class);
     }
+
+    public function test_daily_cap_blocks_further_mail(): void
+    {
+        Mail::fake();
+
+        $payload = [
+            'name' => 'Capped User',
+            'email' => 'capped@example.com',
+            'text' => 'Hello again and again.',
+        ];
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->from('/en/contacts')->post('/en/contacts', $payload)->assertSessionHas('contact_sent', true);
+        }
+
+        Mail::assertQueuedCount(30);
+
+        $this->postJson('/en/contacts', $payload)->assertStatus(500);
+        $this->from('/en/contacts')->post('/en/contacts', $payload)->assertSessionHasErrors('email');
+
+        Mail::assertQueuedCount(30);
+    }
 }
