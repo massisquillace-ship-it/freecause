@@ -76,6 +76,23 @@ class HomepageOrganizationsTest extends TestCase
         $this->assertCount(1, $response->viewData('campaigns'));
     }
 
+    public function test_homepage_uses_uploaded_and_legacy_covers_with_a_default_for_missing_images(): void
+    {
+        $uploaded = $this->petition(['cover_image' => 'https://images.example.com/uploaded.jpg']);
+        $legacy = $this->petition(['image_url' => 'https://images.example.com/legacy.jpg', 'signature_count' => 10, 'goal_signatures' => 10]);
+        $missing = $this->petition(['cover_image' => 'missing-cover.jpg']);
+
+        $this->get('/en')->assertOk()
+            ->assertSee($uploaded->coverUrl(), false)
+            ->assertSee($legacy->coverUrl(), false)
+            ->assertSee($missing->coverUrl(), false)
+            ->assertSee('data-home-petition-cover', false)
+            ->assertSee('data-home-petition-introduction', false)
+            ->assertSee('/en/how-to-write-a-petition', false)
+            ->assertSee('/en/create-petition', false)
+            ->assertSee('Download signatures in PDF or CSV format');
+    }
+
     public function test_directory_count_query_runs_once_across_requests(): void
     {
         config(['organizations.min_directory_count' => 1]);
