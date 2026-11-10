@@ -56,6 +56,26 @@ class PetitionDigestTest extends TestCase
         $this->assertStringContainsString('1,200', $html);
     }
 
+    public function test_running_twice_in_one_day_queues_one_mail_per_user(): void
+    {
+        $this->publishedPetition();
+
+        User::factory()->create([
+            'email' => 'twice@example.com',
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+            'unsubscribed_at' => null,
+        ]);
+
+        Mail::fake();
+
+        Artisan::call('petition:send-digest');
+        Artisan::call('petition:send-digest');
+
+        Mail::assertQueuedCount(1);
+    }
+
     public function test_does_not_send_to_opted_out_or_unsubscribed_users(): void
     {
         $this->publishedPetition();

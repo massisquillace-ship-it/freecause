@@ -87,6 +87,7 @@ class SendPetitionDigest extends Command
                     }
 
                     $processed++;
+                    $dedupeKey = null;
 
                     try {
                         $locale = Locale::toShort($user->locale ?: $defaultLocale);
@@ -104,11 +105,21 @@ class SendPetitionDigest extends Command
                         }
 
                         if (! $dryRun) {
+                            if (! Cache::add($dedupeKey = 'digest:'.$user->id.':'.today()->toDateString(), 1, now()->endOfDay())) {
+                                $skipped++;
+
+                                continue;
+                            }
+
                             Mail::to($user->email)->queue((new PetitionDigestMail($user, $petitions))->onQueue('bulk'));
                         }
 
                         $sent++;
                     } catch (\Throwable $e) {
+                        if ($dedupeKey !== null) {
+                            Cache::forget($dedupeKey);
+                        }
+
                         $failed++;
                         AppLog::error('Petition digest failed', 'User ID: '.$user->id.' | '.$e->getMessage(), 'emails.digest');
                     }
