@@ -6,12 +6,13 @@ use App\Models\AccountDeletionCleanup;
 use App\Models\User;
 use App\Services\WordPressUserDeletionService;
 use DateTimeInterface;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class CleanupDeletedAccount implements ShouldQueue
+class CleanupDeletedAccount implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -20,6 +21,11 @@ class CleanupDeletedAccount implements ShouldQueue
     public function __construct(public int $cleanupId)
     {
         $this->afterCommit = true;
+    }
+
+    public function uniqueId(): string
+    {
+        return (string) $this->cleanupId;
     }
 
     public function retryUntil(): DateTimeInterface
@@ -37,6 +43,12 @@ class CleanupDeletedAccount implements ShouldQueue
         $cleanup = AccountDeletionCleanup::find($this->cleanupId);
 
         if (! $cleanup || $cleanup->completed_at) {
+            return;
+        }
+
+        if (User::where('email', $cleanup->email)->exists()) {
+            $cleanup->delete();
+
             return;
         }
 

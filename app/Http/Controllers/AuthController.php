@@ -636,14 +636,14 @@ class AuthController extends Controller
                 $request->only('email')
             );
         } catch (\Throwable $e) {
-            if (! MailQuota::causedBy($e)) {
-                throw $e;
+            if (MailQuota::causedBy($e)) {
+                MailQuota::trip();
+                AppLog::error('Password reset mail refused', $e->getMessage(), 'auth.password');
+
+                return back()->withInput()->withErrors(['email' => __('auth.email_try_later')]);
             }
 
-            MailQuota::trip();
-            AppLog::error('Password reset mail refused', $e->getMessage(), 'auth.password');
-
-            return back()->withInput()->withErrors(['email' => __('auth.email_try_later')]);
+            AppLog::error('Password reset mail failed', $e->getMessage(), 'auth.password');
         }
 
         return back()->with('status', __('auth.reset_link_sent'));
@@ -665,6 +665,9 @@ class AuthController extends Controller
                     $user->password = Hash::make($password);
                     $user->setRememberToken(Str::random(60));
                     $user->password_changed_at = now();
+                    $user->pending_email = null;
+                    $user->verification_token = null;
+                    $user->verification_token_sent_at = null;
                     $user->save();
 
                     event(new PasswordReset($user));

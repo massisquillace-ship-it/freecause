@@ -136,12 +136,15 @@ class MailQuotaUserMessageTest extends TestCase
         $this->assertTrue(MailQuota::tripped());
     }
 
-    public function test_password_reset_other_mail_errors_still_surface(): void
+    public function test_password_reset_other_mail_errors_answer_identically(): void
     {
         Password::shouldReceive('sendResetLink')->once()
             ->andThrow(new RuntimeException('550 unroutable domain'));
 
-        $this->post('/en/forgot-password', ['email' => 'a@example.com'])->assertStatus(500);
+        $this->from('/en/forgot-password')
+            ->post('/en/forgot-password', ['email' => 'a@example.com'])
+            ->assertRedirect('/en/forgot-password')
+            ->assertSessionHas('status', __('auth.reset_link_sent'));
 
         $this->assertFalse(MailQuota::tripped());
     }
