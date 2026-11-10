@@ -315,4 +315,26 @@ class PetitionNewSignaturesTest extends TestCase
         Mail::assertNothingSent();
         $this->assertSame('skipped', $notification->fresh()->status);
     }
+
+    public function test_opting_back_in_resets_last_notified_at(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'country' => 'US', 'gender' => 'other', 'verified' => true, 'notify_new_signatures' => false]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true, 'last_notified_at' => now()->subMonths(3)]);
+        $other = Petition::factory()->create(['last_notified_at' => now()->subMonths(3)]);
+
+        $this->actingAs($owner)->post('/en/preferences', ['notify_new_signatures' => 1]);
+
+        $this->assertTrue($petition->fresh()->last_notified_at->greaterThan(now()->subMinute()));
+        $this->assertTrue($other->fresh()->last_notified_at->lessThan(now()->subMonth()));
+    }
+
+    public function test_saving_while_already_opted_in_keeps_last_notified_at(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'country' => 'US', 'gender' => 'other', 'verified' => true, 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true, 'last_notified_at' => now()->subDay()]);
+
+        $this->actingAs($owner)->post('/en/preferences', ['notify_new_signatures' => 1]);
+
+        $this->assertTrue($petition->fresh()->last_notified_at->lessThan(now()->subHour()));
+    }
 }
