@@ -96,10 +96,8 @@ class AuthController extends Controller
         $requireVerif = Settings::get('require_email_verification', false, 'global');
 
         $needsVerif = (bool) $requireVerif;
-        $token = $needsVerif ? Str::random(64) : null;
-
         try {
-            $user = User::create([
+            $user = new User([
                 'name' => $fullName,
                 'first_name' => $data['name'],
                 'last_name' => $data['surname'],
@@ -115,9 +113,13 @@ class AuthController extends Controller
 
                 'welcome_email_pending' => true,
                 'verified' => $needsVerif ? false : true,
-                'verification_token' => $token ? User::hashVerificationToken($token) : null,
-                'verification_token_sent_at' => $needsVerif ? now() : null,
             ]);
+
+            if ($needsVerif) {
+                $user->issueVerificationToken();
+            }
+
+            $user->save();
         } catch (\Throwable $e) {
             AppLog::error(
                 'User registration failed',
@@ -129,8 +131,6 @@ class AuthController extends Controller
                 'email' => __('auth.register_failed'),
             ]);
         }
-
-        $user->plainVerificationToken = $token;
 
         AppLog::info(
             'User registered',

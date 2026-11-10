@@ -16,7 +16,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class PetitionSigning
 {
@@ -156,7 +155,7 @@ class PetitionSigning
             $response = DB::transaction(function () use ($request, $data, $email, $locale, $petition, $tr, $needsVerification, &$counted, &$previousCount, &$mailUser) {
                 $userLevel = UserLevel::where('name', 'user')->first();
 
-                $user = User::create([
+                $user = new User([
                     'name' => $data['name'],
                     'first_name' => $data['name'],
                     'last_name' => null,
@@ -165,9 +164,9 @@ class PetitionSigning
                     'ip' => request()->ip(),
                     'level_id' => $userLevel?->id,
                     'verified' => ! $needsVerification,
-                    'verification_token' => User::hashVerificationToken($plainToken = Str::random(64)),
-                    'verification_token_sent_at' => now(),
                 ]);
+                $plainToken = $user->issueVerificationToken();
+                $user->save();
 
                 if ($needsVerification && Settings::get('smtp_enabled', false)) {
                     $mailUser = $user->fresh();
