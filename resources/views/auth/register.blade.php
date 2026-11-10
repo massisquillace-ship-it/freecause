@@ -137,6 +137,11 @@
                                         target="_blank" rel="noopener">{{ __('auth.accept_terms') }}</a>
                                 </div>
 
+                                @if (\App\Support\Spam::turnstileEnabled())
+                                    <div class="mb-3 cf-turnstile" data-sitekey="{{ \App\Support\Settings::get('turnstile_site_key', '', 'global') }}"></div>
+                                    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                                @endif
+
                                 <div class="hidden text-center md:block">
                                     <x-ui.button type="submit" variant="danger" class="px-6 py-2 min-w-40 max-md:min-h-12">
                                         {{ __('auth.submit') }}
