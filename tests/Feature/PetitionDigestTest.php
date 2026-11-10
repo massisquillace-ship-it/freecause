@@ -136,6 +136,25 @@ class PetitionDigestTest extends TestCase
         Mail::assertNothingQueued();
     }
 
+    public function test_sends_nothing_when_all_petitions_are_older_than_a_day(): void
+    {
+        $petition = $this->publishedPetition();
+        $petition->forceFill(['created_at' => now()->subDays(2)])->save();
+
+        User::factory()->create([
+            'email' => 'old@example.com',
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+        ]);
+
+        Mail::fake();
+
+        Artisan::call('petition:send-digest');
+
+        Mail::assertNothingQueued();
+    }
+
     public function test_aborts_dispatch_once_mail_quota_is_tripped(): void
     {
         $this->publishedPetition();

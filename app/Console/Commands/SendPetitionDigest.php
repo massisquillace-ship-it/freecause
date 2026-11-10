@@ -159,6 +159,7 @@ class SendPetitionDigest extends Command
             })
             ->where('petitions.status', 'published')
             ->where('petitions.is_active', 1)
+            ->where('petitions.created_at', '>=', now()->subDay())
             ->orderByDesc('petitions.created_at')
             ->limit(5)
             ->get();
