@@ -68,3 +68,7 @@ Homepage “Victories” now means public petitions with a positive signature go
 “Explore by cause” uses all active petition categories and their existing localized category URLs, independently of the organization gate. It does not use organization causes or omit categories with no organizations. Home petition cards show a blue badge-check only for organizations currently verified by FreeCause; unclaimed organizations retain a neutral label. Personal authors keep their privacy preferences.
 
 Global scope: petitions are filtered by the displayed language, never by Italy or another country. Positive-goal tests include US and Brazilian petitions in the same English view. Without explicit country context, organization hero and weekly headings use worldwide copy rather than Europe.
+
+## Owner update — petition covers and introduction panels
+
+Restore the two localized “What is online petition” and “Create petition” panels between goal results and categories, in both homepage variants. This supersedes the original removal instruction for these two panels only; the old hero and activity feed remain removed. Feature copy uses the actual PDF/CSV export formats. Every recent-signature and goal-result card displays its uploaded cover, legacy image or existing default cover through the shared petition resolver, with reserved 16:9 dimensions and lazy loading. Cache version v4 includes legacy image fields.
