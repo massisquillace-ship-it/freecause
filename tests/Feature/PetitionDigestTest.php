@@ -10,6 +10,7 @@ use App\Support\MailQuota;
 use App\Support\Settings;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
@@ -74,6 +75,33 @@ class PetitionDigestTest extends TestCase
         Artisan::call('petition:send-digest');
 
         Mail::assertQueuedCount(1);
+    }
+
+    public function test_limit_option_caps_queued_mails(): void
+    {
+        $this->publishedPetition();
+
+        User::factory()->count(3)->create([
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+            'unsubscribed_at' => null,
+        ]);
+
+        Mail::fake();
+
+        Artisan::call('petition:send-digest', ['--limit' => 2]);
+
+        Mail::assertQueuedCount(2);
+    }
+
+    public function test_digest_is_scheduled_with_a_limit(): void
+    {
+        $event = collect(app(Schedule::class)->events())
+            ->first(fn ($e) => str_contains($e->command, 'petition:send-digest'));
+
+        $this->assertNotNull($event);
+        $this->assertStringContainsString('--limit=100', $event->command);
     }
 
     public function test_does_not_send_to_opted_out_or_unsubscribed_users(): void
