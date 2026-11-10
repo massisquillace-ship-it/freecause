@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 
 class PetitionDigestMail extends Mailable implements ShouldQueue
 {
-    use GatedByMailQuota, Queueable, SerializesModels;
+    use GatedByMailQuota, Queueable, SerializesModels, WithListUnsubscribe;
 
     public function __construct(
         public User $user,
@@ -27,6 +27,8 @@ class PetitionDigestMail extends Mailable implements ShouldQueue
         $defaultLocale = default_locale();
         $firstName = $this->user->first_name ?: $this->user->name;
         $token = $this->user->ensureUnsubscribeToken();
+
+        $unsubscribeUrl = lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]);
 
         $items = $this->petitions->take(5)->map(function (Petition $petition) use ($locale, $defaultLocale) {
             $translation = $petition->translationOrFallback($locale, $defaultLocale);
@@ -57,8 +59,9 @@ class PetitionDigestMail extends Mailable implements ShouldQueue
                 'footer' => MailText::get('petition_digest_footer', [], $locale),
                 'unsubscribeLabel' => MailText::get('petition_digest_unsubscribe', [], $locale),
                 'manageLabel' => MailText::get('common_manage_preferences', [], $locale),
-                'unsubscribeUrl' => lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]),
+                'unsubscribeUrl' => $unsubscribeUrl,
                 'preferencesUrl' => lroute('preferences.show', ['locale' => $locale]),
-            ]);
+            ])
+            ->listUnsubscribe($unsubscribeUrl);
     }
 }

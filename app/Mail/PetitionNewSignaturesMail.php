@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 
 class PetitionNewSignaturesMail extends Mailable
 {
-    use SerializesModels;
+    use SerializesModels, WithListUnsubscribe;
 
     public function __construct(
         public Petition $petition,
@@ -26,6 +26,7 @@ class PetitionNewSignaturesMail extends Mailable
         $locale = Locale::toShort($this->owner->locale ?: default_locale());
         $translation = $this->petition->translationOrFallback($locale, default_locale());
         $token = $this->owner->ensureUnsubscribeToken();
+        $unsubscribeUrl = lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]);
 
         $petitionUrl = $translation
             ? route('petition.show', [
@@ -50,8 +51,9 @@ class PetitionNewSignaturesMail extends Mailable
                 'footer' => MailText::get('petition_new_signatures_footer', [], $locale),
                 'unsubscribeLabel' => MailText::get('petition_new_signatures_unsubscribe', [], $locale),
                 'manageLabel' => MailText::get('common_manage_preferences', [], $locale),
-                'unsubscribeUrl' => lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]),
+                'unsubscribeUrl' => $unsubscribeUrl,
                 'preferencesUrl' => lroute('preferences.show', ['locale' => $locale]),
-            ]);
+            ])
+            ->listUnsubscribe($unsubscribeUrl);
     }
 }
