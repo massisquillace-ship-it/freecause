@@ -329,7 +329,7 @@ Route::prefix('{locale}')
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('throttle:login');
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-        Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:5,1');
+        Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware(['throttle:5,1', 'throttle:auth-mail']);
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
         Route::get('/verify/{token}', [AuthController::class, 'showVerifyConfirmation'])->name('verify.account');
