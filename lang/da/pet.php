@@ -5,6 +5,7 @@ return [
     'explore' => 'Udforsk underskriftsindsamlinger',
     'pdf_description' => 'Beskrivelse',
     'pdf_latest' => 'Seneste underskrifter',
+    'pdf_capped' => 'This PDF lists the first 1000 signatures. Download the full list as TXT or CSV.',
     'anonymous' => 'Anonym',
     'default_comment' => 'Jeg støtter denne underskriftsindsamling',
     'no_signatures' => 'Ingen underskrifter endnu.',

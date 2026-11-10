@@ -45,6 +45,10 @@
 
     <h2>{{ __('pet.pdf_latest') }}</h2>
 
+    @if ($isCapped ?? false)
+        <p class="muted">{{ __('pet.pdf_capped') }}</p>
+    @endif
+
     @forelse($signatures as $sig)
         <div class="signature">
             <strong>{{ $sig->display_name ?? __('pet.anonymous') }}</strong>

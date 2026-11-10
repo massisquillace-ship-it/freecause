@@ -5,6 +5,7 @@ return [
     'explore' => 'Explorar petições',
     'pdf_description' => 'Descrição',
     'pdf_latest' => 'Últimas assinaturas',
+    'pdf_capped' => 'This PDF lists the first 1000 signatures. Download the full list as TXT or CSV.',
     'anonymous' => 'Anônimo',
     'default_comment' => 'Eu apoio esta petição',
     'no_signatures' => 'Ainda sem assinaturas.',

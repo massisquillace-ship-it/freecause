@@ -795,8 +795,9 @@ class PetitionController extends Controller
         $categories = $this->activeCategories($locale);
 
         $mode = 'edit';
+        $isHeldForReview = (bool) $petition->held_by_admin;
 
-        return view('petition.create', compact('petition', 'tr', 'locale', 'categories', 'mode'));
+        return view('petition.create', compact('petition', 'tr', 'locale', 'categories', 'mode', 'isHeldForReview'));
     }
 
     public function withdraw(string $locale, string $slug, int $id): RedirectResponse
@@ -957,8 +958,12 @@ class PetitionController extends Controller
         }
 
         if ($oldCoverImage && $oldCoverImage !== $petition->cover_image && ! Str::startsWith($oldCoverImage, ['http://', 'https://'])) {
-            Storage::disk('public')->delete($oldCoverImage);
-            ImageVariants::purge($oldCoverImage);
+            try {
+                Storage::disk('public')->delete($oldCoverImage);
+                ImageVariants::purge($oldCoverImage);
+            } catch (\Throwable $e) {
+                Log::warning('Old cover image cleanup failed after petition update: '.$e->getMessage());
+            }
         }
 
         return $response;
@@ -1042,12 +1047,15 @@ class PetitionController extends Controller
             ->limit(1000)
             ->get();
 
+        $isCapped = (int) ($petition->signature_count ?? 0) > 1000;
+
         try {
             return Pdf::loadView('petition.pdf', compact(
                 'petition',
                 'tr',
                 'locale',
-                'signatures'
+                'signatures',
+                'isCapped'
             ))
                 ->download("petition-{$petition->id}.pdf");
         } catch (\Exception $e) {

@@ -5,6 +5,7 @@ return [
     'explore' => 'Dilekçeleri keşfet',
     'pdf_description' => 'Açıklama',
     'pdf_latest' => 'Son imzalar',
+    'pdf_capped' => 'This PDF lists the first 1000 signatures. Download the full list as TXT or CSV.',
     'anonymous' => 'Anonim',
     'default_comment' => 'Bu dilekçeyi destekliyorum',
     'no_signatures' => 'Henüz imza yok.',
