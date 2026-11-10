@@ -29,8 +29,8 @@
             </button>
         </div>
 
-        <div class="collapse navbar-collapse" id="fcNav">
-            <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center">
+        <div class="collapse navbar-collapse min-w-0" id="fcNav">
+            <ul class="navbar-nav ms-auto mb-2 lg:mb-0 lg:items-center lg:flex-wrap lg:justify-end lg:gap-y-2">
                 <li class="nav-item"><a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('organizations.explore') }}">{{ __('home.organizations_label') }}</a></li>
                 <li class="nav-item">
                     <a class="{{ request()->routeIs('home') ? 'fc-home-link' : 'nav-link' }}" href="{{ lroute('petitions.index') }}">
