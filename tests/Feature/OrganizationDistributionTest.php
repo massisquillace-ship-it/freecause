@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\SendOrganizationNotification;
 use App\Mail\OrganizationStatusMail;
+use App\Models\Log;
 use App\Models\Organization;
 use App\Models\OrganizationNotification;
 use App\Models\Petition;
@@ -277,6 +278,27 @@ class OrganizationDistributionTest extends TestCase
         $this->assertNull($pending->fresh()->sent_at);
         $this->assertNull($pending->fresh()->claimed_at);
         $this->assertSame('verified', $org->fresh()->status);
+    }
+
+    public function test_invalid_admin_address_is_logged_and_job_is_released(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true, 'global');
+        config(['organizations.notifications_enabled' => true, 'organizations.admin_email' => 'not-an-email']);
+        $org = $this->org();
+        app(OrganizationLifecycle::class)->record($org, $org->owner_user_id, 'verify');
+        $notice = OrganizationNotification::firstOrFail();
+        $notice->forceFill(['to_admin' => true])->save();
+        $job = (new SendOrganizationNotification($notice->id))->withFakeQueueInteractions();
+
+        $job->handle();
+
+        $job->assertReleased(3600);
+        Mail::assertNothingSent();
+        $log = Log::where('context', 'organizations.notification')->firstOrFail();
+        $this->assertSame('error', $log->level);
+        $this->assertStringContainsString((string) $notice->id, $log->content);
+        $this->assertStringNotContainsString('not-an-email', $log->content);
     }
 
     public function test_active_notification_claim_blocks_concurrent_delivery_and_expired_claim_retries(): void
