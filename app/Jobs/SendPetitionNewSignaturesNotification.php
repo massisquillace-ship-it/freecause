@@ -57,20 +57,12 @@ class SendPetitionNewSignaturesNotification implements ShouldQueue
             return;
         }
 
-        try {
-            Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
-                $notification->petition,
-                $owner,
-                $notification->total,
-                collect($notification->signers),
-            ));
-        } catch (Throwable $e) {
-            if (MailQuota::causedBy($e)) {
-                MailQuota::trip();
-            }
-
-            throw $e;
-        }
+        MailQuota::send(fn () => Mail::to($owner->email)->send(new PetitionNewSignaturesMail(
+            $notification->petition,
+            $owner,
+            $notification->total,
+            collect($notification->signers),
+        )));
 
         $updated = PetitionSignatureNotification::query()
             ->whereKey($notification->id)

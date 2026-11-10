@@ -32,4 +32,20 @@ class MailQuota
     {
         return preg_match('/email allowance/i', $e->getMessage()) === 1;
     }
+
+    public static function send(\Closure $send, ?\Closure $onFail = null): void
+    {
+        try {
+            $send();
+        } catch (\Throwable $e) {
+            if (self::causedBy($e)) {
+                self::trip();
+            }
+            if ($onFail) {
+                $onFail();
+            }
+
+            throw $e;
+        }
+    }
 }

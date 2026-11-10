@@ -78,20 +78,14 @@ class SendWelcomeEmail implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        try {
-            Mail::to($claimed[0])->send(new WelcomeAccountMail($claimed[1]));
-        } catch (\Throwable $e) {
-            if (MailQuota::causedBy($e)) {
-                MailQuota::trip();
-            }
-            DB::transaction(fn () => User::query()
+        MailQuota::send(
+            fn () => Mail::to($claimed[0])->send(new WelcomeAccountMail($claimed[1])),
+            fn () => DB::transaction(fn () => User::query()
                 ->whereKey($this->userId)
                 ->whereNull('welcome_email_sent_at')
                 ->where('welcome_email_claim_token', $claimToken)
-                ->update(['welcome_email_claimed_at' => null, 'welcome_email_claim_token' => null]));
-
-            throw $e;
-        }
+                ->update(['welcome_email_claimed_at' => null, 'welcome_email_claim_token' => null])),
+        );
 
         DB::transaction(fn () => User::query()
             ->whereKey($this->userId)

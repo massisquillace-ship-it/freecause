@@ -92,20 +92,14 @@ class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        try {
-            Mail::to($claimed[0])->send(new OrganizationStatusMail($claimed[1], $claimed[2], $claimed[3], $claimed[4], $claimed[5]));
-        } catch (\Throwable $e) {
-            if (MailQuota::causedBy($e)) {
-                MailQuota::trip();
-            }
-            DB::transaction(fn () => OrganizationNotification::query()
+        MailQuota::send(
+            fn () => Mail::to($claimed[0])->send(new OrganizationStatusMail($claimed[1], $claimed[2], $claimed[3], $claimed[4], $claimed[5])),
+            fn () => DB::transaction(fn () => OrganizationNotification::query()
                 ->whereKey($this->notificationId)
                 ->whereNull('sent_at')
                 ->where('claim_token', $claimToken)
-                ->update(['claimed_at' => null, 'claim_token' => null]));
-
-            throw $e;
-        }
+                ->update(['claimed_at' => null, 'claim_token' => null])),
+        );
 
         DB::transaction(fn () => OrganizationNotification::query()
             ->whereKey($this->notificationId)
