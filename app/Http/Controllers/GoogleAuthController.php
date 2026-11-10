@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\InvalidStateException;
 
 class GoogleAuthController extends Controller
 {
@@ -106,10 +105,10 @@ class GoogleAuthController extends Controller
 
         try {
             $google = Socialite::driver('google')->user();
-        } catch (InvalidStateException $e) {
+        } catch (\Throwable $e) {
             AppLog::warning(
-                'Google OAuth state mismatch',
-                'Session expired or replay detected',
+                'Google OAuth callback interrupted',
+                $e::class.': '.$e->getMessage(),
                 'auth.google'
             );
 
@@ -206,8 +205,8 @@ class GoogleAuthController extends Controller
             try {
                 $currentUser->google_id = $google->getId();
                 DB::transaction(fn () => $currentUser->save());
-            } catch (QueryException $e) {
-                if (self::isGoogleIdUniqueViolation($e)) {
+            } catch (\Throwable $e) {
+                if ($e instanceof QueryException && self::isGoogleIdUniqueViolation($e)) {
                     AppLog::warning(
                         'Google link rejected — identity was linked concurrently',
                         'User ID: '.$currentUser->id.' | Email: '.$email,
@@ -219,16 +218,6 @@ class GoogleAuthController extends Controller
                     ]);
                 }
 
-                AppLog::error(
-                    'Google link failed to save',
-                    'User ID: '.$currentUser->id.' | '.$e->getMessage(),
-                    'auth.google'
-                );
-
-                return redirect("/{$destLocale}/profile")->withErrors([
-                    'google_link' => __('profile.google_link_failed'),
-                ]);
-            } catch (\Throwable $e) {
                 AppLog::error(
                     'Google link failed to save',
                     'User ID: '.$currentUser->id.' | '.$e->getMessage(),
@@ -379,9 +368,6 @@ class GoogleAuthController extends Controller
                 $user->save();
 
                 if ($tookOver) {
-                    if (config('session.driver') === 'database') {
-                        DB::table(config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
-                    }
                     DB::table(config('auth.passwords.users.table'))->where('email', $user->email)->delete();
                 }
             });

@@ -135,6 +135,16 @@ class GoogleOAuthStateTest extends TestCase
         $this->assertNotSame(trans('auth.google_session_expired', [], 'it'), trans('auth.google_session_expired', [], 'en'));
     }
 
+    public function test_google_callback_handles_cancelled_sign_in(): void
+    {
+        $state = $this->startGoogleLogin('/en/oauth/google?flow=login');
+        $this->googleResponses->append(new Response(400, ['Content-Type' => 'application/json'], '{"error":"invalid_grant"}'));
+
+        $this->googleCallback(['state' => $state, 'error' => 'access_denied'])
+            ->assertRedirect('/en/login')
+            ->assertSessionHasErrors('oauth');
+    }
+
     public function test_google_callback_rejects_missing_returned_state_before_contacting_google(): void
     {
         $this->startGoogleLogin('/en/oauth/google?flow=login');
@@ -347,7 +357,6 @@ class GoogleOAuthStateTest extends TestCase
 
     public function test_google_takeover_race_keeps_password_session_and_reset_token(): void
     {
-        config()->set('session.driver', 'database');
         $user = User::factory()->create([
             'email' => 'google-state@example.test',
             'google_id' => null,
@@ -356,12 +365,6 @@ class GoogleOAuthStateTest extends TestCase
             'verified' => true,
         ]);
         $hash = $user->password;
-        DB::table('sessions')->insert([
-            'id' => 'squatter-session',
-            'user_id' => $user->id,
-            'payload' => '',
-            'last_activity' => time(),
-        ]);
         DB::table('password_reset_tokens')->insert([
             'email' => $user->email,
             'token' => 'squatter-token',
@@ -390,7 +393,6 @@ class GoogleOAuthStateTest extends TestCase
         $fresh = $user->fresh();
         $this->assertNull($fresh->google_id);
         $this->assertSame($hash, $fresh->password);
-        $this->assertDatabaseHas('sessions', ['id' => 'squatter-session']);
         $this->assertDatabaseHas('password_reset_tokens', ['email' => $user->email, 'token' => 'squatter-token']);
     }
 
@@ -526,21 +528,14 @@ class GoogleOAuthStateTest extends TestCase
         $this->assertFalse(Hash::check('old-password', (string) $fresh->password));
     }
 
-    public function test_google_takeover_revokes_other_sessions_and_reset_tokens(): void
+    public function test_google_takeover_revokes_reset_tokens(): void
     {
-        config()->set('session.driver', 'database');
         $user = User::factory()->create([
             'email' => 'google-state@example.test',
             'google_id' => null,
             'password' => Hash::make('old-password'),
             'password_changed_at' => now(),
             'verified' => true,
-        ]);
-        DB::table('sessions')->insert([
-            'id' => 'squatter-session',
-            'user_id' => $user->id,
-            'payload' => '',
-            'last_activity' => time(),
         ]);
         DB::table('password_reset_tokens')->insert([
             'email' => $user->email,
@@ -553,7 +548,6 @@ class GoogleOAuthStateTest extends TestCase
         $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
-        $this->assertDatabaseMissing('sessions', ['id' => 'squatter-session']);
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
     }
 

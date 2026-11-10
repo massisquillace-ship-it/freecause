@@ -601,6 +601,37 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
     }
 
+    public function test_password_reset_cancels_pending_email_change(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'reset-pending@example.com',
+            'password' => bcrypt('old-password-123'),
+            'verified' => true,
+            'country' => 'NL',
+            'gender' => 'female',
+        ]);
+        $user->pending_email = 'pending-target@example.com';
+        $plain = $user->issueVerificationToken();
+        $user->save();
+
+        $this->post('/en/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => 'reset-pending@example.com',
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertRedirect();
+
+        $this->assertNull($user->fresh()->pending_email);
+        $this->assertNull($user->fresh()->verification_token);
+        $this->assertNull($user->fresh()->verification_token_sent_at);
+
+        $this->post('/en/verify/'.$plain, [])->assertRedirect('/en');
+
+        $user->refresh();
+        $this->assertSame('reset-pending@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+    }
+
     public function test_password_reset_caps_password_at_72_characters(): void
     {
         $user = User::factory()->create([
@@ -700,6 +731,27 @@ class AuthenticationTest extends TestCase
             'email' => 'newuser@example.com',
             'locale' => 'en_US',
         ]);
+    }
+
+    public function test_forgot_password_mail_failure_matches_unknown_email_response(): void
+    {
+        $user = User::factory()->create(['email' => 'reset-mail-failure@example.com']);
+
+        $unknownResponse = $this->from('/en/forgot-password')
+            ->post('/en/forgot-password', ['email' => 'unknown-reset@example.com']);
+
+        $unknownResponse->assertRedirect('/en/forgot-password')
+            ->assertSessionHas('status', __('auth.reset_link_sent'));
+
+        Password::shouldReceive('sendResetLink')
+            ->once()
+            ->andThrow(new \RuntimeException('Synthetic mail outage'));
+
+        $existingResponse = $this->from('/en/forgot-password')
+            ->post('/en/forgot-password', ['email' => $user->email]);
+
+        $existingResponse->assertRedirect('/en/forgot-password')
+            ->assertSessionHas('status', __('auth.reset_link_sent'));
     }
 
     public function test_embedded_registration_returns_to_create_page(): void

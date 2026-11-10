@@ -242,6 +242,32 @@ class AccountDeletionTest extends TestCase
         $this->assertDatabaseMissing('account_deletion_cleanups', ['id' => $cleanup->id]);
     }
 
+    public function test_cleanup_skips_wordpress_deletion_when_email_belongs_to_a_user(): void
+    {
+        $user = User::factory()->create();
+        $cleanup = AccountDeletionCleanup::create([
+            'user_id' => 999,
+            'email' => $user->email,
+        ]);
+        $wordPressDeletion = Mockery::mock(WordPressUserDeletionService::class);
+        $wordPressDeletion->shouldNotReceive('delete');
+
+        (new CleanupDeletedAccount($cleanup->id))->handle($wordPressDeletion);
+
+        $this->assertDatabaseMissing('account_deletion_cleanups', ['id' => $cleanup->id]);
+    }
+
+    public function test_cleanup_job_is_dispatched_only_once_per_cleanup_id(): void
+    {
+        Queue::fake();
+        $id = 123;
+
+        CleanupDeletedAccount::dispatch($id);
+        CleanupDeletedAccount::dispatch($id);
+
+        Queue::assertPushed(CleanupDeletedAccount::class, 1);
+    }
+
     private function googleOnlyUser(): User
     {
         return User::factory()->create([
