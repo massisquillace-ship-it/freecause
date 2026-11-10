@@ -146,4 +146,46 @@ class ProfilePasswordTest extends TestCase
 
         $this->assertTrue(Hash::check('another-new-pass', $user->fresh()->password));
     }
+
+    public function test_password_change_keeps_current_session_and_logs_out_other_sessions(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => null,
+            'password' => Hash::make('correct-current'),
+            'password_changed_at' => now(),
+            'verified' => true,
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'country' => 'US',
+            'gender' => 'female',
+        ]);
+        $oldHash = $user->password;
+
+        $this->post('/en/login', ['email' => $user->email, 'password' => 'correct-current'])
+            ->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($user);
+
+        $this->post('/en/profile', [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'country' => 'US',
+            'gender' => 'female',
+            'locale' => 'en',
+            'current_password' => 'correct-current',
+            'new_password' => 'another-new-pass',
+            'new_password_confirmation' => 'another-new-pass',
+        ])->assertRedirect('/en/profile');
+
+        $this->get('/en/profile')->assertOk();
+        $this->assertAuthenticatedAs($user);
+
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+
+        $this->actingAs($user->fresh())
+            ->withSession(['password_hash_web' => $oldHash])
+            ->get('/en/profile')
+            ->assertRedirect();
+        $this->assertGuest();
+    }
 }
