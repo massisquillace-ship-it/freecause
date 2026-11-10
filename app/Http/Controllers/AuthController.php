@@ -166,6 +166,12 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
+        if (! $user) {
+            static $dummyHash = null;
+            $dummyHash ??= Hash::make('dummy-password');
+            Hash::check($credentials['password'], $dummyHash);
+        }
+
         $legacyHash = $user && filled($user->password) && str_contains($user->password, ':');
 
         try {

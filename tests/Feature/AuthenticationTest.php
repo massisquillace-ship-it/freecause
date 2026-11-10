@@ -13,6 +13,7 @@ use App\Support\Settings;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Hashing\HashManager;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -351,6 +352,43 @@ class AuthenticationTest extends TestCase
 
         $response->assertSessionHasErrors('email');
         $this->assertGuest();
+    }
+
+    public function test_login_with_unknown_email_runs_one_hash_check_and_fails_like_wrong_password(): void
+    {
+        User::factory()->create([
+            'email' => 'known@example.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        $hasher = new class($this->app) extends HashManager
+        {
+            public int $checks = 0;
+
+            public function check($value, $hashedValue, array $options = [])
+            {
+                $this->checks++;
+
+                return parent::check($value, $hashedValue, $options);
+            }
+        };
+        Hash::swap($hasher);
+
+        $unknown = $this->post('/en/login', [
+            'email' => 'unknown@example.com',
+            'password' => 'wrongpassword',
+        ]);
+
+        $unknown->assertSessionHasErrors(['email' => __('auth.err_invalid_credentials')]);
+        $this->assertGuest();
+        $this->assertSame(1, $hasher->checks);
+
+        $known = $this->post('/en/login', [
+            'email' => 'known@example.com',
+            'password' => 'wrongpassword',
+        ]);
+
+        $known->assertSessionHasErrors(['email' => __('auth.err_invalid_credentials')]);
     }
 
     public function test_embedded_login_error_appears_once_on_create_page(): void
