@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class PetitionMilestoneMail extends Mailable implements ShouldQueue
 {
-    use GatedByMailQuota, Queueable, SerializesModels;
+    use GatedByMailQuota, Queueable, SerializesModels, WithListUnsubscribe;
 
     public bool $transactional = true;
 
@@ -36,6 +36,7 @@ class PetitionMilestoneMail extends Mailable implements ShouldQueue
             : lroute('home', ['locale' => $locale]);
 
         $token = $this->owner->ensureUnsubscribeToken();
+        $unsubscribeUrl = lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]);
         $firstName = $this->owner->first_name ?: $this->owner->name;
         $petitionTitle = $translation?->title ?? 'your petition';
         $count = number_format($this->milestone);
@@ -59,8 +60,9 @@ class PetitionMilestoneMail extends Mailable implements ShouldQueue
                 'footer' => trans('emails.petition_milestone.footer', [], $locale),
                 'unsubscribeLabel' => trans('emails.petition_milestone.unsubscribe', [], $locale),
                 'manageLabel' => trans('preferences.manage_preferences', [], $locale),
-                'unsubscribeUrl' => lroute('preferences.unsubscribe', ['locale' => $locale, 'token' => $token]),
+                'unsubscribeUrl' => $unsubscribeUrl,
                 'preferencesUrl' => lroute('preferences.show', ['locale' => $locale]),
-            ]);
+            ])
+            ->listUnsubscribe($unsubscribeUrl);
     }
 }
