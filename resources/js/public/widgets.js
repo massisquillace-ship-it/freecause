@@ -2,6 +2,19 @@ export function init(ctx) {
     const announce = ctx.announce;
     const prefersReducedMotion = ctx.prefersReducedMotion;
 
+    const recoverPetitionCover = function (image) {
+        if (!image?.matches?.('img[data-home-petition-cover]')) return;
+        const fallback = image.getAttribute('data-cover-fallback');
+        if (!fallback) return;
+        // Clear first so an unavailable fallback can never create a retry loop.
+        image.removeAttribute('data-cover-fallback');
+        image.src = fallback;
+    };
+    document.addEventListener('error', (event) => recoverPetitionCover(event.target), true);
+    document.querySelectorAll('img[data-home-petition-cover]').forEach(function (image) {
+        if (image.complete && image.naturalWidth === 0) recoverPetitionCover(image);
+    });
+
     document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-close-details]');
         if (!trigger) return;

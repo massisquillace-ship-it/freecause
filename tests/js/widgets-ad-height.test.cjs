@@ -17,11 +17,18 @@ function frame({ fluid }) {
     };
 }
 
-function setup(frames) {
+function setup(frames, covers = []) {
+    let errorHandler = null;
     let messageHandler = null;
     const document = {
-        addEventListener() {},
+        addEventListener(type, handler, capture) {
+            if (type === 'error') {
+                assert.equal(capture, true);
+                errorHandler = handler;
+            }
+        },
         querySelectorAll(sel) {
+            if (sel === 'img[data-home-petition-cover]') return covers;
             return sel === '.fc-ad iframe' ? frames : [];
         },
         querySelector() {
@@ -40,6 +47,7 @@ function setup(frames) {
     vm.runInContext(`${SRC}\n;globalThis.__init = init;`, sandbox);
     sandbox.__init({ announce() {}, prefersReducedMotion: true });
     return {
+        failCover(image) { errorHandler({ target: image }); },
         fire(height) {
             messageHandler({ data: { fcAdHeight: height }, source: frames[0].contentWindow });
         },
@@ -65,4 +73,40 @@ test('non-fluid ad frame keeps the 1000 cap', () => {
 test('widgets source has no adsense slot push code', () => {
     assert.equal(/data-adsense/.test(SRC), false);
     assert.equal(/adsbygoogle/.test(SRC), false);
+});
+
+function cover({ complete = false, naturalWidth = 0, relevant = true } = {}) {
+    const attributes = { 'data-cover-fallback': '/legacy/images/demo-featured.jpg' };
+    let replacements = 0;
+    let source = 'https://broken.example.com/blog/';
+    return { complete, naturalWidth,
+        matches() { return relevant; },
+        getAttribute(name) { return attributes[name] ?? null; },
+        removeAttribute(name) { delete attributes[name]; },
+        get src() { return source; },
+        set src(value) { source = value; replacements += 1; },
+        replacements() { return replacements; },
+    };
+}
+
+test('failed homepage cover uses the local fallback once without a retry loop', () => {
+    const image = cover();
+    const s = setup([], [image]);
+    assert.equal(image.replacements(), 0);
+    s.failCover(image);
+    assert.equal(image.src, '/legacy/images/demo-featured.jpg');
+    assert.equal(image.replacements(), 1);
+    s.failCover(image);
+    assert.equal(image.replacements(), 1);
+});
+
+test('covers that failed before widgets initialized recover; loaded and unrelated images stay intact', () => {
+    const early = cover({ complete: true });
+    const loaded = cover({ complete: true, naturalWidth: 640 });
+    const unrelated = cover({ relevant: false });
+    const s = setup([], [early, loaded]);
+    assert.equal(early.replacements(), 1);
+    assert.equal(loaded.replacements(), 0);
+    s.failCover(unrelated);
+    assert.equal(unrelated.replacements(), 0);
 });
