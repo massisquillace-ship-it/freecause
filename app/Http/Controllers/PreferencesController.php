@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Petition;
 use App\Models\User;
 use App\Support\AppLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PreferencesController extends Controller
 {
@@ -39,6 +41,8 @@ class PreferencesController extends Controller
             'unsubscribe_all' => ['nullable', 'boolean'],
         ]);
 
+        $hadNewSignatureEmails = $user->wantsNewSignatureEmails();
+
         if ($request->boolean('unsubscribe_all')) {
             $user->notify_milestones = false;
             $user->notify_new_signatures = false;
@@ -52,7 +56,13 @@ class PreferencesController extends Controller
         }
 
         try {
-            $user->save();
+            DB::transaction(function () use ($user, $hadNewSignatureEmails) {
+                $user->save();
+
+                if (! $hadNewSignatureEmails && $user->wantsNewSignatureEmails()) {
+                    Petition::where('user_id', $user->id)->update(['last_notified_at' => now()]);
+                }
+            });
         } catch (\Throwable $e) {
             AppLog::error('Preferences update failed', 'User ID: '.$user->id.' | '.$e->getMessage(), 'preferences.update');
 
