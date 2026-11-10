@@ -6,6 +6,7 @@ use App\Mail\OrganizationStatusMail;
 use App\Models\Organization;
 use App\Models\OrganizationNotification;
 use App\Models\User;
+use App\Support\AppLog;
 use App\Support\Locale;
 use App\Support\MailQuota;
 use App\Support\Settings;
@@ -76,6 +77,7 @@ class SendOrganizationNotification implements ShouldBeUnique, ShouldQueue
             }
             $address = $notice->to_admin ? (config('organizations.admin_email') ?: Settings::get('email_to_staff', '', 'global')) : $recipient->email;
             if (! filter_var($address, FILTER_VALIDATE_EMAIL)) {
+                AppLog::error('Organization notification address invalid', 'Notification id: '.$notice->id, 'organizations.notification');
                 $this->release(3600);
 
                 return null;
