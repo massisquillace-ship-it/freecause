@@ -214,4 +214,20 @@ export function init(ctx) {
             content.removeAttribute('hidden');
         });
     });
+
+    const turnstileContainers = document.querySelectorAll('.cf-turnstile[data-render="explicit"]');
+
+    const renderTurnstile = function () {
+        if (!turnstileContainers.length || !window.turnstile) return;
+        turnstileContainers.forEach(function (container) {
+            if (container.offsetParent === null) return;
+            if (container.dataset.fcTurnstileRendered === '1') return;
+            container.dataset.fcTurnstileRendered = '1';
+            window.turnstile.render(container, { sitekey: container.dataset.sitekey });
+        });
+    };
+
+    window.fcTurnstileOnload = renderTurnstile;
+    document.addEventListener('shown.bs.tab', renderTurnstile);
+    renderTurnstile();
 }

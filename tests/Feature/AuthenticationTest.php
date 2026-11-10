@@ -15,6 +15,7 @@ use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Hashing\HashManager;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Laravel\Socialite\Facades\Socialite;
@@ -469,6 +470,29 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user->fresh());
         $this->assertTrue((bool) $user->fresh()->verified);
+    }
+
+    public function test_registration_rejects_failed_turnstile_check(): void
+    {
+        Settings::set('turnstile_enabled', true, 'global');
+        Settings::set('turnstile_site_key', 'site-key', 'global');
+        Settings::set('turnstile_secret', 'secret-key', 'global');
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Http::fake(['challenges.cloudflare.com/*' => Http::response(['success' => false], 200)]);
+        Mail::fake();
+
+        $this->post('/en/register', [
+            'name' => 'Captcha',
+            'surname' => 'Rejected',
+            'email' => 'captcha-rejected@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+            'cf-turnstile-response' => 'failed-token',
+        ]);
+
+        $this->assertDatabaseMissing('users', ['email' => 'captcha-rejected@example.com']);
+        Mail::assertNothingQueued();
     }
 
     public function test_register_stops_after_per_email_cap(): void

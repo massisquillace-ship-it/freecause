@@ -226,6 +226,18 @@ class ProfileCrudTest extends TestCase
         Mail::assertQueued(VerifyAccountMail::class, fn ($mail) => $mail->hasTo('fresh-address@example.com'));
     }
 
+    public function test_email_change_requests_are_limited_to_one_per_ten_minutes(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser();
+        $this->requestEmailChange($user, 'first-address@example.com')->assertSessionHasNoErrors();
+        $this->requestEmailChange($user->fresh(), 'second-address@example.com')->assertSessionHasErrors('new_email');
+
+        Mail::assertQueued(VerifyAccountMail::class, 1);
+    }
+
     private function requestEmailChange(User $user, string $email)
     {
         return $this->actingAs($user)
@@ -374,6 +386,7 @@ class ProfileCrudTest extends TestCase
         $user = $this->passwordUser(['email' => 'first@example.com']);
         $this->requestEmailChange($user, 'second@example.com')->assertSessionHasNoErrors();
         $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
+        $this->travel(11)->minutes();
         $this->requestEmailChange($user->fresh(), 'third@example.com')->assertSessionHasNoErrors();
         $this->post('/en/verify/'.$this->knownVerificationToken($user))->assertRedirect('/en');
 

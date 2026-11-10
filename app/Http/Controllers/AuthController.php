@@ -74,6 +74,12 @@ class AuthController extends Controller
     {
         $data = $request->validated();
 
+        if (! Spam::verifyTurnstile($request->input('cf-turnstile-response'))) {
+            toast(__('sign.captcha_failed'), 'error');
+
+            return back()->withInput();
+        }
+
         $fullName = trim($data['name'].' '.$data['surname']);
 
         $userLevel = UserLevel::where('name', 'user')->first();
@@ -289,6 +295,10 @@ class AuthController extends Controller
                 return back()
                     ->withInput()
                     ->withErrors(['new_email' => __('auth.email_try_later')]);
+            }
+
+            if ($u->pending_email !== null && $u->verification_token_sent_at?->gt(now()->subMinutes(10))) {
+                return back()->withInput()->withErrors(['new_email' => __('auth.email_try_later')]);
             }
 
             // email/verified stay until the link proves the new address (see verify()).
