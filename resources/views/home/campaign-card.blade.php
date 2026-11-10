@@ -5,7 +5,7 @@
 @endphp
 <article class="bg-white border border-border rounded-lg shadow-elev-1 overflow-hidden min-w-0 h-full flex flex-col">
     <a href="{{ $campaignUrl }}" class="block shrink-0" tabindex="-1" aria-hidden="true">
-        <img src="{{ $petition->coverUrl() }}" alt="" width="640" height="360" loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover bg-surface-muted" data-home-petition-cover>
+        <img src="{{ $petition->coverUrl() }}" alt="" width="640" height="360" loading="lazy" decoding="async" class="w-full aspect-[16/9] object-cover bg-surface-muted" data-home-petition-cover data-cover-fallback="{{ asset('legacy/images/demo-featured.jpg') }}">
     </a>
     <div class="p-4 flex flex-col flex-1">
     @if($goalReached ?? false)<span class="bg-success-soft text-ink rounded-full px-2 py-1 text-xs self-start mb-3">{{ __('home.victory_badge') }}</span>@endif
