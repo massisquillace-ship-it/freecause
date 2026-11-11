@@ -2,6 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+if [ -z "${CI:-}" ]; then
+    npm run build >/dev/null
+fi
+
 VERSION=$(node -p "require('@playwright/test/package.json').version")
 # Preserve the checkout path so the host-created public/storage symlink also resolves inside Docker.
 exec docker run --rm --platform linux/amd64 -v "$PWD":"$PWD" -w "$PWD" -e E2E_VISUAL=1 \
