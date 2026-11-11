@@ -15,6 +15,7 @@ class OrganizationNotifications
         $targets = match ($event) {
             'applied' => [false, true], 'deletion_requested' => [true], 'resubmitted' => [true],
             'verify', 'reject', 'suspend', 'restore', 'donation' => [false],
+            'founding', 'owner_reassigned' => $org->owner_user_id ? [false] : [],
             default => [],
         };
         foreach ($targets as $admin) {
