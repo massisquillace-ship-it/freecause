@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Jobs\PurgeOrganizationAttribution;
+use App\Services\OrganizationMemberships;
 use App\Services\UnclaimedOrganizations;
 use App\Support\CacheVersion;
 use App\Support\Settings;
@@ -40,6 +41,9 @@ class Organization extends Model
             }
         });
         static::saved(function (Organization $org) {
+            if ($org->wasRecentlyCreated || $org->wasChanged('owner_user_id')) {
+                app(OrganizationMemberships::class)->syncOwner($org);
+            }
             DB::afterCommit(fn () => CacheVersion::bumpSitemap());
             if ($org->wasRecentlyCreated || $org->wasChanged(['status', 'owner_user_id'])) {
                 DB::afterCommit(fn () => CacheVersion::bump('organizations'));
@@ -51,6 +55,33 @@ class Organization extends Model
         static::deleted(function () {
             DB::afterCommit(fn () => CacheVersion::bump('organizations'));
         });
+    }
+
+    // Keep the owner mirror and its unique membership in the same transaction,
+    // including admin reassignment, claims and existing import/creation paths.
+    public function save(array $options = [])
+    {
+        return DB::transaction(fn () => parent::save($options), 3);
+    }
+
+    public function members()
+    {
+        return $this->hasMany(OrganizationMember::class);
+    }
+
+    public function invitations()
+    {
+        return $this->hasMany(OrganizationInvitation::class);
+    }
+
+    public function roleFor(User $user): ?string
+    {
+        return $this->members()->where('user_id', $user->id)->when(DB::transactionLevel() > 0, fn ($q) => $q->lockForUpdate())->value('role');
+    }
+
+    public function scopeForMember($query, User $user)
+    {
+        return $query->whereHas('members', fn ($members) => $members->where('user_id', $user->id));
     }
 
     public function owner()
