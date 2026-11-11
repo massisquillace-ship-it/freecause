@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'De opschorting voor :name is na beoordeling opgeheven. Open je profiel of het beheerpaneel om de huidige verificatiestatus te controleren.',
     'donation_subject' => 'Donatielink goedgekeurd: :name',
     'donation_body' => 'De externe donatielink voor :name is goedgekeurd. Supporters kunnen deze link vinden via het geverifieerde profiel. Als de bestemming wordt gewijzigd, is een nieuwe beoordeling vereist.',
+    'founding_subject' => 'Erkenning van de oprichting bijgewerkt: :name',
+    'founding_body' => 'De erkenning bij de oprichting van :name is bijgewerkt. Open je beheerpaneel om de huidige status van je badge en organisatie te controleren.',
+    'owner_reassigned_subject' => 'Toegewezen organisatie-eigendom: :name',
+    'owner_reassigned_body' => 'Je bent nu de eigenaar van :name op FreeCause. Open je beheerpaneel om de organisatie, de leden en de campagnes te bekijken.',
+    'admin_deletion_subject' => 'Verzoek tot verwijdering van de organisatie: :name',
+    'admin_deletion_body' => 'De eigenaar van :name heeft verzocht om verwijdering van de organisatie. Bekijk het verzoek en de auditgeschiedenis ervan via de besloten beheerpagina.',
     'action' => 'Open FreeCause',
 ];
 
