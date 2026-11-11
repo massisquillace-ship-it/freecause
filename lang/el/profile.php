@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Επαληθεύστε την ταυτότητά σας με το Google πριν διαγράψετε τον λογαριασμό σας.',
     'google_link_success' => 'Ο λογαριασμός σας Google είναι τώρα συνδεδεμένος.',
     'google_link_in_use' => 'Αυτός ο λογαριασμός Google είναι ήδη συνδεδεμένος με άλλον λογαριασμό FreeCause.',
+    'google_link_email_mismatch' => 'Αυτός ο λογαριασμός Google έχει διαφορετική διεύθυνση email από τον λογαριασμό σου στο FreeCause, οπότε δεν μπορεί να συνδεθεί.',
     'google_link_no_email' => 'Το Google δεν κοινοποίησε διεύθυνση email, οπότε δεν μπορέσαμε να τον συνδέσουμε.',
     'google_link_failed' => 'Δεν μπορέσαμε να συνδέσουμε το Google. Δοκιμάστε ξανά.',
     'google_link_session_lost' => 'Η συνεδρία σας έληξε. Συνδεθείτε και δοκιμάστε ξανά να συνδέσετε το Google.',

@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Verifiera din identitet med Google innan du raderar ditt konto.',
     'google_link_success' => 'Ditt Google-konto är nu anslutet.',
     'google_link_in_use' => 'Det Google-kontot är redan kopplat till ett annat FreeCause-konto.',
+    'google_link_email_mismatch' => 'Det Google-kontot har en annan e-postadress än ditt FreeCause-konto och kan därför inte kopplas.',
     'google_link_no_email' => 'Google delade ingen e-postadress, så vi kunde inte ansluta det.',
     'google_link_failed' => 'Vi kunde inte ansluta Google. Försök igen.',
     'google_link_session_lost' => 'Din session har gått ut. Logga in och försök ansluta Google igen.',

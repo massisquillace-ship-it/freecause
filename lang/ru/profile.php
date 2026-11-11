@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Подтвердите свою личность через Google перед удалением аккаунта.',
     'google_link_success' => 'Ваш аккаунт Google теперь подключён.',
     'google_link_in_use' => 'Этот аккаунт Google уже привязан к другому аккаунту FreeCause.',
+    'google_link_email_mismatch' => 'У этого аккаунта Google другой адрес почты, чем у твоего аккаунта FreeCause, поэтому его нельзя привязать.',
     'google_link_no_email' => 'Google не предоставил адрес электронной почты, поэтому мы не смогли его подключить.',
     'google_link_failed' => 'Не удалось подключить Google. Пожалуйста, попробуйте снова.',
     'google_link_session_lost' => 'Ваша сессия истекла. Войдите и попробуйте подключить Google снова.',

@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Bekræft din identitet med Google, før du sletter din konto.',
     'google_link_success' => 'Din Google-konto er nu forbundet.',
     'google_link_in_use' => 'Den Google-konto er allerede knyttet til en anden FreeCause-konto.',
+    'google_link_email_mismatch' => 'Den Google-konto har en anden e-mailadresse end din FreeCause-konto, så den kan ikke knyttes.',
     'google_link_no_email' => 'Google delte ikke en e-mailadresse, så vi kunne ikke forbinde den.',
     'google_link_failed' => 'Vi kunne ikke forbinde Google. Prøv igen.',
     'google_link_session_lost' => 'Din session udløb. Log ind og prøv at forbinde Google igen.',
