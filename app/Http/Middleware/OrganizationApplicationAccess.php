@@ -10,7 +10,7 @@ class OrganizationApplicationAccess
     public function handle(Request $request, Closure $next)
     {
         if (! auth('web')->check()) {
-            abort_unless(config('organizations.public_launch'), 404);
+            abort_unless(config('organizations.public_launch') || config('organizations.applications_open'), 404);
 
             return redirect()->guest(lroute('login'));
         }

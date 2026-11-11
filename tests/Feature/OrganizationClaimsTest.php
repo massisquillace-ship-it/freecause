@@ -135,6 +135,7 @@ class OrganizationClaimsTest extends TestCase
 
     public function test_closed_apply_is_404_for_guests_but_open_launch_requires_login(): void
     {
+        config(['organizations.applications_open' => false]);
         $this->get('/en/organizations/apply')->assertNotFound();
         $this->post('/en/organizations/apply', [])->assertNotFound();
         $this->get('/en/organizations')->assertOk()->assertDontSee('Not listed? Create your page')->assertDontSee('Applications are not open yet.');

@@ -32,7 +32,7 @@ class OrganizationController extends Controller
     public function landing()
     {
         $owned = auth('web')->check() ? Organization::forMember(auth('web')->user())->withCount('members')->orderByDesc('id')->get() : collect();
-        $view = view('organizations.landing', ['owned' => $owned, 'directoryIsEmpty' => ! Organization::public()->exists(), 'applicationsOpen' => config('organizations.public_launch') && $this->applicationsOpen()]);
+        $view = view('organizations.landing', ['owned' => $owned, 'directoryIsEmpty' => ! Organization::public()->exists(), 'applicationsOpen' => $this->applicationsOpen()]);
 
         return auth('web')->check() ? $this->privateResponse($view) : $view;
     }
@@ -83,7 +83,7 @@ class OrganizationController extends Controller
                 ->orderBy('name')->orderBy('id')->limit(20)->get();
         }
 
-        return view('organizations.claim-search', ['organizations' => $results, 'q' => $term, 'countries' => Countries::all()]);
+        return view('organizations.claim-search', ['organizations' => $results, 'q' => $term, 'countries' => Countries::all(), 'applicationsOpen' => $this->applicationsOpen()]);
     }
 
     public function claim(string $locale, string $slug)
