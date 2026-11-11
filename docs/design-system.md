@@ -164,6 +164,6 @@ CI: blocking step in `.github/workflows/ci.yml` (`Design system lint`).
 ## Browser gates
 
 `npx playwright test` runs smoke and a11y (axe WCAG A/AA serious+critical, horizontal overflow at 375 and 1280) against a fresh SQLite DB; screenshots do not run there.
-Screenshots run only via `bash scripts/e2e-visual.sh` in the official Playwright Linux container (needs Docker/OrbStack), on their own fresh DB; baselines are `*-linux.png`; update with `bash scripts/e2e-visual.sh --update-snapshots`.
+Screenshots run only via `bash scripts/e2e-visual.sh` in the official Playwright Linux container (needs Docker/OrbStack), on their own fresh DB, after a fresh `npm run build` on the host (CI builds once in an earlier step); baselines are `*-linux.png`; update with `bash scripts/e2e-visual.sh --update-snapshots`.
 Both are blocking in the CI `e2e` job, which runs on pull requests only; the push-to-main deploy does not run it.
 The component preview at `/__components` is only available in the `local` and `e2e` environments.
