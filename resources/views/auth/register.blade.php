@@ -44,6 +44,7 @@
 
                             <form method="POST" action="{{ url("/{$locale}/register") }}">
                                 @csrf
+                                @if(!empty($redirect))<input type="hidden" name="redirect" value="{{ $redirect }}">@endif
 
                                 <div class="flex flex-wrap -mx-3">
                                     <div class="w-full md:w-1/2 shrink-0 grow-0 px-3 mb-4">
