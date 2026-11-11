@@ -36,46 +36,58 @@ class AdminPetitionDeleteController extends Controller
         $imagePaths = [];
         $failure = null;
         try {
-            foreach (array_chunk($data['ids'], 1) as $chunk) {
-                DB::table('petitions')->whereIn('id', $chunk)->update(['is_active' => 0, 'status' => 'draft', 'held_by_admin' => 1, 'updated_at' => now()]);
-                $urls = [...$urls, ...EdgeCachePurge::petitionUrls($chunk)];
-                do {
-                    $removed = DB::table('signatures')->whereIn('petition_id', $chunk)->limit(5000)->delete();
-                } while ($removed > 0);
+            DB::table('petitions')->whereIn('id', $data['ids'])->update(['is_active' => 0, 'status' => 'draft', 'held_by_admin' => 1, 'updated_at' => now()]);
+            DB::transaction(function () use ($data, &$deleted, &$shortLinks, &$urls, &$imagePaths) {
+                foreach (array_chunk($data['ids'], 1) as $chunk) {
+                    $urls = [...$urls, ...EdgeCachePurge::petitionUrls($chunk)];
+                    do {
+                        $removed = DB::table('signatures')->whereIn('petition_id', $chunk)->limit(5000)->delete();
+                    } while ($removed > 0);
 
-                [$chunkDeleted, $chunkShortLinks, $chunkUrls, $chunkImagePaths] = DB::transaction(function () use ($chunk) {
-                    $rows = DB::table('petitions')->whereIn('id', $chunk)
-                        ->orderBy('id')->lockForUpdate()->get(['id', 'cover_image', 'image_url']);
-                    $ids = $rows->pluck('id')->all();
-                    $shortLinks = DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->pluck('short_link')->all();
-                    $urls = EdgeCachePurge::petitionUrls($ids);
-                    $imagePaths = [];
-                    foreach ($rows as $row) {
-                        foreach ([$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null] as $path) {
-                            if ($path && str_starts_with($path, 'petitions/') && ! str_contains($path, '..')) {
-                                $imagePaths[] = $path;
+                    [$chunkDeleted, $chunkShortLinks, $chunkUrls, $chunkImagePaths] = DB::transaction(function () use ($chunk) {
+                        $rows = DB::table('petitions')->whereIn('id', $chunk)
+                            ->orderBy('id')->lockForUpdate()->get(['id', 'cover_image', 'image_url']);
+                        $ids = $rows->pluck('id')->all();
+                        $shortLinks = DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->pluck('short_link')->all();
+                        $urls = EdgeCachePurge::petitionUrls($ids);
+                        $imagePaths = [];
+                        foreach ($rows as $row) {
+                            foreach ([$row->cover_image, $row->image_url && ! preg_match('#^https?://#', $row->image_url) ? 'petitions/'.$row->image_url : null] as $path) {
+                                if ($path && str_starts_with($path, 'petitions/') && ! str_contains($path, '..')) {
+                                    $imagePaths[] = $path;
+                                }
                             }
                         }
-                    }
 
-                    // Legacy short links, outcome events, and reports have no foreign key cascade.
-                    DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
-                    DB::table('petition_outcome_events')->whereIn('petition_id', $ids)->delete();
-                    DB::table('reports')
-                        ->where('reportable_type', Petition::class)
-                        ->whereIn('reportable_id', $ids)
-                        ->delete();
-                    $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
+                        // Legacy short links, outcome events, and reports have no foreign key cascade.
+                        DB::table('legacy_shortlinks')->whereIn('petition_id', $ids)->delete();
+                        DB::table('petition_outcome_events')->whereIn('petition_id', $ids)->delete();
+                        DB::table('reports')
+                            ->where('reportable_type', Petition::class)
+                            ->whereIn('reportable_id', $ids)
+                            ->delete();
+                        $deleted = DB::table('petitions')->whereIn('id', $ids)->delete();
 
-                    return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
-                });
-                $deleted += $chunkDeleted;
-                $shortLinks = [...$shortLinks, ...$chunkShortLinks];
-                $urls = [...$urls, ...$chunkUrls];
-                $imagePaths = [...$imagePaths, ...$chunkImagePaths];
-            }
+                        return [$deleted, $shortLinks, $urls, array_values(array_unique($imagePaths))];
+                    });
+                    $deleted += $chunkDeleted;
+                    $shortLinks = [...$shortLinks, ...$chunkShortLinks];
+                    $urls = [...$urls, ...$chunkUrls];
+                    $imagePaths = [...$imagePaths, ...$chunkImagePaths];
+                }
+            });
         } catch (\Throwable $e) {
             $failure = $e;
+        }
+
+        if ($failure) {
+            Log::warning('Admin petition deletion failed: '.$failure->getMessage(), [
+                'admin_id' => $request->user('admin')?->id,
+                'petition_ids' => $data['ids'],
+                'deleted' => 0,
+            ]);
+
+            throw $failure;
         }
 
         try {
@@ -116,16 +128,6 @@ class AdminPetitionDeleteController extends Controller
             EdgeCachePurge::urls($urls);
         } catch (\Throwable $e) {
             Log::warning('Cache invalidation failed after petition deletion: '.$e->getMessage());
-        }
-
-        if ($failure) {
-            Log::warning('Admin petition deletion failed: '.$failure->getMessage(), [
-                'admin_id' => $request->user('admin')?->id,
-                'petition_ids' => $data['ids'],
-                'deleted' => $deleted,
-            ]);
-
-            throw $failure;
         }
 
         Log::info('Admin permanently deleted petitions.', [

@@ -187,6 +187,27 @@ class AdminPetitionDeleteTest extends TestCase
             && ($context['petition_ids'] ?? null) === [$petition->id])->once();
     }
 
+    public function test_failed_batch_delete_is_atomic_across_petitions(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $first = Petition::factory()->create();
+        $second = Petition::factory()->create();
+        $firstSignature = Signature::factory()->create(['petition_id' => $first->id]);
+        $secondSignature = Signature::factory()->create(['petition_id' => $second->id]);
+        DB::unprepared("CREATE TRIGGER block_second_petition_delete BEFORE DELETE ON petitions WHEN OLD.id = {$second->id} BEGIN SELECT RAISE(ABORT, 'delete blocked'); END");
+        Log::spy();
+
+        $this->postJson(route('admin.petitions.bulkDelete'), ['ids' => [$first->id, $second->id], 'confirmed' => true])
+            ->assertStatus(500);
+
+        $this->assertDatabaseHas('petitions', ['id' => $first->id]);
+        $this->assertDatabaseHas('petitions', ['id' => $second->id]);
+        $this->assertDatabaseHas('signatures', ['id' => $firstSignature->id]);
+        $this->assertDatabaseHas('signatures', ['id' => $secondSignature->id]);
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context = []) => str_starts_with($message, 'Admin petition deletion failed')
+            && ($context['petition_ids'] ?? null) === [$first->id, $second->id])->once();
+    }
+
     public function test_delete_requires_explicit_confirmation_and_valid_selection(): void
     {
         $this->actingAs($this->admin(), 'admin');
