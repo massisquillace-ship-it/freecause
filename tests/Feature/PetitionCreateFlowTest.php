@@ -6,14 +6,17 @@ use App\Models\Category;
 use App\Models\CategoryTranslation;
 use App\Models\Petition;
 use App\Models\PetitionTranslation;
+use App\Models\Signature;
 use App\Models\User;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use PDOException;
 use Tests\TestCase;
 
@@ -173,6 +176,17 @@ class PetitionCreateFlowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_owner_cannot_edit_after_another_user_signs(): void
+    {
+        $petition = Petition::factory()->create(['user_id' => $this->user->id, 'category_id' => $this->category->id, 'status' => 'published', 'is_active' => true]);
+        PetitionTranslation::create(['petition_id' => $petition->id, 'locale' => 'en', 'title' => 'Original Petition Title', 'slug' => 'original-petition-title', 'description' => 'Original description.']);
+        $signer = User::factory()->create(['verified' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => $signer->id, 'confirmed' => true, 'is_spam' => false]);
+
+        $this->actingAs($this->user)->post("/en/petition/original-petition-title/{$petition->id}/edit", $this->payload(['title' => 'Updated Petition Title']))
+            ->assertForbidden();
+    }
+
     public function test_non_owner_invalid_update_is_forbidden_before_validation(): void
     {
         $other = User::factory()->create(['verified' => true]);
@@ -276,6 +290,21 @@ class PetitionCreateFlowTest extends TestCase
         ])->assertRedirect();
         $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'cover_image' => 'petitions/keep.png']);
         Storage::disk('public')->assertExists('petitions/keep.png');
+    }
+
+    public function test_update_succeeds_when_old_cover_cleanup_throws(): void
+    {
+        $petition = Petition::factory()->create(['user_id' => $this->user->id, 'category_id' => $this->category->id, 'status' => 'published', 'is_active' => true, 'cover_image' => 'petitions/old.png']);
+        PetitionTranslation::create(['petition_id' => $petition->id, 'locale' => 'en', 'title' => 'Original Petition Title', 'slug' => 'original-petition-title', 'description' => 'Original description.']);
+
+        $disk = Mockery::mock(Filesystem::class);
+        $disk->shouldReceive('delete')->andThrow(new \RuntimeException('disk down'));
+        Storage::shouldReceive('disk')->with('public')->andReturn($disk);
+
+        $this->actingAs($this->user)->post("/en/petition/original-petition-title/{$petition->id}/edit", $this->payload(['title' => 'Updated Petition Title', 'remove_image' => 1]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'cover_image' => null]);
     }
 
     public function test_normal_html_description_is_not_flagged_as_spam(): void

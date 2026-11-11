@@ -5,6 +5,7 @@ return [
     'explore' => 'Смотреть петиции',
     'pdf_description' => 'Описание',
     'pdf_latest' => 'Последние подписи',
+    'pdf_capped' => 'This PDF lists the first 1000 signatures. Download the full list as TXT or CSV.',
     'anonymous' => 'Аноним',
     'default_comment' => 'Я поддерживаю эту петицию',
     'no_signatures' => 'Подписей пока нет.',

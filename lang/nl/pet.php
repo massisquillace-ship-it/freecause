@@ -5,6 +5,7 @@ return [
     'explore' => 'Petities verkennen',
     'pdf_description' => 'Beschrijving',
     'pdf_latest' => 'Laatste handtekeningen',
+    'pdf_capped' => 'This PDF lists the first 1000 signatures. Download the full list as TXT or CSV.',
     'anonymous' => 'Anoniem',
     'default_comment' => 'Ik ondersteun deze petitie',
     'no_signatures' => 'Nog geen handtekeningen.',
