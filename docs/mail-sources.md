@@ -29,7 +29,7 @@ Turn them back on only after the volume fixes below. Settings are cached 300 s; 
 - Digest: weekly instead of daily.
 - New signatures: at most one mail per petition per day.
 - Queue alert: at most one per hour, done.
-- Digest is scheduled with `--limit=100`, so it reaches only the first 100 users each day until #471 (digest cursor) is fixed. Do not turn the digest on before that.
+- Digest runs with `--limit=100` per day and resumes from a cursor (`digest:cursor`), so one full pass over N recipients takes about N/100 days.
 - Verification on guest sign: daily cap done (`verify_guest_daily_cap`).
 - Check the real recipient count first (`petition:send-digest --dry-run`) and the plan limit in the SMTP2GO dashboard.
 
