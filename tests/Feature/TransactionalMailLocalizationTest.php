@@ -7,6 +7,7 @@ use App\Mail\VerifyAccountMail;
 use App\Models\Petition;
 use App\Models\PetitionTranslation;
 use App\Models\User;
+use App\Support\MailText;
 use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,5 +83,13 @@ class TransactionalMailLocalizationTest extends TestCase
         $html = (new VerifyAccountMail($user, 'en'))->render();
 
         $this->assertStringContainsString('Thank you for joining FreeCause', $html);
+    }
+
+    public function test_mail_text_returns_each_locale_own_text_across_repeated_calls(): void
+    {
+        $this->assertSame('Verify your FreeCause email', MailText::get('verify_subject', [], 'en'));
+        $this->assertSame('Verifica la tua email FreeCause', MailText::get('verify_subject', [], 'it'));
+        $this->assertSame('Verify your FreeCause email', MailText::get('verify_subject', [], 'en'));
+        $this->assertSame('Verifica la tua email FreeCause', MailText::get('verify_subject', [], 'it'));
     }
 }

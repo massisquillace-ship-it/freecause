@@ -8,8 +8,14 @@ use Illuminate\Support\Facades\Cache;
 
 class MailText
 {
+    private static array $defaultsCache = [];
+
     public static function defaults(string $locale): array
     {
+        if (isset(self::$defaultsCache[$locale])) {
+            return self::$defaultsCache[$locale];
+        }
+
         $values = [];
         foreach (Arr::dot(trans('emails', [], $locale)) as $key => $value) {
             if (is_string($value)) {
@@ -31,7 +37,7 @@ class MailText
         $values['common_footer'] = trans('profile.welcome_footer', [], $locale);
         $values['common_manage_preferences'] = trans('preferences.manage_preferences', [], $locale);
 
-        return $values;
+        return self::$defaultsCache[$locale] = $values;
     }
 
     public static function catalog(string $locale): array
