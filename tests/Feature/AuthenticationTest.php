@@ -782,12 +782,46 @@ class AuthenticationTest extends TestCase
             'email' => 'banned-reset@example.com',
             'password' => 'new-password-123',
             'password_confirmation' => 'new-password-123',
-        ])->assertRedirect();
+        ])->assertRedirect('/en/login')->assertSessionHas('toast.message', __('auth.err_suspended'));
 
+        $this->assertGuest();
         $this->assertTrue($user->fresh()->isBanned());
         $this->assertFalse($user->fresh()->verified);
         $this->assertDatabaseHas('signatures', ['id' => $signature->id, 'confirmed' => 0]);
         $this->assertDatabaseHas('petitions', ['id' => $petition->id, 'signature_count' => 0]);
+    }
+
+    public function test_banned_user_verify_link_leaves_guest_and_signatures_unconfirmed(): void
+    {
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+
+        $this->post('/en/register', [
+            'name' => 'Pending',
+            'surname' => 'Banned',
+            'email' => 'pending-banned@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email');
+
+        $user = User::where('email', 'pending-banned@example.com')->firstOrFail();
+        $user->forceFill(['banned_until' => now()->addDay()])->save();
+        $petition = Petition::factory()->create(['signature_count' => 0]);
+        $signature = Signature::factory()->create([
+            'petition_id' => $petition->id,
+            'user_id' => $user->id,
+            'confirmed' => false,
+            'is_spam' => false,
+        ]);
+
+        $this->post('/en/verify/'.$this->knownVerificationToken($user), [])
+            ->assertRedirect('/en/login')
+            ->assertSessionHas('toast.message', __('auth.err_suspended'));
+
+        $this->assertGuest();
+        $this->assertFalse((bool) $user->fresh()->verified);
+        $this->assertDatabaseHas('signatures', ['id' => $signature->id, 'confirmed' => 0]);
     }
 
     public function test_user_can_register(): void
