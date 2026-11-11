@@ -141,8 +141,8 @@ class SendPetitionDigest extends Command
                 return true;
             });
 
-        if ($useCursor && ! $aborted) {
-            $limited ? Cache::forever('digest:cursor', $lastId) : Cache::forget('digest:cursor');
+        if ($useCursor) {
+            $limited || $aborted ? Cache::forever('digest:cursor', $lastId) : Cache::forget('digest:cursor');
         }
 
         $summary = sprintf(

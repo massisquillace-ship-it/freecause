@@ -268,6 +268,33 @@ class PetitionDigestTest extends TestCase
         $this->assertDatabaseHas('logs', ['title' => 'Petition digest aborted']);
     }
 
+    public function test_saves_cursor_when_mail_quota_trips_mid_run(): void
+    {
+        $this->publishedPetition();
+
+        $users = User::factory()->count(201)->create([
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+            'unsubscribed_at' => null,
+        ]);
+
+        $secondChunkId = $users->last()->id;
+
+        User::retrieved(function (User $user) use ($secondChunkId) {
+            if ($user->id === $secondChunkId) {
+                MailQuota::trip();
+            }
+        });
+
+        Mail::fake();
+
+        Artisan::call('petition:send-digest', ['--limit' => 500]);
+
+        $this->assertDatabaseHas('logs', ['title' => 'Petition digest aborted']);
+        $this->assertSame($users[199]->id, Cache::get('digest:cursor'));
+    }
+
     public function test_skips_digest_while_mail_is_paused(): void
     {
         $this->publishedPetition();
