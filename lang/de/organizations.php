@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'Die Sperre für :name wurde nach einer Überprüfung aufgehoben. Öffnen Sie Ihr Profil oder Ihr Verwaltungsportal, um den aktuellen Verifizierungsstatus zu überprüfen.',
     'donation_subject' => 'Spendenlink genehmigt: :name',
     'donation_body' => 'Der externe Spendenlink für :name wurde genehmigt. Unterstützer können über das verifizierte Profil darauf zugreifen. Eine Änderung des Spendenziels erfordert eine erneute Prüfung.',
+    'founding_subject' => 'Anerkennung der Gründung aktualisiert: :name',
+    'founding_body' => 'Die Gründungsauszeichnung für :name wurde aktualisiert. Öffnen Sie Ihr Verwaltungsportal, um die aktuelle Auszeichnung und den Status Ihrer Organisation zu überprüfen.',
+    'owner_reassigned_subject' => 'Zugewiesene Organisationszugehörigkeit: :name',
+    'owner_reassigned_body' => 'Sie sind nun Eigentümer von :name auf FreeCause. Öffnen Sie Ihr Verwaltungsportal, um die Organisation, ihre Mitglieder und Kampagnen einzusehen.',
+    'admin_deletion_subject' => 'Antrag auf Löschung einer Organisation: :name',
+    'admin_deletion_body' => 'Der Inhaber von :name hat die Löschung der Organisation beantragt. Überprüfen Sie den Antrag und den Prüfverlauf auf der privaten Verwaltungsseite.',
     'action' => 'Open FreeCause öffnen',
 ];
 
