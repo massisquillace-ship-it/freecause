@@ -13,7 +13,7 @@ class OrganizationNotifications
     public static function record(Organization $org, string $event, array $details = []): void
     {
         $targets = match ($event) {
-            'applied' => [false, true], 'resubmitted' => [true],
+            'applied' => [false, true], 'deletion_requested' => [true], 'resubmitted' => [true],
             'verify', 'reject', 'suspend', 'restore', 'donation' => [false],
             default => [],
         };
