@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\Petition;
 use App\Models\PetitionTranslation;
 use App\Models\Signature;
+use App\Policies\PetitionPolicy;
 use App\Services\PageContentService;
 use App\Services\PetitionSigning;
 use App\Services\PetitionStats;
@@ -42,14 +43,17 @@ class PetitionController extends Controller
 {
     private function requireOwner(Petition $petition): void
     {
-        abort_unless(auth()->check() && (int) $petition->user_id === (int) auth()->id(), 403);
+        if ($petition->organization_id && DB::transactionLevel() > 0) {
+            $petition->setRelation('organization', Organization::whereKey($petition->organization_id)->lockForUpdate()->first());
+        }
+
+        abort_unless(auth()->check() && app(PetitionPolicy::class)->update(auth()->user(), $petition), 403);
     }
 
     /**
      * Export authorization: the petition owner OR a logged-in admin.
      * Matches the legacy rule (owner_id == user || VALID_ADMIN) for
-     * signature downloads. Kept separate from requireOwner(), which must
-     * stay owner-only for edit/update.
+     * signature downloads. Kept separate from requireOwner(), which uses organization roles for edit/update.
      */
     private function requireOwnerOrAdmin(Petition $petition): void
     {
@@ -283,8 +287,12 @@ class PetitionController extends Controller
                     $q2->where('status', 'published');
                 })
                     ->orWhere(function ($q2) {
-                        $q2->where('status', 'draft')
-                            ->where('user_id', auth()->id() ?? 0);
+                        $q2->where('status', 'draft')->where(function ($draft) {
+                            $draft->where('user_id', auth()->id() ?? 0);
+                            if (auth()->check()) {
+                                $draft->orWhereHas('organization.members', fn ($members) => $members->where('user_id', auth()->id())->whereIn('role', ['owner', 'admin']));
+                            }
+                        });
                     });
             })
             ->firstOrFail();
@@ -383,7 +391,7 @@ class PetitionController extends Controller
                 ->count()
         );
 
-        $canEdit = auth()->check() && (int) auth()->id() === (int) $petition->user_id && $this->isEditable($petition);
+        $canEdit = auth()->check() && app(PetitionPolicy::class)->update(auth()->user(), $petition) && $this->isEditable($petition);
 
         return view('petition.show', compact(
             'canEdit',
@@ -553,7 +561,7 @@ class PetitionController extends Controller
                 }
 
                 if (filled($data['organization_id'] ?? null)) {
-                    $org = Organization::verified()->where('owner_user_id', auth()->id())->whereKey($data['organization_id'])->lockForUpdate()->first();
+                    $org = Organization::verified()->forMember(auth()->user())->whereKey($data['organization_id'])->lockForUpdate()->first();
                     if (! $org) {
                         throw ValidationException::withMessages(['organization_id' => __('organizations.invalid_attribution')]);
                     }
@@ -802,13 +810,15 @@ class PetitionController extends Controller
 
     public function withdraw(string $locale, string $slug, int $id): RedirectResponse
     {
-        $petition = Petition::query()->findOrFail($id);
-        $this->requireOwner($petition);
-        abort_unless($petition->status === 'published', 403);
+        $petition = DB::transaction(function () use ($id) {
+            $petition = Petition::query()->lockForUpdate()->findOrFail($id);
+            $this->requireOwner($petition);
+            abort_unless($petition->status === 'published', 403);
+            $petition->is_active = 0;
+            $petition->save();
 
-        // The owner cannot undo this; an admin restores it via the admin petition form.
-        $petition->is_active = 0;
-        $petition->save();
+            return $petition;
+        }, 3);
 
         try {
             EdgeCachePurge::urls(EdgeCachePurge::petitionUrls([$petition->id]));
