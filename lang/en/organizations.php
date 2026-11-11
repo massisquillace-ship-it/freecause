@@ -198,6 +198,12 @@ return [
         'restore_body' => 'The suspension for :name has been lifted after review. Open your profile or management panel to check its current verification status.',
         'donation_subject' => 'Donation link approved: :name',
         'donation_body' => 'The external donation link for :name has been approved. Supporters can reach it from the verified profile. Changing the destination will require a new review.',
+        'founding_subject' => 'Founding recognition updated: :name',
+        'founding_body' => 'The founding recognition for :name has been updated. Open your management panel to check the current badge and organization status.',
+        'owner_reassigned_subject' => 'Organization owner role assigned: :name',
+        'owner_reassigned_body' => 'You have been assigned the owner role for :name on FreeCause. Open your management panel to review the organization, its members and campaigns.',
+        'admin_deletion_subject' => 'Organization removal request: :name',
+        'admin_deletion_body' => 'The owner of :name has requested removal of the organization. Review the request and its audit history from the private administrative page.',
         'action' => 'Open FreeCause',
     ],
 ];
