@@ -16,7 +16,7 @@
     $hintId = "{$fieldId}-hint";
 
     $describedBy = [];
-    if ($hint) {
+    if ($hint && ! $error) {
         $describedBy[] = $hintId;
     }
     if ($error) {
