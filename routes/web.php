@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminCategoriesController;
 use App\Http\Controllers\Admin\AdminLanguagesController;
 use App\Http\Controllers\Admin\AdminLogsController;
+use App\Http\Controllers\Admin\AdminOrganizationMembersController;
 use App\Http\Controllers\Admin\AdminOrganizationsController;
 use App\Http\Controllers\Admin\AdminPagesController;
 use App\Http\Controllers\Admin\AdminPetitionDeleteController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\LegacyShortLinkController;
 use App\Http\Controllers\OrganizationBadgeController;
 use App\Http\Controllers\OrganizationConsentController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\OrganizationMembersController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetitionController;
 use App\Http\Controllers\PetitionOutcomeController;
@@ -183,6 +185,17 @@ Route::prefix('admin')->name('admin.')->middleware('no.cache')->group(function (
     Route::middleware(['admin.auth', 'admin.audit'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
+        Route::prefix('organizations/{slug}/members')->middleware('permission:organizations,edit')->group(function () {
+            Route::get('/', [AdminOrganizationMembersController::class, 'index'])->name('organizations.members');
+            Route::post('/invite', [AdminOrganizationMembersController::class, 'invite'])->middleware('throttle:20,1')->name('organizations.members.invite');
+            Route::post('/invitations/{invitation}/resend', [AdminOrganizationMembersController::class, 'resend'])->whereNumber('invitation')->middleware('throttle:20,1')->name('organizations.members.resend');
+            Route::post('/invitations/{invitation}/revoke', [AdminOrganizationMembersController::class, 'revoke'])->whereNumber('invitation')->name('organizations.members.revoke');
+            Route::post('/{member}/role', [AdminOrganizationMembersController::class, 'role'])->whereNumber('member')->name('organizations.members.role');
+            Route::post('/{member}/remove', [AdminOrganizationMembersController::class, 'remove'])->whereNumber('member')->name('organizations.members.remove');
+            Route::post('/transfer', [AdminOrganizationMembersController::class, 'transfer'])->name('organizations.members.transfer');
+            Route::post('/leave', [AdminOrganizationMembersController::class, 'leave'])->name('organizations.members.leave');
+            Route::post('/deletion-request', [AdminOrganizationMembersController::class, 'deletion'])->middleware('throttle:3,1440,organization-deletion-')->name('organizations.members.deletion');
+        });
         Route::get('/organizations', [AdminOrganizationsController::class, 'index'])->middleware('permission:organizations,view')->name('organizations');
         Route::get('/organizations/create-unclaimed', [AdminOrganizationsController::class, 'createUnclaimed'])->middleware('permission:organizations,edit')->name('organizations.unclaimed.create');
         Route::post('/organizations/create-unclaimed', [AdminOrganizationsController::class, 'storeUnclaimed'])->middleware(['permission:organizations,edit', 'throttle:10,1'])->name('organizations.unclaimed.store');
@@ -311,10 +324,21 @@ Route::prefix('{locale}')
         Route::post('/organizations/apply', [OrganizationController::class, 'store'])->middleware([OrganizationApplicationAccess::class, 'profile.complete', 'no.cache', 'throttle:5,1'])->name('organizations.store');
         Route::get('/organizations/terms', [OrganizationController::class, 'terms'])->name('organizations.terms');
         Route::get('/org/{slug}', [OrganizationController::class, 'show'])->name('organizations.show');
+        Route::get('/organization-invitations/{token}', [OrganizationMembersController::class, 'showInvitation'])->middleware(['no.cache', 'throttle:30,1'])->name('organization-invitations.show');
+        Route::post('/organization-invitations/{token}', [OrganizationMembersController::class, 'acceptInvitation'])->middleware(['auth', 'profile.complete', 'no.cache', 'throttle:20,1'])->name('organization-invitations.accept');
         Route::middleware(['auth', 'profile.complete', 'no.cache'])->group(function () {
             Route::get('/org/{slug}/claim', [OrganizationController::class, 'claim'])->name('organizations.claim');
             Route::post('/org/{slug}/claim', [OrganizationController::class, 'storeClaim'])->middleware('throttle:5,1')->name('organizations.claim.store');
             Route::get('/org/{slug}/manage', [OrganizationController::class, 'manage'])->name('organizations.manage');
+            Route::get('/org/{slug}/manage/members', [OrganizationMembersController::class, 'index'])->name('organizations.members');
+            Route::post('/org/{slug}/manage/members/invite', [OrganizationMembersController::class, 'invite'])->middleware('throttle:20,1')->name('organizations.members.invite');
+            Route::post('/org/{slug}/manage/members/invitations/{invitation}/resend', [OrganizationMembersController::class, 'resend'])->whereNumber('invitation')->middleware('throttle:20,1')->name('organizations.members.resend');
+            Route::post('/org/{slug}/manage/members/invitations/{invitation}/revoke', [OrganizationMembersController::class, 'revoke'])->whereNumber('invitation')->name('organizations.members.revoke');
+            Route::post('/org/{slug}/manage/members/{member}/role', [OrganizationMembersController::class, 'role'])->whereNumber('member')->name('organizations.members.role');
+            Route::post('/org/{slug}/manage/members/{member}/remove', [OrganizationMembersController::class, 'remove'])->whereNumber('member')->name('organizations.members.remove');
+            Route::post('/org/{slug}/manage/members/transfer', [OrganizationMembersController::class, 'transfer'])->name('organizations.members.transfer');
+            Route::post('/org/{slug}/manage/members/leave', [OrganizationMembersController::class, 'leave'])->name('organizations.members.leave');
+            Route::post('/org/{slug}/manage/deletion-request', [OrganizationMembersController::class, 'deletion'])->middleware('throttle:3,1440,organization-deletion-')->name('organizations.deletion-request');
             Route::get('/org/{slug}/manage/petitions', [OrganizationController::class, 'campaigns'])->name('organizations.campaigns');
             Route::post('/org/{slug}/manage/petitions/attach', [OrganizationController::class, 'attach'])->middleware('throttle:20,1')->name('organizations.attach');
             Route::post('/org/{slug}/manage/petitions/{petition}/detach', [OrganizationController::class, 'detach'])->whereNumber('petition')->middleware('throttle:20,1')->name('organizations.detach');

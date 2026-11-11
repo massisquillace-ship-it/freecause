@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Cause;
 use App\Models\Organization;
+use App\Policies\OrganizationPolicy;
 use App\Rules\OrganizationUrl;
 use App\Support\Countries;
 use App\Support\Locale;
@@ -27,7 +28,7 @@ class OrganizationProfileRequest extends FormRequest
         }
         $org = Organization::where('slug', $slug)->firstOrFail();
 
-        return (int) $org->owner_user_id === (int) $this->user('web')->id && $org->status !== 'suspended';
+        return app(OrganizationPolicy::class)->update($this->user('web'), $org);
     }
 
     public function rules(): array

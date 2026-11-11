@@ -599,6 +599,9 @@
                         </div>
 
                         @auth
+                            @if ((int) auth()->id() !== (int) $petition->user_id && app(\App\Policies\PetitionPolicy::class)->setOutcome(auth()->user(), $petition))
+                                <a class="text-brand underline block my-4" href="{{ lroute('petition.outcome', ['slug'=>$tr->slug, 'id'=>$petition->id]) }}">{{ __('organizations.update_outcome') }}</a>
+                            @endif
                             @if ((int) auth()->id() === (int) $petition->user_id)
                                 <div class="bg-white rounded-md p-4 sm:p-6 shadow-elev-1 my-6 hover:shadow-elev-2 transition-shadow duration-150">
                                     <h2 class="text-lg font-semibold">{{ __('show.operations') }}</h2>

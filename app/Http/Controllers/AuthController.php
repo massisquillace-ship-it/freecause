@@ -45,7 +45,7 @@ class AuthController extends Controller
             return redirect()->to("/{$locale}");
         }
 
-        return view('auth.login');
+        return view('auth.login', ['redirect' => self::sanitizeRedirectPath(is_string(request()->query('redirect')) ? request()->query('redirect') : null, self::intendedDestination())]);
     }
 
     public function showRegister(string $locale)
@@ -54,7 +54,7 @@ class AuthController extends Controller
             return redirect()->to("/{$locale}");
         }
 
-        return view('auth.register', compact('locale'));
+        return view('auth.register', ['locale' => $locale, 'redirect' => self::sanitizeRedirectPath(is_string(request()->query('redirect')) ? request()->query('redirect') : null, self::intendedDestination())]);
     }
 
     public function profile()
@@ -165,7 +165,7 @@ class AuthController extends Controller
 
         toast(__('auth.register_success'), 'success');
 
-        $dest = self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}");
+        $dest = self::sanitizeRedirectPath($request->input('redirect'), self::intendedDestination("/{$locale}"));
 
         return self::redirectViaSso($user, $locale, $dest);
     }
@@ -713,7 +713,7 @@ class AuthController extends Controller
 
         toast(__('auth.reset_success'), 'success');
 
-        $dest = self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}");
+        $dest = self::sanitizeRedirectPath($request->input('redirect'), self::intendedDestination("/{$locale}"));
 
         return self::redirectViaSso($user, $locale, $dest);
     }
@@ -792,7 +792,7 @@ class AuthController extends Controller
         $request->session()->put('verify_autologin', true);
         $request->session()->put(
             'verify_intended',
-            self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}")
+            self::sanitizeRedirectPath($request->input('redirect'), self::intendedDestination("/{$locale}"))
         );
     }
 

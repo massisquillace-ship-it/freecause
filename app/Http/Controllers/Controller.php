@@ -31,6 +31,15 @@ abstract class Controller
         return (new LengthAwarePaginator($rows, $cached['total'] ?? 0, 15, $page, ['path' => request()->url()]))->withQueryString();
     }
 
+    protected static function intendedDestination(string $fallback = ''): string
+    {
+        $intended = (string) request()->session()->get('url.intended', '');
+        $path = (string) parse_url($intended, PHP_URL_PATH);
+        $query = parse_url($intended, PHP_URL_QUERY);
+
+        return self::sanitizeRedirectPath($path.(filled($query) ? '?'.$query : ''), $fallback);
+    }
+
     public static function sanitizeRedirectPath(?string $dest, string $fallback): string
     {
         if ($dest !== null && $dest !== ''

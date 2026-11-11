@@ -21,7 +21,7 @@
             <h2 class="text-2xl font-bold mt-10 mb-4">{{ __('organizations.my_organizations') }}</h2>
             <ul class="space-y-4">
                 @foreach($owned as $org)
-                    <li><a class="underline" href="{{ lroute('organizations.manage', ['slug' => $org->slug]) }}">{{ $org->name }}</a> — {{ __('organizations.'.$org->status) }}</li>
+                    <li><a class="underline" href="{{ lroute('organizations.manage', ['slug' => $org->slug]) }}">{{ $org->name }}</a> — {{ __('organizations.'.$org->status) }} · {{ __('organization_members.'.($org->roleFor(auth()->user()) ?? 'admin')) }} · {{ __('organization_members.member_count', ['count'=>$org->members_count]) }}</li>
                 @endforeach
             </ul>
         @endif

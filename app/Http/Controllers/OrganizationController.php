@@ -10,6 +10,8 @@ use App\Models\Organization;
 use App\Models\Petition;
 use App\Models\Signature;
 use App\Models\User;
+use App\Policies\OrganizationPolicy;
+use App\Policies\PetitionPolicy;
 use App\Services\OrganizationImages;
 use App\Services\OrganizationLifecycle;
 use App\Support\Countries;
@@ -29,7 +31,7 @@ class OrganizationController extends Controller
 
     public function landing()
     {
-        $owned = auth('web')->check() ? Organization::where('owner_user_id', auth('web')->id())->orderByDesc('id')->get() : collect();
+        $owned = auth('web')->check() ? Organization::forMember(auth('web')->user())->withCount('members')->orderByDesc('id')->get() : collect();
         $view = view('organizations.landing', ['owned' => $owned, 'directoryIsEmpty' => ! Organization::public()->exists(), 'applicationsOpen' => config('organizations.public_launch') && $this->applicationsOpen()]);
 
         return auth('web')->check() ? $this->privateResponse($view) : $view;
@@ -124,7 +126,7 @@ class OrganizationController extends Controller
     public function campaigns(string $locale, string $slug)
     {
         $org = $this->owned($slug);
-        $campaigns = $org->petitions()->withExists(['signatures as has_external_signatures' => fn ($q) => $q->where('confirmed', true)->where('is_spam', false)->where(fn ($signer) => $signer->whereColumn('signatures.user_id', '!=', 'petitions.user_id')->orWhereNull('signatures.user_id'))])->where(fn ($q) => $q->where('user_id', auth()->id())->orWhere(fn ($public) => $public->visible()))->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
+        $campaigns = $org->petitions()->withExists(['signatures as has_external_signatures' => fn ($q) => $q->where('confirmed', true)->where('is_spam', false)->where(fn ($signer) => $signer->whereColumn('signatures.user_id', '!=', 'petitions.user_id')->orWhereNull('signatures.user_id'))])->when($org->roleFor(auth()->user()) === 'editor', fn ($q) => $q->where(fn ($q) => $q->where('user_id', auth()->id())->orWhere(fn ($public) => $public->visible())))->with('translations')->orderByDesc('created_at')->orderByDesc('id')->paginate(12);
         $available = Petition::where('user_id', auth()->id())->whereNull('organization_id')
             ->with('translations')->orderByDesc('id')->paginate(12, ['*'], 'available_page');
 
@@ -151,9 +153,9 @@ class OrganizationController extends Controller
     {
         DB::transaction(function () use ($slug, $petitionId, $attach) {
             $org = Organization::where('slug', $slug)->lockForUpdate()->firstOrFail();
-            abort_unless((int) $org->owner_user_id === (int) auth()->id() && $org->status === 'verified', 403);
+            abort_unless(app(OrganizationPolicy::class)->publish(auth()->user(), $org), 403);
             $petition = Petition::whereKey($petitionId)->lockForUpdate()->firstOrFail();
-            abort_unless((int) $petition->user_id === (int) auth()->id(), 403);
+            abort_unless($attach ? (int) $petition->user_id === (int) auth()->id() : app(PetitionPolicy::class)->update(auth()->user(), $petition), 403);
             abort_unless($attach ? $petition->organization_id === null : (int) $petition->organization_id === (int) $org->id, 409);
             $petition->organization_id = $attach ? $org->id : null;
             $petition->save();
@@ -213,7 +215,7 @@ class OrganizationController extends Controller
     public function manage(string $locale, string $slug)
     {
         $org = $this->owned($slug);
-        $org->loadCount(['petitions as public_petitions_count' => fn ($q) => $q->visible(), 'petitions as victories_count' => fn ($q) => $q->visible()->where('outcome', 'victory')]);
+        $org->loadCount(['members', 'petitions as public_petitions_count' => fn ($q) => $q->visible(), 'petitions as victories_count' => fn ($q) => $q->visible()->where('outcome', 'victory')]);
         $org->signatures_total = $org->petitions()->visible()->sum('signature_count');
         $consents = Signature::where('org_optin_organization_id', $org->id)
             ->where('org_optin', true)->whereNull('org_optin_revoked_at')->where('confirmed', true)->where('is_spam', false);
@@ -226,7 +228,7 @@ class OrganizationController extends Controller
     public function edit(string $locale, string $slug)
     {
         $org = $this->owned($slug);
-        abort_if($org->status === 'suspended', 403);
+        abort_unless(app(OrganizationPolicy::class)->update(auth('web')->user(), $org), 403);
 
         return $this->form($org);
     }
@@ -247,7 +249,7 @@ class OrganizationController extends Controller
         try {
             $org = DB::transaction(function () use ($request, $existing, $data, $paths, &$oldPaths) {
                 $org = Organization::whereKey($existing->id)->lockForUpdate()->firstOrFail();
-                abort_unless((int) $org->owner_user_id === (int) auth('web')->id() && $org->status !== 'suspended', 403);
+                abort_unless(app(OrganizationPolicy::class)->update(auth('web')->user(), $org), 403);
                 if ($org->verified_at) {
                     foreach (Organization::IDENTITY_FIELDS as $field) {
                         if (array_key_exists($field, $data) && $data[$field] !== $org->$field) {
@@ -288,7 +290,7 @@ class OrganizationController extends Controller
     {
         DB::transaction(function () use ($slug) {
             $org = Organization::where('slug', $slug)->lockForUpdate()->firstOrFail();
-            abort_unless((int) $org->owner_user_id === (int) auth('web')->id(), 403);
+            abort_unless(app(OrganizationPolicy::class)->resubmit(auth('web')->user(), $org), 403);
             abort_unless($org->status === 'rejected', 409);
             $org->status = 'pending';
             $org->rejection_reason = null;
@@ -302,7 +304,7 @@ class OrganizationController extends Controller
     private function owned(string $slug): Organization
     {
         $org = Organization::with('causes')->where('slug', $slug)->firstOrFail();
-        abort_unless((int) $org->owner_user_id === (int) auth('web')->id(), 403);
+        abort_unless(app(OrganizationPolicy::class)->view(auth('web')->user(), $org), 403);
 
         return $org;
     }

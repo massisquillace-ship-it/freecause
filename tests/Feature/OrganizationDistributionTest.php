@@ -86,15 +86,20 @@ class OrganizationDistributionTest extends TestCase
         $this->get('/en/petition/test-campaign-'.$petition->id.'/'.$petition->id)->assertOk()->assertDontSee('Victory reported by the organizer');
     }
 
-    public function test_unrelated_user_and_reassigned_organization_owner_cannot_change_personal_outcomes(): void
+    public function test_reassigned_owner_can_update_org_outcomes_but_not_personal_outcomes(): void
     {
         $org = $this->org();
         $petition = $this->petition($org);
+        $personal = $this->petition($org, ['organization_id' => null]);
+        $stranger = $this->owner();
+        $this->actingAs($stranger)->post($this->outcomeUrl($petition), $this->victory())->assertForbidden();
         $newOwner = $this->owner();
         $org->update(['owner_user_id' => $newOwner->id]);
-        $this->actingAs($newOwner)->post($this->outcomeUrl($petition), $this->victory())->assertForbidden();
-        $this->get($this->outcomeUrl($petition))->assertForbidden();
-        $this->assertSame('open', $petition->fresh()->outcome);
+        $this->actingAs($newOwner)->post($this->outcomeUrl($petition), $this->victory())->assertRedirect();
+        $this->get($this->outcomeUrl($petition))->assertOk();
+        $this->assertSame('victory', $petition->fresh()->outcome);
+        $this->post($this->outcomeUrl($personal), $this->victory())->assertForbidden();
+        $this->assertSame('open', $personal->fresh()->outcome);
     }
 
     public static function invalidOutcomes(): array
