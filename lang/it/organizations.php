@@ -198,6 +198,12 @@ return [
         'restore_body' => 'La sospensione di :name è stata revocata dopo una verifica. Apri il profilo o il pannello di gestione per controllare lo stato attuale della verifica.',
         'donation_subject' => 'Link per le donazioni approvato: :name',
         'donation_body' => 'Il link esterno per le donazioni di :name è stato approvato. I sostenitori possono raggiungerlo dal profilo verificato. Modificare la destinazione richiederà una nuova verifica.',
+        'founding_subject' => 'Riconoscimento di partner fondatore aggiornato: :name',
+        'founding_body' => 'Il riconoscimento di partner fondatore per :name è stato aggiornato. Apri il pannello di gestione per verificare il badge e lo stato dell’organizzazione.',
+        'owner_reassigned_subject' => 'Ruolo di proprietario assegnato: :name',
+        'owner_reassigned_body' => 'Ti è stato assegnato il ruolo di proprietario di :name su FreeCause. Apri il pannello di gestione per controllare l’organizzazione, i membri e le campagne.',
+        'admin_deletion_subject' => 'Richiesta di rimozione dell\'organizzazione: :name',
+        'admin_deletion_body' => 'Il proprietario di :name ha richiesto la rimozione dell’organizzazione. Esamina la richiesta e il registro delle attività dalla pagina amministrativa privata.',
         'action' => 'Apri FreeCause',
     ],
 ];
