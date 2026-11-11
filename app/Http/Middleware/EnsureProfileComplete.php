@@ -25,7 +25,7 @@ class EnsureProfileComplete
         $user = $request->user();
 
         if ($user instanceof User && ! $user->hasCompleteProfile()) {
-            $return = $request->isMethod('GET')
+            $return = ($request->isMethod('GET') || $request->routeIs('organization-invitations.accept'))
                 ? $request->getRequestUri()
                 : (parse_url((string) url()->previous(), PHP_URL_PATH) ?: '/');
             $profileUrl = lroute('profile');
