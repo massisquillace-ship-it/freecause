@@ -298,6 +298,26 @@ class PetitionNewSignaturesTest extends TestCase
         $this->assertSame('skipped', $notification->fresh()->status);
     }
 
+    public function test_switch_turned_off_after_queueing_skips_without_advancing_cursor(): void
+    {
+        $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
+        $petition = Petition::factory()->create(['user_id' => $owner->id, 'status' => 'published', 'is_active' => true]);
+        Signature::factory()->create(['petition_id' => $petition->id, 'confirmed' => true, 'created_at' => now()->subMinutes(10)]);
+
+        Queue::fake();
+        Artisan::call('emails:petition-new-signatures');
+        $notification = PetitionSignatureNotification::firstOrFail();
+        $before = $petition->fresh()->last_notified_at;
+        Settings::set('petition_new_signatures_enabled', false);
+
+        Mail::fake();
+        (new SendPetitionNewSignaturesNotification($notification->id))->handle();
+
+        Mail::assertNothingSent();
+        $this->assertSame('skipped', $notification->fresh()->status);
+        $this->assertEquals($before, $petition->fresh()->last_notified_at);
+    }
+
     public function test_missing_owner_marks_notification_skipped(): void
     {
         $owner = User::factory()->create(['locale' => 'en', 'notify_new_signatures' => true]);
