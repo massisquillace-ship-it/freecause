@@ -22,4 +22,6 @@ return [
     'next_page' => 'Nästa sida',
     'back_to_top' => 'Tillbaka till toppen',
     'offline' => 'Du verkar vara offline. Anslut igen och skicka på nytt.',
+    'password_show' => 'Visa lösenord',
+    'password_hide' => 'Dölj lösenord',
 ];

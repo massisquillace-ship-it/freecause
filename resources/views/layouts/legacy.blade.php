@@ -111,7 +111,7 @@
     @include('partials.analytics')
 </head>
 
-<body class="fc-public @yield('body_class', '')" data-offline-text="{{ __('ui.offline') }}">
+<body class="fc-public @yield('body_class', '')" data-offline-text="{{ __('ui.offline') }}" data-pw-show="{{ __('ui.password_show') }}" data-pw-hide="{{ __('ui.password_hide') }}">
     <a href="#fc-main" class="fc-skip-link">{{ __('ui.skip_to_content') }}</a>
     @include('partials.navbar')
 

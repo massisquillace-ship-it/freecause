@@ -22,4 +22,6 @@ return [
     'next_page' => 'Next page',
     'back_to_top' => 'Back to top',
     'offline' => 'You appear to be offline. Reconnect and submit again.',
+    'password_show' => 'Show password',
+    'password_hide' => 'Hide password',
 ];

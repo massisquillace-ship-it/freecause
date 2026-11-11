@@ -22,4 +22,6 @@ return [
     'next_page' => 'Volgende pagina',
     'back_to_top' => 'Terug naar boven',
     'offline' => 'Je lijkt offline te zijn. Maak opnieuw verbinding en verzend opnieuw.',
+    'password_show' => 'Wachtwoord tonen',
+    'password_hide' => 'Wachtwoord verbergen',
 ];

@@ -22,4 +22,6 @@ return [
     'next_page' => 'Page suivante',
     'back_to_top' => 'Retour en haut',
     'offline' => 'Vous semblez être hors ligne. Reconnectez-vous et envoyez à nouveau.',
+    'password_show' => 'Afficher le mot de passe',
+    'password_hide' => 'Masquer le mot de passe',
 ];
