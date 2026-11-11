@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Bestätigen Sie Ihre Identität mit Google, bevor Sie Ihr Konto löschen.',
     'google_link_success' => 'Ihr Google-Konto ist jetzt verbunden.',
     'google_link_in_use' => 'Dieses Google-Konto ist bereits mit einem anderen FreeCause-Konto verknüpft.',
+    'google_link_email_mismatch' => 'Dieses Google-Konto hat eine andere E-Mail-Adresse als dein FreeCause-Konto und kann nicht verknüpft werden.',
     'google_link_no_email' => 'Google hat keine E-Mail-Adresse übermittelt, daher konnten wir es nicht verbinden.',
     'google_link_failed' => 'Wir konnten Google nicht verbinden. Bitte versuchen Sie es erneut.',
     'google_link_session_lost' => 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich an und versuchen Sie erneut, Google zu verbinden.',

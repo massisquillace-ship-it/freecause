@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Vérifiez votre identité avec Google avant de supprimer votre compte.',
     'google_link_success' => 'Votre compte Google est maintenant connecté.',
     'google_link_in_use' => 'Ce compte Google est déjà lié à un autre compte FreeCause.',
+    'google_link_email_mismatch' => 'Ce compte Google utilise une adresse e-mail différente de celle de ton compte FreeCause, il ne peut donc pas être lié.',
     'google_link_no_email' => 'Google n\'a pas partagé d\'adresse e-mail, nous n\'avons donc pas pu le connecter.',
     'google_link_failed' => 'Nous n\'avons pas pu connecter Google. Veuillez réessayer.',
     'google_link_session_lost' => 'Votre session a expiré. Veuillez vous connecter et réessayer de connecter Google.',

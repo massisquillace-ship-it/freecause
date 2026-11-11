@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Zweryfikuj swoją tożsamość za pomocą Google przed usunięciem konta.',
     'google_link_success' => 'Twoje konto Google jest teraz połączone.',
     'google_link_in_use' => 'To konto Google jest już powiązane z innym kontem FreeCause.',
+    'google_link_email_mismatch' => 'To konto Google ma inny adres e-mail niż Twoje konto FreeCause, więc nie można go powiązać.',
     'google_link_no_email' => 'Google nie udostępnił adresu e-mail, więc nie mogliśmy go połączyć.',
     'google_link_failed' => 'Nie udało się połączyć Google. Spróbuj ponownie.',
     'google_link_session_lost' => 'Twoja sesja wygasła. Zaloguj się i spróbuj ponownie połączyć Google.',

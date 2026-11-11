@@ -200,7 +200,11 @@ class GoogleAuthController extends Controller
                 ]);
             }
 
-            abort_unless(hash_equals(strtolower(trim((string) $currentUser->email)), $email), 403);
+            if (! hash_equals(strtolower(trim((string) $currentUser->email)), $email)) {
+                return redirect("/{$destLocale}/profile")->withErrors([
+                    'google_link' => __('profile.google_link_email_mismatch'),
+                ]);
+            }
 
             try {
                 $currentUser->google_id = $google->getId();

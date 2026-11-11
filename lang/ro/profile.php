@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Verificați-vă identitatea cu Google înainte de a vă șterge contul.',
     'google_link_success' => 'Contul dvs. Google este acum conectat.',
     'google_link_in_use' => 'Acel cont Google este deja asociat cu alt cont FreeCause.',
+    'google_link_email_mismatch' => 'Acel cont Google folosește altă adresă de e-mail decât contul tău FreeCause, deci nu poate fi asociat.',
     'google_link_no_email' => 'Google nu a partajat o adresă de e-mail, așa că nu l-am putut conecta.',
     'google_link_failed' => 'Nu am putut conecta Google. Încercați din nou.',
     'google_link_session_lost' => 'Sesiunea dvs. a expirat. Autentificați-vă și încercați din nou să conectați Google.',

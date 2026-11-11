@@ -468,7 +468,8 @@ class GoogleOAuthStateTest extends TestCase
 
         $this->queueGoogleUser();
         $this->googleCallback(['state' => $state, 'code' => 'synthetic-code'])
-            ->assertForbidden();
+            ->assertRedirect('/en/profile')
+            ->assertSessionHasErrors('google_link');
 
         $this->assertAuthenticatedAs($user);
         $this->assertNull($user->fresh()->google_id);

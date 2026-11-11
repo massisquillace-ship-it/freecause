@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Verifieer uw identiteit met Google voordat u uw account verwijdert.',
     'google_link_success' => 'Uw Google-account is nu verbonden.',
     'google_link_in_use' => 'Dat Google-account is al gekoppeld aan een ander FreeCause-account.',
+    'google_link_email_mismatch' => 'Dat Google-account gebruikt een ander e-mailadres dan je FreeCause-account en kan dus niet worden gekoppeld.',
     'google_link_no_email' => 'Google heeft geen e-mailadres gedeeld, dus we konden het niet verbinden.',
     'google_link_failed' => 'We konden geen verbinding maken met Google. Probeer het opnieuw.',
     'google_link_session_lost' => 'Uw sessie is verlopen. Log in en probeer Google opnieuw te verbinden.',

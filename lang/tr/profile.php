@@ -89,6 +89,7 @@ return [
     'account_delete_verify_google' => 'Hesabınızı silmeden önce kimliğinizi Google ile doğrulayın.',
     'google_link_success' => 'Google hesabınız artık bağlı.',
     'google_link_in_use' => 'Bu Google hesabı zaten başka bir FreeCause hesabına bağlı.',
+    'google_link_email_mismatch' => 'Bu Google hesabı FreeCause hesabından farklı bir e-posta adresi kullanıyor, bu yüzden bağlanamaz.',
     'google_link_no_email' => 'Google bir e-posta adresi paylaşmadı, bu yüzden bağlayamadık.',
     'google_link_failed' => 'Google\'ı bağlayamadık. Lütfen tekrar deneyin.',
     'google_link_session_lost' => 'Oturumunuzun süresi doldu. Lütfen giriş yapın ve Google\'ı tekrar bağlamayı deneyin.',
