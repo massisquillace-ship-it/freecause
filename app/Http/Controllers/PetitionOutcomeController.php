@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
 use App\Models\Petition;
+use App\Policies\PetitionPolicy;
 use App\Support\EdgeCachePurge;
 use App\Support\ReviewKeywords;
 use App\Support\Spam;
@@ -17,7 +19,7 @@ class PetitionOutcomeController extends Controller
     {
         $petition = Petition::findOrFail($id);
         $admin = request()->routeIs('admin.*');
-        abort_unless($admin ? admin_can('petitions', 'edit') : (int) $petition->user_id === (int) auth('web')->id(), 403);
+        abort_unless($admin ? admin_can('petitions', 'edit') : (auth('web')->check() && app(PetitionPolicy::class)->setOutcome(auth('web')->user(), $petition)), 403);
 
         return $petition;
     }
@@ -73,7 +75,10 @@ class PetitionOutcomeController extends Controller
         }
         DB::transaction(function () use ($id, $data, $request) {
             $petition = Petition::whereKey($id)->lockForUpdate()->firstOrFail();
-            abort_unless($request->routeIs('admin.*') ? admin_can('petitions', 'edit') : (int) $petition->user_id === (int) auth('web')->id(), 403);
+            if ($petition->organization_id) {
+                $petition->setRelation('organization', Organization::whereKey($petition->organization_id)->lockForUpdate()->first());
+            }
+            abort_unless($request->routeIs('admin.*') ? admin_can('petitions', 'edit') : (auth('web')->check() && app(PetitionPolicy::class)->setOutcome(auth('web')->user(), $petition)), 403);
             if ($data['outcome'] === 'open' && $petition->outcome !== 'open' && ! $request->boolean('confirm_reopen')) {
                 throw ValidationException::withMessages(['confirm_reopen' => __('organizations.outcome_reopen_confirm')]);
             }
