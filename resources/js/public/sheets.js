@@ -139,6 +139,20 @@ export function init() {
         location.replace(url.href);
     });
 
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        if (event.defaultPrevented || !pushedEntry || !form.closest || !form.closest('dialog[data-sheet][open]')) {
+            return;
+        }
+
+        event.preventDefault();
+        pushedEntry = false;
+        window.addEventListener('popstate', function () {
+            form.submit();
+        }, { once: true });
+        history.back();
+    });
+
     sheets.forEach(function (sheet) {
         sheet.addEventListener('click', function (event) {
             if (event.target === sheet) {
