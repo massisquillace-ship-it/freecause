@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Organization;
 use App\Models\Petition;
+use App\Policies\PetitionPolicy;
 use App\Rules\MinCharacters;
 use App\Rules\MinWords;
 use App\Rules\SafeExternalImageUrl;
@@ -27,12 +29,12 @@ class PetitionRequest extends FormRequest
         // Missing petition answers 404 before any validation or remote image fetch.
         $petition = $this->currentPetition() ?? abort(404);
 
-        return auth()->check() && (int) $petition->user_id === (int) auth()->id();
+        return auth()->check() && app(PetitionPolicy::class)->update(auth()->user(), $petition);
     }
 
     private function currentPetition(): ?Petition
     {
-        return $this->petition ??= Petition::query()->whereKey($this->route('id'))->first(['user_id', 'image_url', 'youtube_url']);
+        return $this->petition ??= Petition::query()->whereKey($this->route('id'))->first(['id', 'user_id', 'organization_id', 'image_url', 'youtube_url']);
     }
 
     public function rules(): array
@@ -63,7 +65,7 @@ class PetitionRequest extends FormRequest
         }
 
         return [
-            'organization_id' => $creating ? ['nullable', 'integer', Rule::exists('organizations', 'id')->where('status', 'verified')->where('owner_user_id', auth()->id())] : ['prohibited'],
+            'organization_id' => $creating ? ['nullable', 'integer', Rule::in(Organization::verified()->forMember(auth()->user())->pluck('id')->all())] : ['prohibited'],
             'causes' => ['sometimes', 'array', 'max:3'],
             'causes.*' => ['integer', 'distinct', Rule::exists('causes', 'id')->whereIn('slug', array_keys(OrganizationCauseSeeder::CAUSES))],
             'title' => ['required', 'string', 'max:255', new MinWords(3, 'Title')],
