@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'Suspensionen af :name er blevet ophævet efter en gennemgang. Åbn din profil eller dit administrationspanel for at se den aktuelle verifikationsstatus.',
     'donation_subject' => 'Link til donation godkendt: :name',
     'donation_body' => 'Det eksterne donationslink til :name er blevet godkendt. Tilhængere kan få adgang til det via den verificerede profil. Hvis destinationen ændres, skal der foretages en ny gennemgang.',
+    'founding_subject' => 'Opdatering af anerkendelse af stiftelsen: :name',
+    'founding_body' => 'Den oprindelige anerkendelse for :name er blevet opdateret. Åbn dit administrationspanel for at se det aktuelle badge og organisationens status.',
+    'owner_reassigned_subject' => 'Tildelt organisationsejerskab: :name',
+    'owner_reassigned_body' => 'Du er nu ejer af :name på FreeCause. Åbn dit administrationspanel for at se organisationen, dens medlemmer og kampagner.',
+    'admin_deletion_subject' => 'Anmodning om fjernelse af organisation: :name',
+    'admin_deletion_body' => 'Ejeren af :name har anmodet om, at organisationen slettes. Gennemgå anmodningen og dens revisionshistorik fra den private administrationsside.',
     'action' => 'Åbn FreeCause',
 ];
 
