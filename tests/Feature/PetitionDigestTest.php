@@ -13,6 +13,7 @@ use Database\Seeders\UserLevelSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -93,6 +94,68 @@ class PetitionDigestTest extends TestCase
         Artisan::call('petition:send-digest', ['--limit' => 2]);
 
         Mail::assertQueuedCount(2);
+    }
+
+    public function test_limited_runs_resume_from_cursor_and_reset_after_reaching_the_end(): void
+    {
+        $petition = $this->publishedPetition();
+
+        $users = User::factory()->count(4)->create([
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+            'unsubscribed_at' => null,
+        ]);
+
+        Mail::fake();
+
+        $recipients = fn () => Mail::queued(PetitionDigestMail::class)
+            ->map(fn ($mail) => $mail->to[0]['address'])
+            ->all();
+
+        Artisan::call('petition:send-digest', ['--limit' => 2]);
+
+        $this->travel(1)->days();
+        $petition->forceFill(['created_at' => now()])->save();
+
+        Artisan::call('petition:send-digest', ['--limit' => 2]);
+
+        $this->assertEqualsCanonicalizing($users->pluck('email')->all(), $recipients());
+
+        $this->travel(1)->days();
+        $petition->forceFill(['created_at' => now()])->save();
+
+        Artisan::call('petition:send-digest', ['--limit' => 2]);
+
+        $this->assertSame(
+            $users->take(2)->pluck('email')->all(),
+            array_slice($recipients(), 4)
+        );
+    }
+
+    public function test_dry_run_and_unlimited_runs_ignore_the_cursor(): void
+    {
+        $this->publishedPetition();
+
+        $users = User::factory()->count(3)->create([
+            'locale' => 'en',
+            'verified' => true,
+            'notify_product' => true,
+            'unsubscribed_at' => null,
+        ]);
+
+        Mail::fake();
+        Cache::put('digest:cursor', $users->get(1)->id);
+
+        Artisan::call('petition:send-digest', ['--dry-run' => true, '--limit' => 1]);
+
+        $this->assertSame($users->get(1)->id, Cache::get('digest:cursor'));
+        Mail::assertNothingQueued();
+
+        Artisan::call('petition:send-digest');
+
+        $this->assertSame($users->get(1)->id, Cache::get('digest:cursor'));
+        Mail::assertQueuedCount(3);
     }
 
     public function test_digest_is_scheduled_with_a_limit(): void
