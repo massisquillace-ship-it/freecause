@@ -15,7 +15,7 @@ class OrganizationStatusMail extends Mailable
 
     public function build(): static
     {
-        $kind = $this->toAdmin ? 'admin' : $this->event;
+        $kind = $this->toAdmin ? ($this->event === 'deletion_requested' ? 'admin_deletion' : 'admin') : $this->event;
         $replace = ['name' => $this->notice['name']];
         $subject = MailText::get('organization_'.$kind.'_subject', $replace, $this->emailLocale);
         $body = MailText::get('organization_'.$kind.'_body', $replace, $this->emailLocale);
