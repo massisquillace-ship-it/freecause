@@ -2,6 +2,7 @@
 @section('title', $org->name)
 @section('content')
 <h1 class="text-2xl font-bold mb-6 break-words">{{ $org->name }}</h1>
+@if(admin_can('organizations','edit'))<a class="underline block mb-5" href="{{ route('admin.organizations.members', ['slug'=>$org->slug]) }}">{{ __('organization_members.title') }}</a>@endif
 @if(session('success'))<p role="status" class="mb-4">{{ session('success') }}</p>@endif
 @if($errors->any())<div role="alert" class="mb-4">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 <x-blatui.card class="p-6 mb-6 space-y-3">
