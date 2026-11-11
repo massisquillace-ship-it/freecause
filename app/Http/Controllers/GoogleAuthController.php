@@ -79,7 +79,7 @@ class GoogleAuthController extends Controller
                 'slug' => (string) $request->query('slug'),
             ]);
         } else {
-            $redirect = self::sanitizeRedirectPath($request->query('redirect'), '');
+            $redirect = self::sanitizeRedirectPath($request->query('redirect'), self::intendedDestination());
 
             $request->session()->put('oauth_ctx', [
                 'flow' => in_array($flow, ['login', 'register'], true) ? $flow : 'register',
