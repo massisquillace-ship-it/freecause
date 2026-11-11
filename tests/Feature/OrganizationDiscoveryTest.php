@@ -127,15 +127,20 @@ class OrganizationDiscoveryTest extends TestCase
         $this->post($url.'/'.$own->id.'/detach', ['confirm' => 1])->assertForbidden();
     }
 
-    public function test_reassignment_does_not_expose_old_authors_drafts_or_allow_mutations(): void
+    public function test_reassignment_grants_org_draft_management_but_keeps_personal_drafts_private(): void
     {
         $org = $this->org();
         $draft = $this->petition($org, ['status' => 'draft']);
+        $personal = $this->petition($org, ['status' => 'draft', 'organization_id' => null]);
+        $personal->translations()->update(['title' => 'Unshared personal draft']);
         $newOwner = $this->owner();
         $org->update(['owner_user_id' => $newOwner->id]);
         $url = '/en/org/'.$org->slug.'/manage/petitions';
-        $this->actingAs($newOwner)->get($url)->assertOk()->assertDontSee($draft->translations->first()->title);
-        $this->post($url.'/'.$draft->id.'/detach', ['confirm' => 1])->assertForbidden();
+        $this->actingAs($newOwner)->get($url)->assertOk()->assertSee($draft->translations->first()->title)->assertDontSee('Unshared personal draft');
+        $this->get('/en/petition/protect-park-'.$personal->id.'/'.$personal->id.'/edit')->assertForbidden();
+        $this->post($url.'/'.$draft->id.'/detach', ['confirm' => 1])->assertRedirect();
+        $this->assertNull($draft->fresh()->organization_id);
+        $this->assertSame($personal->user_id, $draft->fresh()->user_id);
     }
 
     private function recordConsent(Petition $petition, bool $accepted, ?string $proof = null): array
