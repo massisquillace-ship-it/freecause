@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     @vite('resources/css/app.css')
     @stack('preload')
-    @include('partials.consent')
+    @unless(\App\Support\OrganizationPrivateFlow::sensitive()) @include('partials.consent') @endunless
+    @if(\App\Support\OrganizationPrivateFlow::sensitive())<meta name="referrer" content="no-referrer">@endif
 
     @php
         $locale = app()->getLocale();
@@ -94,12 +95,12 @@
     <meta name="twitter:image" content="{{ $ogImage }}">
 
     @php
-        $headExtraHtml = \App\Services\ContentRenderer::render($headExtra);
+        $headExtraHtml = \App\Support\OrganizationPrivateFlow::sensitive() ? '' : \App\Services\ContentRenderer::render($headExtra);
         request()->attributes->set('head_additional_html', $headExtraHtml);
     @endphp
     {!! $headExtraHtml !!}
 
-    @if (config('services.adsense.enabled') && config('services.adsense.client'))
+    @if (!\App\Support\OrganizationPrivateFlow::sensitive() && config('services.adsense.enabled') && config('services.adsense.client'))
         {{-- Keep legacy AdSense inert until a certified CMP is configured. --}}
         <script type="text/plain" data-fc-future-adsense data-src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ config('services.adsense.client') }}" crossorigin="anonymous"></script>
     @endif
@@ -108,7 +109,7 @@
 
     @stack('head')
 
-    @include('partials.analytics')
+    @unless(\App\Support\OrganizationPrivateFlow::sensitive()) @include('partials.analytics') @endunless
 </head>
 
 <body class="fc-public @yield('body_class', '')" data-offline-text="{{ __('ui.offline') }}" data-pw-show="{{ __('ui.password_show') }}" data-pw-hide="{{ __('ui.password_hide') }}">
