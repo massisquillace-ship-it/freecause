@@ -117,7 +117,26 @@ export function init() {
         if (closer) {
             event.preventDefault();
             close(closer.closest('dialog[data-sheet]') || openSheet, true);
+            return;
         }
+
+        const link = event.target.closest('a[href]');
+        if (event.defaultPrevented || !link || !pushedEntry || !link.closest('dialog[data-sheet][open]')) {
+            return;
+        }
+
+        const url = new URL(link.href, location.href);
+        const samePage = url.pathname + url.search === location.pathname + location.search;
+        const plainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+        const sameTab = !link.target || link.target === '_self';
+
+        if (url.origin !== location.origin || !plainClick || !sameTab || link.hasAttribute('download') || (samePage && url.hash)) {
+            return;
+        }
+
+        event.preventDefault();
+        pushedEntry = false;
+        location.replace(url.href);
     });
 
     sheets.forEach(function (sheet) {
@@ -162,6 +181,12 @@ export function init() {
                 close(sheet, true);
             }
         }, { passive: true });
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted && openSheet) {
+            close(openSheet, false, false);
+        }
     });
 
     window.addEventListener('popstate', function () {
