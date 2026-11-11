@@ -7,6 +7,7 @@ use Database\Seeders\LanguageSeeder;
 use Database\Seeders\UserLevelSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -80,5 +81,34 @@ class ContactNoJsTest extends TestCase
         $this->from('/en/contacts')->post('/en/contacts', $payload)->assertSessionHasErrors('email');
 
         Mail::assertQueuedCount(30);
+    }
+
+    public function test_spam_rejection_is_localized(): void
+    {
+        Mail::fake();
+
+        $response = $this->from('/de/contacts')->post('/de/contacts', [
+            'name' => 'Spammer',
+            'email' => 'spam@example.com',
+            'text' => 'see http://a.example and http://b.example',
+        ]);
+
+        $response->assertSessionHas('toast.message', __('sign.suspicious', [], 'de'));
+        Mail::assertNothingQueued();
+    }
+
+    public function test_daily_cap_failure_is_localized(): void
+    {
+        Mail::fake();
+        Cache::put('mail:contact:'.today()->toDateString(), 30, now()->endOfDay());
+
+        $response = $this->from('/de/contacts')->post('/de/contacts', [
+            'name' => 'Capped User',
+            'email' => 'capped@example.com',
+            'text' => 'Hallo zusammen.',
+        ]);
+
+        $response->assertSessionHas('toast.message', __('contacts.failed', [], 'de'));
+        Mail::assertNothingQueued();
     }
 }

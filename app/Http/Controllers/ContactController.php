@@ -40,10 +40,10 @@ class ContactController extends Controller
             Spam::log('contact', json_encode($data));
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Suspicious activity detected.'], 422);
+                return response()->json(['message' => __('sign.suspicious')], 422);
             }
 
-            toast('Suspicious activity detected.', 'error');
+            toast(__('sign.suspicious'), 'error');
 
             return back()->withInput();
         }
@@ -53,14 +53,14 @@ class ContactController extends Controller
 
         if (Cache::increment($capKey) > 30) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Failed to send message. Please try again later.'], 500);
+                return response()->json(['message' => __('contacts.failed')], 500);
             }
 
-            toast('Failed to send message. Please try again later.', 'error');
+            toast(__('contacts.failed'), 'error');
 
             return back()
                 ->withInput()
-                ->withErrors(['email' => 'Failed to send message. Please try again later.']);
+                ->withErrors(['email' => __('contacts.failed')]);
         }
 
         $adminEmail = Settings::get('email_to_staff', '', 'global') ?: config('mail.from.address');
@@ -72,14 +72,14 @@ class ContactController extends Controller
             AppLog::error('Contact form mail failed', $e->getMessage(), 'contacts');
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Failed to send message. Please try again later.'], 500);
+                return response()->json(['message' => __('contacts.failed')], 500);
             }
 
-            toast('Failed to send message. Please try again later.', 'error');
+            toast(__('contacts.failed'), 'error');
 
             return back()
                 ->withInput()
-                ->withErrors(['email' => 'Failed to send message. Please try again later.']);
+                ->withErrors(['email' => __('contacts.failed')]);
         }
 
         if ($request->expectsJson()) {
