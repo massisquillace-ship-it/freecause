@@ -578,15 +578,11 @@ class AuthController extends Controller
 
             $intended = $request->session()->pull('verify_intended');
 
-            if ($intended && ! $user->hasCompleteProfile()) {
-                $intended = self::profileCompletionTarget($locale, $intended);
-            }
-
             if (! $user->hasCompleteProfile()) {
                 $request->session()->flash('profile_completion', __('profile.complete_required'));
             }
 
-            return redirect()->to($intended ?: "/{$locale}");
+            return self::redirectViaSso($user, $locale, $intended ?: "/{$locale}");
         }
 
         $request->session()->forget(['verify_email', 'verify_intended']);
@@ -705,11 +701,7 @@ class AuthController extends Controller
 
         $dest = self::sanitizeRedirectPath($request->input('redirect'), "/{$locale}");
 
-        if (! $user->hasCompleteProfile()) {
-            $dest = self::profileCompletionTarget($locale, $dest);
-        }
-
-        return redirect()->to($dest);
+        return self::redirectViaSso($user, $locale, $dest);
     }
 
     public function showResendVerification(string $locale)

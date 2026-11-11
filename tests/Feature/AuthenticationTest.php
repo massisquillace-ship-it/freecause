@@ -625,6 +625,55 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(Hash::check('new-password-123', $user->fresh()->password));
     }
 
+    public function test_password_reset_redirects_through_wordpress_sso(): void
+    {
+        config(['app.sso_secret' => 'test-secret']);
+        $user = User::factory()->create([
+            'email' => 'sso-reset@example.com',
+            'verified' => true,
+            'country' => 'NL',
+            'gender' => 'female',
+        ]);
+
+        $response = $this->post('/en/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => 'sso-reset@example.com',
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+            'redirect' => '/en/petitions',
+        ]);
+
+        $location = $response->headers->get('Location');
+        $this->assertSame('/magazine/sso.php', parse_url($location, PHP_URL_PATH));
+        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertSame('/en/petitions', $query['r']);
+    }
+
+    public function test_verify_auto_login_redirects_through_wordpress_sso_to_profile_when_incomplete(): void
+    {
+        config(['app.sso_secret' => 'test-secret']);
+        Settings::set('require_email_verification', true);
+        Settings::set('smtp_enabled', true);
+        Mail::fake();
+
+        $this->post('/en/register', [
+            'name' => 'Pending',
+            'surname' => 'User',
+            'email' => 'sso-verify@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertRedirect('/en/verify-email');
+
+        $user = User::where('email', 'sso-verify@example.com')->firstOrFail();
+
+        $response = $this->post('/en/verify/'.$this->knownVerificationToken($user), []);
+
+        $location = $response->headers->get('Location');
+        $this->assertSame('/magazine/sso.php', parse_url($location, PHP_URL_PATH));
+        parse_str(parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertStringStartsWith('/en/profile', $query['r']);
+    }
+
     public function test_password_reset_cancels_pending_email_change(): void
     {
         $user = User::factory()->create([
