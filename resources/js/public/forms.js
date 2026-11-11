@@ -29,10 +29,28 @@ export function init() {
                     const label = el.querySelector('.fcui-btn__label');
                     const busyText = el.dataset.loadingText;
                     if (label && busyText) {
+                        el.dataset.fcLabel = label.textContent;
                         label.textContent = busyText;
                     }
                 });
             }, 0);
+        });
+
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) return;
+            form.querySelectorAll('[data-loading]').forEach(function (el) {
+                if (el.dataset.fcLoadingActive !== '1') return;
+                delete el.dataset.fcLoadingActive;
+                if (typeof el.disabled === 'boolean') {
+                    el.disabled = false;
+                }
+                el.removeAttribute('aria-busy');
+                const label = el.querySelector('.fcui-btn__label');
+                if (label && el.dataset.fcLabel !== undefined) {
+                    label.textContent = el.dataset.fcLabel;
+                    delete el.dataset.fcLabel;
+                }
+            });
         });
     });
 
