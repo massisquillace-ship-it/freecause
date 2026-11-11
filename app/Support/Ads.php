@@ -17,6 +17,10 @@ class Ads
     // master switch: Settings override, else config default.
     public static function enabled(): bool
     {
+        if (OrganizationPrivateFlow::sensitive()) {
+            return false;
+        }
+
         $v = Settings::get('ads_enabled', null, self::GROUP);
 
         if ($v === null) {
