@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\PetitionNewSignaturesMail;
 use App\Models\PetitionSignatureNotification;
 use App\Support\MailQuota;
+use App\Support\Settings;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -33,6 +34,15 @@ class SendPetitionNewSignaturesNotification implements ShouldQueue
             ->firstOrFail();
 
         if ($notification->status === 'delivered') {
+            return;
+        }
+
+        if (! Settings::get('petition_new_signatures_enabled', true)) {
+            PetitionSignatureNotification::query()
+                ->whereKey($notification->id)
+                ->where('status', '!=', 'delivered')
+                ->update(['status' => 'skipped', 'updated_at' => now()]);
+
             return;
         }
 
