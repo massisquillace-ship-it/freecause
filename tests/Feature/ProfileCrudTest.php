@@ -396,7 +396,7 @@ class ProfileCrudTest extends TestCase
         );
     }
 
-    public function test_pending_email_cannot_be_registered_or_claimed_by_another_account(): void
+    public function test_pending_email_cannot_be_claimed_by_another_account_but_can_be_registered(): void
     {
         Mail::fake();
         Settings::set('smtp_enabled', true);
@@ -415,8 +415,37 @@ class ProfileCrudTest extends TestCase
             'email' => 'claimed@example.com',
             'password' => 'password123',
             'agree_terms' => 'on',
-        ])->assertSessionHasErrors('email');
-        $this->assertSame(0, User::where('email', 'claimed@example.com')->count());
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(1, User::where('email', 'claimed@example.com')->count());
+    }
+
+    public function test_confirming_a_pending_email_registered_meanwhile_keeps_the_old_email(): void
+    {
+        Mail::fake();
+        Settings::set('smtp_enabled', true);
+
+        $user = $this->passwordUser(['email' => 'keeps@example.com']);
+        $this->requestEmailChange($user, 'raced@example.com')->assertSessionHasNoErrors();
+        $token = $this->knownVerificationToken($user);
+
+        auth()->logout();
+        $this->flushSession();
+        $this->post('/en/register', [
+            'name' => 'Other',
+            'surname' => 'User',
+            'email' => 'raced@example.com',
+            'password' => 'password123',
+            'agree_terms' => 'on',
+        ])->assertSessionHasNoErrors();
+
+        auth()->logout();
+        $this->flushSession();
+        $this->post("/en/verify/{$token}", [])->assertRedirect();
+
+        $user->refresh();
+        $this->assertSame('keeps@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+        $this->assertSame(1, User::where('email', 'raced@example.com')->count());
     }
 
     public function test_resend_verification_clears_pending_email_and_voids_the_old_link(): void
@@ -459,27 +488,6 @@ class ProfileCrudTest extends TestCase
         $this->assertSame('kept@example.com', $user->email);
         $this->assertNull($user->pending_email);
         $this->assertNull($user->verification_token);
-    }
-
-    public function test_pending_email_can_be_registered_after_the_link_expires(): void
-    {
-        Mail::fake();
-        Settings::set('smtp_enabled', true);
-
-        $this->requestEmailChange($this->passwordUser(), 'released@example.com')->assertSessionHasNoErrors();
-        auth()->logout();
-        $this->flushSession();
-
-        $this->travel(49)->hours();
-        $this->post('/en/register', [
-            'name' => 'Other',
-            'surname' => 'User',
-            'email' => 'released@example.com',
-            'password' => 'password123',
-            'agree_terms' => 'on',
-        ])->assertSessionHasNoErrors();
-
-        $this->assertSame(1, User::where('email', 'released@example.com')->count());
     }
 
     public function test_admin_email_change_clears_pending_email(): void
