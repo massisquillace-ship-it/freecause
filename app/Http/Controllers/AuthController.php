@@ -553,6 +553,13 @@ class AuthController extends Controller
             return redirect()->to("/{$locale}");
         }
 
+        if ($user->isBanned()) {
+            $request->session()->forget(['verify_email', 'verify_intended', 'verify_autologin']);
+            toast(__('auth.err_suspended'), 'error');
+
+            return redirect()->to("/{$locale}/login");
+        }
+
         if ($user->verificationExpired()) {
             toast(__('auth.verify_expired'), 'error');
 
@@ -688,8 +695,15 @@ class AuthController extends Controller
             return redirect("/{$locale}/login")->with('success', __('auth.reset_success'));
         }
 
+        if ($user->isBanned()) {
+            $request->session()->forget(['verify_email', 'verify_intended', 'verify_autologin']);
+            toast(__('auth.err_suspended'), 'error');
+
+            return redirect()->to("/{$locale}/login");
+        }
+
         // The reset link came by email, so using it proves inbox ownership.
-        if (! $user->verified && ! $user->isBanned()) {
+        if (! $user->verified) {
             PetitionSigning::markVerified($user);
             $user->refresh();
         }
