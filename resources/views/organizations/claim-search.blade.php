@@ -15,7 +15,7 @@
             @if($q !== '')<li>{{ __('organizations.no_results') }}</li>@endif
         @endforelse
     </ul>
-    @if($organizations->isEmpty() && (config('organizations.public_launch') || auth()->check()))<a class="underline block mt-6" href="{{ lroute('organizations.apply') }}">{{ __('organizations.not_listed') }}</a>@endif
+    @if($organizations->isEmpty() && $applicationsOpen)<a class="underline block mt-6" href="{{ lroute('organizations.apply') }}">{{ __('organizations.not_listed') }}</a>@endif
     <a class="underline block mt-8" href="{{ lroute('organizations.terms') }}">{{ __('organizations.terms') }}</a>
 </section>
 @endsection
