@@ -4,6 +4,8 @@
 <section class="container py-10 max-w-3xl">
     <h1 class="text-3xl font-bold mb-6 break-words">{{ $org->name }}</h1>
     @if(session('success'))<p role="status" class="mb-4">{{ session('success') }}</p>@endif
+    <p class="mb-4">{{ __('organization_members.role_label') }}: {{ __('organization_members.'.($org->roleFor(auth()->user()) ?? 'admin')) }} · {{ __('organization_members.member_count', ['count'=>$org->members_count]) }}</p>
+    <a class="underline block mb-6" href="{{ lroute('organizations.members', ['slug'=>$org->slug]) }}">{{ __('organization_members.title') }}</a>
     <div class="border border-border rounded-lg p-6 mb-6">
         <h2 class="text-xl font-semibold">{{ __('organizations.status') }}: {{ __('organizations.'.$org->status) }}</h2>
         @if($org->status === 'pending')<p class="mt-3">{{ __('organizations.pending_help') }}</p>@endif
@@ -16,8 +18,8 @@
         @endif
     </div>
     <div class="flex flex-wrap gap-4 mb-6">
-        @if($org->status !== 'suspended')<x-ui.button :href="lroute('organizations.edit', ['slug'=>$org->slug])">{{ __('organizations.edit') }}</x-ui.button>@endif
-        @if($org->status === 'rejected')<form method="post" action="{{ lroute('organizations.resubmit', ['slug'=>$org->slug]) }}">@csrf<x-ui.button variant="secondary">{{ __('organizations.resubmit') }}</x-ui.button></form>@endif
+        @if(app(\App\Policies\OrganizationPolicy::class)->update(auth()->user(), $org))<x-ui.button :href="lroute('organizations.edit', ['slug'=>$org->slug])">{{ __('organizations.edit') }}</x-ui.button>@endif
+        @if($org->status === 'rejected' && app(\App\Policies\OrganizationPolicy::class)->resubmit(auth()->user(), $org))<form method="post" action="{{ lroute('organizations.resubmit', ['slug'=>$org->slug]) }}">@csrf<x-ui.button variant="secondary">{{ __('organizations.resubmit') }}</x-ui.button></form>@endif
     </div>
     @if($org->donation_url)<p class="mb-6">{{ $org->donation_url_approved_at ? __('organizations.donation_approved') : __('organizations.donation_pending') }}</p>@endif
     <h2 class="text-2xl font-bold mb-4">{{ __('organizations.campaigns') }}</h2>
