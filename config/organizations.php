@@ -1,6 +1,6 @@
 <?php
 
-$legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-11-08.json')), true, 512, JSON_THROW_ON_ERROR);
+$legal = json_decode(file_get_contents(resource_path('legal/organizations/2026-11-11-members.json')), true, 512, JSON_THROW_ON_ERROR);
 
 return [
     // Applications, optional consent capture and notification delivery are independent switches.
