@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => ':name\'ya uygulanan askıya alma cezası, yapılan incelemenin ardından kaldırılmıştır. Güncel doğrulama durumunu kontrol etmek için profilinizi veya yönetim panelinizi açın.',
     'donation_subject' => 'Bağış bağlantısı onaylandı: :name',
     'donation_body' => ':name için harici bağış bağlantısı onaylandı. Destekçiler, bu bağlantıya doğrulanmış profilden erişebilirler. Hedefin değiştirilmesi durumunda yeni bir inceleme yapılması gerekecektir.',
+    'founding_subject' => 'Kuruluş bilgisi güncellendi: :name',
+    'founding_body' => ':name için kuruluş onayı güncellendi. Mevcut rozetinizi ve kuruluş durumunuzu kontrol etmek için yönetim panelinizi açın.',
+    'owner_reassigned_subject' => 'Atanan kuruluş sahipliği: :name',
+    'owner_reassigned_body' => 'Artık FreeCause\'da :name\'un sahibi oldunuz. Yönetim panelinizi açarak kuruluşu, üyelerini ve kampanyalarını inceleyebilirsiniz.',
+    'admin_deletion_subject' => 'Kuruluşun kaldırılması talebi: :name',
+    'admin_deletion_body' => ':name\'nin sahibi, kuruluşun kaldırılmasını talep etmiştir. Özel yönetim sayfasından bu talebi ve denetim geçmişini inceleyin.',
     'action' => 'FreeCause\'u aç',
 ];
 
