@@ -22,4 +22,6 @@ return [
     'next_page' => 'Sonraki sayfa',
     'back_to_top' => 'Başa dön',
     'offline' => 'Çevrimdışı görünüyorsunuz. Yeniden bağlanın ve tekrar gönderin.',
+    'password_show' => 'Parolayı göster',
+    'password_hide' => 'Parolayı gizle',
 ];

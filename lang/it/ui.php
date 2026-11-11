@@ -22,4 +22,6 @@ return [
     'next_page' => 'Pagina successiva',
     'back_to_top' => 'Torna su',
     'offline' => 'Sembra che tu sia offline. Riconnettiti e invia di nuovo.',
+    'password_show' => 'Mostra password',
+    'password_hide' => 'Nascondi password',
 ];

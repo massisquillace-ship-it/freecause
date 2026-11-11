@@ -22,4 +22,6 @@ return [
     'next_page' => 'Næste side',
     'back_to_top' => 'Til toppen',
     'offline' => 'Du ser ud til at være offline. Opret forbindelse igen, og send igen.',
+    'password_show' => 'Vis adgangskode',
+    'password_hide' => 'Skjul adgangskode',
 ];

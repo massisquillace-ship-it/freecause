@@ -22,4 +22,6 @@ return [
     'next_page' => 'Pagina următoare',
     'back_to_top' => 'Înapoi sus',
     'offline' => 'Pari să fii offline. Reconectează-te și trimite din nou.',
+    'password_show' => 'Arată parola',
+    'password_hide' => 'Ascunde parola',
 ];

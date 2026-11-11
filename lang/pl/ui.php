@@ -22,4 +22,6 @@ return [
     'next_page' => 'Następna strona',
     'back_to_top' => 'Wróć na górę',
     'offline' => 'Wygląda na to, że jesteś offline. Połącz się ponownie i wyślij jeszcze raz.',
+    'password_show' => 'Pokaż hasło',
+    'password_hide' => 'Ukryj hasło',
 ];

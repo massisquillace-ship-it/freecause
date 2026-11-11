@@ -22,4 +22,6 @@ return [
     'next_page' => 'Nächste Seite',
     'back_to_top' => 'Nach oben',
     'offline' => 'Du scheinst offline zu sein. Stelle die Verbindung wieder her und sende erneut.',
+    'password_show' => 'Passwort anzeigen',
+    'password_hide' => 'Passwort verbergen',
 ];

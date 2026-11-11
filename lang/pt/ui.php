@@ -22,4 +22,6 @@ return [
     'next_page' => 'Página seguinte',
     'back_to_top' => 'Voltar ao topo',
     'offline' => 'Parece que está offline. Volte a ligar-se e envie novamente.',
+    'password_show' => 'Mostrar palavra-passe',
+    'password_hide' => 'Ocultar palavra-passe',
 ];
