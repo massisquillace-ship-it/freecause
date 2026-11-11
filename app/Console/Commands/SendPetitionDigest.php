@@ -58,12 +58,18 @@ class SendPetitionDigest extends Command
         $failed = 0;
         $processed = 0;
         $petitionsByLocale = [];
+        $useCursor = $limit > 0 && ! $dryRun;
+        $cursor = $useCursor ? (int) Cache::get('digest:cursor', 0) : 0;
+        $lastId = $cursor;
+        $limited = false;
+        $aborted = false;
 
         User::query()
             ->whereNotNull('email')
             ->where('verified', true)
             ->where('notify_product', true)
             ->whereNull('unsubscribed_at')
+            ->where('id', '>', $cursor)
             ->chunkById(200, function ($users) use (
                 $dryRun,
                 $limit,
@@ -72,20 +78,27 @@ class SendPetitionDigest extends Command
                 &$skipped,
                 &$failed,
                 &$processed,
-                &$petitionsByLocale
+                &$petitionsByLocale,
+                &$lastId,
+                &$limited,
+                &$aborted
             ) {
                 if (MailQuota::tripped()) {
                     AppLog::error('Petition digest aborted', 'Mail provider quota exhausted, stopped dispatching.', 'emails.digest');
                     $this->warn('Mail quota exhausted - digest aborted.');
+                    $aborted = true;
 
                     return false;
                 }
 
                 foreach ($users as $user) {
                     if ($limit > 0 && $processed >= $limit) {
+                        $limited = true;
+
                         return false;
                     }
 
+                    $lastId = $user->id;
                     $processed++;
                     $dedupeKey = null;
 
@@ -127,6 +140,10 @@ class SendPetitionDigest extends Command
 
                 return true;
             });
+
+        if ($useCursor && ! $aborted) {
+            $limited ? Cache::forever('digest:cursor', $lastId) : Cache::forget('digest:cursor');
+        }
 
         $summary = sprintf(
             'processed=%d sent=%d skipped=%d failed=%d dry_run=%s',
