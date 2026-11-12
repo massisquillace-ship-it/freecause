@@ -17,24 +17,30 @@ class RecentActivityPrivacyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_warmed_homepage_no_longer_publishes_signer_activity(): void
+    public function test_warmed_homepage_uses_public_identity_choices_without_caching_names(): void
     {
         $this->seed([UserLevelSeeder::class, LanguageSeeder::class]);
         $petition = Petition::factory()->create(['status' => 'published', 'is_active' => true]);
         PetitionTranslation::factory()->create(['petition_id' => $petition->id, 'locale' => 'en']);
         foreach (['nick' => 'publicnick', 'name' => 'Given', 'full' => 'Private Fullname'] as $mode => $expected) {
-            $user = User::factory()->create(['name' => 'Private Fullname', 'first_name' => 'Given', 'nickname' => 'publicnick'.($mode === 'nick' ? '' : $mode), 'identify_mode' => $mode]);
+            $user = User::factory()->create(['verified' => true, 'name' => 'Private Fullname', 'first_name' => 'Given', 'nickname' => 'publicnick'.($mode === 'nick' ? '' : $mode), 'identify_mode' => $mode]);
             Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => $user->id, 'name' => 'Old snapshot', 'confirmed' => true, 'is_spam' => false]);
             cache()->forget(CacheKeys::homeRecent('en'));
+            cache()->forget('homepage:activity-ids:v1:en');
             $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
             $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
-            $this->get('/en')->assertOk()->assertDontSee($expected)->assertDontSee('Old snapshot');
+            $response = $this->get('/en')->assertOk()->assertSee($expected)->assertDontSee('Old snapshot');
+            if ($mode !== 'full') {
+                $response->assertDontSee('Private Fullname');
+            }
+            $this->assertTrue(collect(cache()->get('homepage:activity-ids:v1:en'))->every(fn ($id) => is_int($id)));
         }
         Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => null, 'name' => 'Guest public name', 'confirmed' => true, 'is_spam' => false]);
         cache()->forget(CacheKeys::homeRecent('en'));
+        cache()->forget('homepage:activity-ids:v1:en');
         $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
         $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
-        $this->get('/en')->assertOk()->assertDontSee('Guest public name')->assertDontSee('publicnick');
+        $this->get('/en')->assertOk()->assertSee('Guest public name')->assertSee('publicnick');
     }
 
     public function test_identity_changes_invalidate_public_home_cache(): void
