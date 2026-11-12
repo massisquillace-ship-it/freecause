@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Category;
+use App\Models\Petition;
 use App\Support\Locale;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -131,6 +132,16 @@ class LegacyWordRedirect
         $allowedLocales = Locale::supported();
 
         $short = SetLocale::legacyLocaleMap()[strtolower(str_replace('-', '_', $first))] ?? null;
+        // Resolve this migrated page before shortening de_CH/de_AT/de_DE, avoiding a 404 hop.
+        if (($first === 'de' || $short === 'de') && $segments === [$first, 'kontakte'] && in_array('de', $allowedLocales, true)) {
+            return $this->redirectWithQuery($request, '/de/contacts');
+        }
+
+        // Bare legacy signature URLs otherwise take an unnecessary locale-prefix hop.
+        if ($first === 'signatures') {
+            return $this->signatures($request, Locale::default(), array_slice($segments, 1));
+        }
+
         if ($short !== null && in_array($short, $allowedLocales, true)) {
             $rest = implode('/', array_slice($segments, 1));
 
@@ -171,6 +182,7 @@ class LegacyWordRedirect
             'recover' => $this->redirectWithQuery($request, "/$locale/forgot-password"),
 
             'download' => $this->download($request, $locale, $tail),
+            'signatures' => $this->signatures($request, $locale, $tail),
             default => abort(404),
         };
     }
@@ -258,6 +270,20 @@ class LegacyWordRedirect
         $rest = implode('/', $tail);
 
         return $this->redirectWithQuery($request, "/$locale/user".($rest !== '' ? "/$rest" : ''));
+    }
+
+    private function signatures(Request $request, string $locale, array $tail): RedirectResponse
+    {
+        $page = $this->popPage($tail);
+        abort_unless(count($tail) === 2 && ctype_digit((string) $tail[1]), 404);
+
+        // Match the destination's visibility and translation fallback. Never redirect
+        // removed/spam or draft petitions to unrelated public content.
+        $petition = Petition::visible()->select('id')->with('translations:id,petition_id,locale,slug')->findOrFail($tail[1]);
+        $tr = $petition->translationOrFallback($locale, Locale::default());
+        abort_unless($tr && filled($tr->slug), 404);
+
+        return $this->redirectWithQuery($request, '/'.$tr->locale.'/petition/'.rawurlencode($tr->slug).'/'.$petition->id.'/signatures', $page);
     }
 
     private function download(Request $request, string $locale, array $tail): RedirectResponse
