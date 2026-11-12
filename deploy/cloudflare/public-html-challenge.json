@@ -1,8 +1,10 @@
 {
-  "description": "Applied manually in Cloudflare; reference configuration, not an automatic deployment. Keep before the existing AI and scanner block rules. The preceding /up health exception remains unchanged.",
-  "name": "Challenge public HTML and profile traffic",
+  "description": "Applied manually in Cloudflare on 2026-11-12. Profile-only Managed Challenge, after the verified-crawler exception. Does not challenge homepage, petitions, organizations, magazine or admin. The origin retains per-IP and global safeguards.",
+  "name": "Protect public profiles — verified crawlers exempt",
   "action": "managed_challenge",
-  "expression": "not cf.client.bot and (\n(http.request.uri.path contains \"/user/\" or\nhttp.request.uri.path contains \"/usuario/\" or\nhttp.request.uri.path contains \"/utente/\" or\nhttp.request.uri.path contains \"/anvandare/\" or\nhttp.request.uri.path contains \"/bruger/\" or\nhttp.request.uri.path contains \"/gebruiker/\" or\nhttp.request.uri.path contains \"/kullanici/\")\nor (\nhttp.host in {\"freecause.com\" \"www.freecause.com\"}\nand http.request.method in {\"GET\" \"HEAD\"}\nand not starts_with(http.request.uri.path, \"/cdn-cgi/\")\nand not starts_with(http.request.uri.path, \"/ads/\")\nand not starts_with(http.request.uri.path, \"/api/\")\nand not starts_with(http.request.uri.path, \"/.well-known/\")\nand not starts_with(http.request.uri.path, \"/admin\")\nand (\nany(http.request.headers[\"accept\"][*] contains \"text/html\")\nor http.request.uri.path contains \"/petition/\"\nor http.request.uri.path contains \"/petitions\"\nor http.request.uri.path in {\"/\" \"/da\" \"/de\" \"/el\" \"/en\" \"/es\" \"/fr\" \"/it\" \"/nl\" \"/pl\" \"/pt\" \"/ro\" \"/ru\" \"/sv\" \"/tr\"}\n)\n)\n)",
+  "expression": "http.host in {\"www.freecause.com\" \"freecause.com\"} and http.request.method in {\"GET\" \"HEAD\"} and not cf.client.bot and not starts_with(http.request.uri.path, \"/admin\") and (http.request.uri.path contains \"/user/\" or http.request.uri.path contains \"/usuario/\" or http.request.uri.path contains \"/utilisateur/\" or http.request.uri.path contains \"/benutzer/\" or http.request.uri.path contains \"/utente/\" or http.request.uri.path contains \"/ususario/\" or http.request.uri.path contains \"/anvandare/\" or http.request.uri.path contains \"/bruger/\" or http.request.uri.path contains \"/gebruiker/\" or http.request.uri.path contains \"/kullanici/\" or http.request.uri.path contains \"/utentes/\")",
   "verified_crawlers_exempt": true,
-  "ads_api_admin_paths_exempt": true
+  "ads_api_admin_paths_exempt": true,
+  "enabled": true,
+  "rule_id": "f46e2a5b183841188b77c9430f891db6"
 }
