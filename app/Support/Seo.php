@@ -86,8 +86,7 @@ class Seo
         $filtered = self::isListing() && (
             filled(request()->query('q')) || in_array(request()->query('sort'), ['signed', 'trending'], true)
         );
-        $emptyListing = (self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty())
-            || (request()->routeIs('organizations.explore') && ((isset($data['organizations']) && $data['organizations']->isEmpty()) || ($data['directoryIsEmpty'] ?? false)));
+        $emptyListing = self::isListing() && isset($data['petitions']) && $data['petitions']->isEmpty();
         if (! $public || $organizationLaunchHidden || isset($data['exception']) || $organizationFiltered || $filtered || $emptyListing
             || (request()->routeIs('petition.show') && $petition && $petition->status !== 'published')
             || request()->has('status') || request()->query('view') === 'pages') {
