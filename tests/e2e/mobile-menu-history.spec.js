@@ -1,4 +1,4 @@
-import { test, expect, newUser } from './helpers.js';
+import { test, expect, login } from './helpers.js';
 
 test.use({ viewport: { width: 375, height: 800 } });
 
@@ -15,9 +15,9 @@ test('mobile menu link leaves no extra history entry', async ({ page }) => {
 });
 
 test('mobile menu logout leaves no extra history entry', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await newUser(page);
-    await page.setViewportSize({ width: 375, height: 800 });
+    await login(page, 'owner@e2e.test', 'password');
+    await expect(page).not.toHaveURL(/\/login$/);
+    await page.goto('/en/profile');
     await page.goto('/en');
     const before = await page.evaluate(() => history.length);
     await page.locator('.fcui-bottom-nav__item[data-sheet-open="mobile-menu"]').click();
