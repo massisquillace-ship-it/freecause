@@ -62,6 +62,33 @@
     </x-ui.container>
 </section>
 
+<section class="bg-white border-y border-border py-10 md:py-12" data-home-activities aria-labelledby="home-activities-title">
+    <x-ui.container>
+        <h2 id="home-activities-title" class="flex items-center gap-2 text-2xl font-bold mb-6"><x-lucide-clock class="size-6 shrink-0" aria-hidden="true" />{{ __('home.tab_recent') }}</h2>
+        <ul class="space-y-3">
+            @forelse($recentActivities as $activity)
+                @php $signedAt = \Carbon\Carbon::parse($activity->created_at); @endphp
+                <li class="bg-surface-muted rounded-lg p-4 md:p-5 min-w-0">
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-2 mb-3 text-sm">
+                        <p class="break-words min-w-0">
+                            @if($activity->profile_user_id)
+                                <a class="hover:underline" href="{{ lroute('user.profile', ['slug'=>\Illuminate\Support\Str::slug($activity->display_name) ?: 'user', 'id'=>$activity->profile_user_id]) }}">{{ $activity->display_name }}</a>
+                            @else
+                                <span>{{ $activity->display_name }}</span>
+                            @endif
+                            <strong>{{ __('home.recent_has_signed') }}</strong>
+                        </p>
+                        <time class="text-brand shrink-0" datetime="{{ $signedAt->toIso8601String() }}" title="{{ $signedAt->isoFormat('LLL') }}">{{ $signedAt->diffForHumans() }}</time>
+                    </div>
+                    <a class="block text-ink hover:text-brand hover:underline break-words" href="{{ lroute('petition.show', ['slug'=>$activity->petition_slug, 'id'=>$activity->petition_id]) }}">{{ $activity->petition_title }}</a>
+                </li>
+            @empty
+                <li class="text-sm text-muted">{{ __('home.recent_empty') }}</li>
+            @endforelse
+        </ul>
+    </x-ui.container>
+</section>
+
 <section class="bg-white border-y border-border py-10 md:py-12" data-home-victories aria-labelledby="home-victories-title">
     <x-ui.container>
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
