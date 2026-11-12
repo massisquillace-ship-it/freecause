@@ -44,7 +44,7 @@ class UserFactory extends Factory
             'first_name' => $first,
             'last_name' => $last,
             'name' => trim($first.' '.$last),
-            'nickname' => $this->faker->optional(0.5)->userName(),
+            'nickname' => $this->faker->boolean(50) ? $this->faker->unique()->userName() : null,
             'city' => $this->faker->optional(0.7)->city(),
             'identify_mode' => $this->faker->randomElement(['full', 'name', 'nick']),
             'country' => 'US',
