@@ -22,6 +22,7 @@ class HomepageData
         $key = 'homepage:v4:'.CacheVersion::get('home').':'.CacheVersion::get('sitemap').':'.$locale.':'.($country ?? 'world');
 
         $data = Cache::remember($key, 600, fn () => $this->load($locale, $country));
+        $data['recentActivities'] = app(HomepageActivities::class)->forLocale($locale);
         // Identity choices and account deletion must take effect even while campaign data is cached.
         $petitions = $data['campaigns']->concat($data['victories']);
         $users = User::whereIn('id', $petitions->pluck('user_id')->filter()->unique())
