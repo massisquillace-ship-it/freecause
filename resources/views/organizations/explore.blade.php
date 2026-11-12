@@ -21,7 +21,7 @@
             @if($org->status === 'verified')<p class="mt-3">{{ $org->localized('tagline') }}</p>@else<p class="mt-3">{{ __('organizations.unclaimed') }}</p>@endif<p class="mt-3">{{ $countries[$org->country] ?? $org->country }}</p>
             <ul class="flex flex-wrap gap-2 mt-3">@foreach($org->causes as $cause)<li class="text-sm border border-border px-2 py-1 rounded-sm">{{ $cause->label() }}</li>@endforeach</ul>
         </li>
-    @empty<li>{{ __('organizations.no_results') }} <a class="underline" href="{{ lroute('organizations.explore') }}">{{ __('organizations.reset_filters') }}</a></li>@endforelse
+    @empty<li>{{ __('organizations.no_results') }} <a class="underline" href="{{ lroute('organizations.explore') }}">{{ __('organizations.reset_filters') }}</a>@if($applicationsOpen)<a class="underline block mt-3" href="{{ lroute('organizations.apply') }}">{{ __('organizations.not_listed') }}</a>@endif</li>@endforelse
     </ul>
     <div class="mt-8">{{ $organizations->links() }}</div>
 </section>
