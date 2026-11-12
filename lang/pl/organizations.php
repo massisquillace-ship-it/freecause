@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'Zawieszenie konta :name zostało zniesione po rozpatrzeniu sprawy. Otwórz swój profil lub panel administracyjny, aby sprawdzić aktualny status weryfikacji.',
     'donation_subject' => 'Link do darowizny zatwierdzony: :name',
     'donation_body' => 'Zewnętrzny link do darowizn dla :name został zatwierdzony. Fani mogą uzyskać do niego dostęp z zweryfikowanego profilu. Zmiana miejsca przeznaczenia darowizny będzie wymagała ponownej weryfikacji.',
+    'founding_subject' => 'Zaktualizowano informacje o założycielach: :name',
+    'founding_body' => 'Zaktualizowano wyróżnienie za założenie :name. Otwórz panel zarządzania, aby sprawdzić aktualny status odznaki i organizacji.',
+    'owner_reassigned_subject' => 'Przypisana organizacja właścicielska: :name',
+    'owner_reassigned_body' => 'Jesteś teraz właścicielem konta :name w serwisie FreeCause. Otwórz panel administracyjny, aby zapoznać się z informacjami o organizacji, jej członkach i kampaniach.',
+    'admin_deletion_subject' => 'Wniosek o usunięcie organizacji: :name',
+    'admin_deletion_body' => 'Właściciel :name złożył wniosek o usunięcie organizacji. Zapoznaj się z wnioskiem i historią audytów na prywatnej stronie administracyjnej.',
     'action' => 'Otwórz FreeCause',
 ];
 

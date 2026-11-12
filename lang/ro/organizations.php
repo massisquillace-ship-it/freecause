@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'Suspendarea contului :name a fost ridicată în urma unei reevaluări. Accesați profilul dvs. sau panoul de administrare pentru a verifica starea actuală a verificării.',
     'donation_subject' => 'Linkul pentru donații a fost aprobat: :name',
     'donation_body' => 'Linkul extern pentru donații destinat lui :name a fost aprobat. Susținătorii îl pot accesa din profilul verificat. Schimbarea destinației va necesita o nouă verificare.',
+    'founding_subject' => 'Recunoașterea fondatorului actualizată: :name',
+    'founding_body' => 'Recunoașterea inițială pentru :name a fost actualizată. Deschideți panoul de administrare pentru a verifica starea actuală a insignei și a organizației.',
+    'owner_reassigned_subject' => 'Proprietarul organizației atribuit: :name',
+    'owner_reassigned_body' => 'Acum sunteți proprietarul organizației :name pe FreeCause. Deschideți panoul de administrare pentru a vizualiza organizația, membrii acesteia și campaniile.',
+    'admin_deletion_subject' => 'Cerere de eliminare a organizației: :name',
+    'admin_deletion_body' => 'Proprietarul :name a solicitat eliminarea organizației. Verificați solicitarea și istoricul de audit al acesteia din pagina administrativă privată.',
     'action' => 'Deschide FreeCause',
 ];
 

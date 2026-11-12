@@ -16,6 +16,12 @@ $strings['mail'] = [
     'restore_body' => 'La suspensión de :name se ha levantado tras su revisión. Abre tu perfil o el panel de administración para comprobar su estado de verificación actual.',
     'donation_subject' => 'Enlace de donación aprobado: :name',
     'donation_body' => 'Se ha aprobado el enlace externo de donaciones para :name. Los seguidores pueden acceder a él desde el perfil verificado. Para cambiar el destino, será necesario someterlo a una nueva revisión.',
+    'founding_subject' => 'Actualización del reconocimiento de la fundación: :name',
+    'founding_body' => 'Se ha actualizado el reconocimiento de fundación de :name. Abre tu panel de gestión para consultar la insignia actual y el estado de la organización.',
+    'owner_reassigned_subject' => 'Propiedad de la organización asignada: :name',
+    'owner_reassigned_body' => 'Ahora eres el propietario de :name en FreeCause. Abre tu panel de administración para consultar la organización, sus miembros y sus campañas.',
+    'admin_deletion_subject' => 'Solicitud de eliminación de una organización: :name',
+    'admin_deletion_body' => 'El propietario de :name ha solicitado la eliminación de la organización. Revisa la solicitud y su historial de auditoría desde la página administrativa privada.',
     'action' => 'Abrir FreeCause',
 ];
 
