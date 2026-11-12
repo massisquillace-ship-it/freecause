@@ -77,7 +77,7 @@ class Seo
     {
         $public = request()->routeIs(
             'home', 'petitions.index', 'petitions.byCategory', 'petition.show', 'organizations', 'organizations.show', 'organizations.explore', 'organizations.terms',
-            'page.show', 'faqs', 'how-to-write-a-petition', 'donations',
+            'page.show', 'user.profile', 'faqs', 'how-to-write-a-petition', 'donations',
             'personal-data-processing', 'contacts'
         );
         $organizationLaunchHidden = ! config('organizations.public_launch') && (request()->routeIs('organizations', 'organizations.explore', 'organizations.terms') || (request()->routeIs('organizations.show') && ($data['org']->status ?? '') === 'unclaimed'));

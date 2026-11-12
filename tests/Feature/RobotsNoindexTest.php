@@ -49,14 +49,15 @@ class RobotsNoindexTest extends TestCase
             ->assertSee('noindex, follow');
     }
 
-    public function test_noindex_meta_on_user_path(): void
+    public function test_index_meta_on_public_user_path(): void
     {
         $user = User::factory()->create(['verified' => true]);
 
         $this->get('/en/user/profile/'.$user->id)
             ->assertOk()
             ->assertSee('name="robots"', false)
-            ->assertSee('noindex, follow');
+            ->assertSee('index, follow, max-snippet:-1')
+            ->assertDontSee('noindex, follow');
     }
 
     public function test_noindex_header_on_widget_routes(): void
