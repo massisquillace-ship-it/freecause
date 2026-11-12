@@ -39,10 +39,6 @@ class OrganizationController extends Controller
 
     public function explore(Request $request)
     {
-        if (! Organization::directoryReady()) {
-            return $this->landing();
-        }
-
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'cause' => ['nullable', 'string', Rule::exists('causes', 'slug')],
@@ -69,6 +65,7 @@ class OrganizationController extends Controller
         return view('organizations.explore', [
             'organizations' => $query->paginate(12)->withQueryString(), 'filters' => $filters,
             'countries' => Countries::all(), 'causes' => Cause::orderBy('sort_order')->get(),
+            'applicationsOpen' => $this->applicationsOpen(),
         ]);
     }
 
