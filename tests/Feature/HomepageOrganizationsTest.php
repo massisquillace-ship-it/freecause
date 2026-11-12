@@ -62,7 +62,7 @@ class HomepageOrganizationsTest extends TestCase
             ->assertSee('data-home-campaigns', false)->assertSee('data-home-victories', false)
             ->assertSee('No confirmed signatures yet.')->assertSee('No petitions have reached their signature goal yet in this language.')
             ->assertDontSee('data-home-causes', false)->assertDontSee('data-home-claim', false)
-            ->assertDontSee('Change the world!')->assertDontSee('Recent User Activities');
+            ->assertDontSee('Change the world!')->assertSee('Recent User Activities')->assertSee('no recent activity yet');
     }
 
     public function test_one_public_organization_and_one_single_signature_campaign_are_visible(): void
@@ -139,7 +139,9 @@ class HomepageOrganizationsTest extends TestCase
         DB::enableQueryLog();
         $response = $this->get('/en')->assertOk()->assertSee('Recently signed petitions');
         $this->assertSame([$latest->id, $older->id], $response->viewData('campaigns')->pluck('id')->all());
-        $this->assertFalse(collect(DB::getQueryLog())->contains(fn ($q) => preg_match('/from\s+["`]?signatures["`]?\b/i', $q['query'])));
+        $signatureQueries = collect(DB::getQueryLog())->filter(fn ($q) => preg_match('/from\s+["`]?signatures["`]?\b/i', $q['query']));
+        $this->assertTrue($signatureQueries->contains(fn ($q) => str_contains($q['query'], 'limit 2000')));
+        $this->assertFalse($signatureQueries->contains(fn ($q) => str_contains(strtolower($q['query']), 'group by')));
         DB::disableQueryLog();
     }
 
