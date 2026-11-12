@@ -31,6 +31,8 @@ class HomepageData
         }
         // One shared threshold also controls navigation and promotion; public_launch is unrelated.
         $data['directoryReady'] = $data['organizations_count'] >= max(1, (int) config('organizations.min_directory_count', 1));
+        $data['organizationApplicationsOpen'] = (config('organizations.public_launch') || config('organizations.applications_open'))
+            && filled(config('organizations.terms_version')) && filled(config('organizations.terms.en'));
         $data['countryCode'] = $country;
         $data['countryName'] = $country && class_exists(\Locale::class)
             ? \Locale::getDisplayRegion('und_'.$country, $locale) : ($country ?? __('home.hero.world'));

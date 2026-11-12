@@ -4,6 +4,9 @@ All notable changes to FreeCause. Format: [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 ### Added
+- Organizations: application and claim review, public profiles, donation approval, campaign attribution, optional signature consent with revocation, outcomes, badges and localized transactional mail.
+- Organization members: owner/admin/editor roles, private invitations and roster, atomic ownership transfer and audit history.
+- Homepage: organization cards, recently signed campaigns with covers, language-specific signature goals reached, all petition categories and petition introduction.
 - Admin: Delete action for selected petitions.
 - Static 503 page when the database is unreachable, so an outage no longer renders a broken app page.
 - Graphical 404 for ad frames, with banners.
@@ -19,6 +22,8 @@ All notable changes to FreeCause. Format: [Keep a Changelog](https://keepachange
 - WordPress magazine updated; unsupported and inactive plugins removed.
 - Admin logs export uses the same filters as the list: search matches the title prefix only, no longer the message content.
 ### Fixed
+- Empty organization directories retain filters and create-page links; launched public directory pages are included in the sitemap even before the first organization.
+- Signature goals reached are labelled separately from organizer-reported victories; removed the misleading moderation-policy label pointing to general terms.
 - Guest name and email are sent from the sign confirm step.
 - Correct locale links and `hreflang`, refreshed X sharing, and fixed Search Console crawl and canonical signals.
 - Nickname preferences are respected in the cached homepage activity.

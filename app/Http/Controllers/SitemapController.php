@@ -65,8 +65,7 @@ class SitemapController extends Controller
 
     public function pages()
     {
-        return $this->xml($this->cached('pages.v5.'.(int) config('organizations.public_launch'), function () {
-            $hasPublicOrganizations = Organization::public()->exists();
+        return $this->xml($this->cached('pages.v6.'.(int) config('organizations.public_launch'), function () {
             $pagesByLocale = [];
 
             foreach (active_locales() as $locale) {
@@ -82,9 +81,7 @@ class SitemapController extends Controller
                 }
                 if (config('organizations.public_launch') && in_array($locale, config('organizations.locales'), true)) {
                     $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations'));
-                    if ($hasPublicOrganizations) {
-                        $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
-                    }
+                    $pagesByLocale[$locale][] = $this->pageEntry(canonical_url($locale.'/organizations/explore'));
                 }
             }
 

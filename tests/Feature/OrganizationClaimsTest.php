@@ -104,10 +104,10 @@ class OrganizationClaimsTest extends TestCase
         for ($i = 0; $i < 19; $i++) {
             $this->org();
         }
-        $html = $this->get('/en/organizations/explore')->assertOk()->assertSee('Find your organization')->assertDontSee('No organizations match these filters.')->getContent();
+        $html = $this->get('/en/organizations/explore')->assertOk()->assertSee('Explore organizations')->assertSee('name="cause"', false)->getContent();
         $this->assertSame(4, $this->navigationCount($html));
         foreach (['cause', 'country', 'sort'] as $field) {
-            $this->assertStringNotContainsString('name="'.$field.'"', $html);
+            $this->assertStringContainsString('name="'.$field.'"', $html);
         }
         $this->assertStringNotContainsString('Create Your Account', $html);
         $this->org();

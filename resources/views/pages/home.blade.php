@@ -45,7 +45,7 @@
                 <p class="text-brand text-sm font-semibold mt-3">{{ __('home.weekly_signatures', ['count'=>number_format($org->signatures_7d_cache)]) }}</p>
             </li>
             @empty
-            <li class="text-sm text-muted md:col-span-3">{{ __('home.organizations_empty') }}</li>
+            <li class="text-sm text-muted md:col-span-3">{{ __('home.organizations_empty') }}@if($organizationApplicationsOpen)<a class="underline block mt-3" href="{{ lroute('organizations.apply') }}">{{ __('organizations.not_listed') }}</a>@endif</li>
             @endforelse
         </ul>
     </x-ui.container>
@@ -65,7 +65,7 @@
 <section class="bg-white border-y border-border py-10 md:py-12" data-home-victories aria-labelledby="home-victories-title">
     <x-ui.container>
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-            <div><h2 id="home-victories-title" class="text-2xl font-bold mb-2">{{ __('home.victories_title') }}</h2>
+            <div><h2 id="home-victories-title" class="text-2xl font-bold mb-2">{{ __('home.victory_badge') }}</h2>
             <p class="text-sm text-muted">{{ __('home.victories_subtitle') }}</p></div>
             <a class="text-brand text-sm whitespace-nowrap hover:underline" href="{{ lroute('petitions.index', ['goal'=>'reached']) }}">{{ __('home.see_all_victories') }} →</a>
         </div>
@@ -134,7 +134,6 @@
         <ul class="flex flex-wrap justify-center items-center gap-x-5 gap-y-3 text-sm text-muted mt-10">
             <li>{{ __('home.since') }}</li>@if($verified_count > 0)<li>{{ __('home.verified_count', ['count'=>number_format($verified_count)]) }}</li>@endif
             <li><a class="underline" href="{{ lroute('page.show', ['slug'=>'ethical-code']) }}">{{ __('pages.ethical_code') }}</a></li>
-            <li><a class="underline" href="{{ lroute('page.show', ['slug'=>'terms-of-service']) }}">{{ __('home.moderation') }}</a></li>
             <li><a class="underline" href="{{ lroute('page.show', ['slug'=>'privacy-policy']) }}">{{ __('pages.privacy_policy') }}</a></li>
         </ul>
     </x-ui.container>
