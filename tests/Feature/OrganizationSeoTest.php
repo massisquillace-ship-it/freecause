@@ -58,10 +58,10 @@ class OrganizationSeoTest extends TestCase
         $this->assertStringContainsString('content="index, follow', $html);
     }
 
-    public function test_empty_directory_is_noindex_and_left_out_of_sitemap(): void
+    public function test_launched_empty_directory_is_indexable_and_in_sitemap(): void
     {
-        $this->get('/en/organizations/explore')->assertOk()->assertSee('noindex, follow', false);
-        $this->get('/sitemap-pages.xml')->assertOk()->assertDontSee('/organizations/explore');
+        $this->get('/en/organizations/explore')->assertOk()->assertSee('index, follow', false);
+        $this->get('/sitemap-pages.xml')->assertOk()->assertSee('/organizations/explore');
     }
 
     public function test_directory_with_public_organization_is_indexable_and_in_sitemap(): void
