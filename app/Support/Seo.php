@@ -25,6 +25,7 @@ class Seo
     public static function canonical(): string
     {
         $params = [];
+        $goalReached = request()->routeIs('petitions.index') && request()->query('goal') === 'reached';
         if (self::isListing() || request()->routeIs('organizations.explore')) {
             $search = request()->query('q');
             if (is_string($search) && trim($search) !== '') {
@@ -34,9 +35,12 @@ class Seo
             if (in_array($sort, ['signed', 'trending'], true)) {
                 $params['sort'] = $sort;
             }
+            if ($goalReached) {
+                $params['goal'] = 'reached';
+            }
             $page = request()->query('page');
             if (is_scalar($page) && ctype_digit((string) $page) && (int) $page > 1) {
-                $params['page'] = min((int) $page, 500);
+                $params['page'] = min((int) $page, $goalReached ? 10000 : 500);
             }
         }
 
@@ -129,6 +133,9 @@ class Seo
             }
         } elseif (request()->routeIs('home', 'petitions.index', 'contacts')) {
             $suffix = request()->routeIs('petitions.index') ? '/petitions' : (request()->routeIs('contacts') ? '/contacts' : '');
+            if (request()->routeIs('petitions.index') && request()->query('goal') === 'reached') {
+                $suffix .= '?goal=reached';
+            }
             foreach ($active as $locale) {
                 $links[$locale] = canonical_url($locale.$suffix);
             }
