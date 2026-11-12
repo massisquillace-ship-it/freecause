@@ -72,3 +72,23 @@ Global scope: petitions are filtered by the displayed language, never by Italy o
 ## Owner update — petition covers and introduction panels
 
 Restore the two localized “What is online petition” and “Create petition” panels between goal results and categories, in both homepage variants. This supersedes the original removal instruction for these two panels only; the old hero and activity feed remain removed. Feature copy uses the actual PDF/CSV export formats. Every recent-signature and goal-result card displays its uploaded cover, legacy image or existing default cover through the shared petition resolver, with reserved 16:9 dimensions and lazy loading. Cache version v4 includes legacy image fields.
+
+## Owner update — recent user activities
+
+The 12 November owner request supersedes the activity-feed removal. Restore a
+server-rendered “Recent User Activities” section after recently signed campaign
+cards, in both homepage variants and all existing interface languages. Show up
+to ten confirmed, nonspam signatures on active published petitions with a title
+and slug in the displayed language, newest first, with honest relative times.
+Links point to the localized petition and, for an available registered signer,
+their public profile. Empty languages retain the translated empty state.
+
+`HomepageActivities` considers the latest 2,000 signatures through the existing
+date index, never an unbounded homepage aggregation. Cache only the selected ten
+signature IDs for 60 seconds. Recheck signature moderation, petition visibility,
+translations and current user identity on every render. Nickname mode never
+falls back to a legal or frozen signature name. Missing nickname, deleted,
+unverified or banned accounts appear anonymously without a profile link;
+guest signatures retain their existing public signature name, or the anonymous
+label when empty. No email, address or consent metadata is selected or rendered.
+The independent WordPress magazine is unchanged.
