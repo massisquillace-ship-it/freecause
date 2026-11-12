@@ -66,6 +66,26 @@ class SeoMetadataTest extends TestCase
         }
     }
 
+    public function test_goal_reached_canonicals_and_language_alternates_preserve_the_filter(): void
+    {
+        for ($i = 0; $i < 16; $i++) {
+            $this->petition('en', ['signature_count' => 100, 'goal_signatures' => 50]);
+        }
+        $first = $this->get('/en/petitions?utm_source=legacy&goal=reached')->assertOk();
+        $first->assertSee('rel="canonical" href="https://www.freecause.com/en/petitions?goal=reached"', false)
+            ->assertSee('hreflang="it" href="https://www.freecause.com/it/petitions?goal=reached"', false)
+            ->assertSee('index, follow, max-snippet:-1', false);
+        $this->assertSame(1, substr_count($first->getContent(), 'rel="canonical"'));
+        $second = $this->get('/en/petitions?page=2&goal=reached&utm_source=legacy')->assertOk();
+        $second->assertSee('rel="canonical" href="https://www.freecause.com/en/petitions?goal=reached&amp;page=2"', false);
+        $this->assertStringNotContainsString('hreflang=', $this->htmlHead($second->getContent()));
+        $this->assertStringNotContainsString('utm_source', $this->htmlHead($second->getContent()));
+        $this->get('/en/petitions?goal=reached&page=501')->assertOk()
+            ->assertSee('rel="canonical" href="https://www.freecause.com/en/petitions?goal=reached&amp;page=501"', false);
+        $this->get('/en/petitions?goal=unknown&page=2')->assertOk()
+            ->assertSee('rel="canonical" href="https://www.freecause.com/en/petitions?page=2"', false);
+    }
+
     public function test_auth_errors_drafts_and_empty_lists_are_noindexed_without_hiding_old_petitions(): void
     {
         $this->get('/en/login')->assertOk()->assertSee('content="noindex, follow"', false);
