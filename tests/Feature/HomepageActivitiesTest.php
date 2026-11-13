@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Language;
 use App\Models\Petition;
 use App\Models\Signature;
 use App\Models\User;
@@ -38,21 +39,24 @@ class HomepageActivitiesTest extends TestCase
         return Signature::factory()->create(array_merge(['petition_id' => $petition->id, 'confirmed' => true, 'is_spam' => false, 'created_at' => now()->subMinute()], $attributes));
     }
 
-    public function test_only_confirmed_nonspam_public_petitions_in_the_current_language_are_shown(): void
+    public function test_confirmed_nonspam_public_activity_is_global_in_every_interface_language(): void
     {
         $public = $this->campaign();
         $valid = $this->signature($public);
         $this->signature($public, ['confirmed' => false]);
         $this->signature($public, ['is_spam' => true]);
         $this->signature($public, ['created_at' => now()->addDay()]);
-        $this->signature($this->campaign('it'));
+        $foreign = $this->signature($this->campaign('it'), ['created_at' => now()]);
         $this->signature($this->campaign('en', ['status' => 'draft']));
         $this->signature($this->campaign('en', ['is_active' => false]));
 
         $rows = app(HomepageActivities::class)->forLocale('en');
-        $this->assertSame([$valid->id], $rows->pluck('id')->all());
-        $this->assertSame($public->id, $rows->first()->petition_id);
-        $this->assertCount(1, app(HomepageActivities::class)->forLocale('it'));
+        $this->assertSame([$foreign->id, $valid->id], $rows->pluck('id')->all());
+        $this->assertSame($public->id, $rows->last()->petition_id);
+        $this->assertSame(['it', 'en'], $rows->pluck('petition_locale')->all());
+        foreach (['it', 'pl', 'es'] as $locale) {
+            $this->assertSame($rows->pluck('id')->all(), app(HomepageActivities::class)->forLocale($locale)->pluck('id')->all());
+        }
     }
 
     public function test_names_and_removals_are_rechecked_while_activity_ids_are_cached(): void
@@ -96,17 +100,40 @@ class HomepageActivitiesTest extends TestCase
         $this->assertCount(0, $service->forLocale('en'));
     }
 
-    public function test_homepage_renders_localized_activity_links_without_leaking_nickname_users_names(): void
+    public function test_homepage_keeps_original_petition_links_and_localized_interface_without_leaking_names(): void
     {
         $user = User::factory()->create(['verified' => true, 'name' => 'Hidden Full Name', 'first_name' => 'Hidden', 'nickname' => 'public-nick', 'identify_mode' => 'nick']);
+        $petitions = [];
         foreach (['en', 'it', 'es'] as $locale) {
-            $petition = $this->campaign($locale);
-            $this->signature($petition, ['user_id' => $user->id, 'name' => 'Frozen Full Name']);
-            $this->get('/'.$locale)->assertOk()->assertSee('data-home-activities', false)
-                ->assertSee('public-nick')->assertDontSee('Hidden Full Name')->assertDontSee('Frozen Full Name')
-                ->assertSee('/'.$locale.'/petition/activity-campaign-'.$petition->id.'/'.$petition->id, false)
-                ->assertSee('/'.$locale.'/user/public-nick/'.$user->id, false)
-                ->assertSee('<time ', false);
+            $petitions[$locale] = $this->campaign($locale);
+            $this->signature($petitions[$locale], ['user_id' => $user->id, 'name' => 'Frozen Full Name']);
         }
+        foreach (['en', 'it', 'es', 'pl'] as $locale) {
+            $response = $this->get('/'.$locale)->assertOk()->assertSee('data-home-activities', false)
+                ->assertSee('public-nick')->assertDontSee('Hidden Full Name')->assertDontSee('Frozen Full Name')
+                ->assertSee('/'.$locale.'/user/public-nick/'.$user->id, false)
+                ->assertSee('<time ', false)->assertSee(__('home.recent_has_signed', [], $locale));
+            foreach ($petitions as $originalLocale => $petition) {
+                $response->assertSee('/'.$originalLocale.'/petition/activity-campaign-'.$petition->id.'/'.$petition->id, false)
+                    ->assertSee('hreflang="'.$originalLocale.'"', false);
+            }
+            $this->assertSame(3, substr_count($response->getContent(), 'data-activity-language'));
+        }
+    }
+
+    public function test_multiple_translations_do_not_duplicate_signatures_and_unavailable_versions_are_excluded(): void
+    {
+        $petition = $this->campaign('es');
+        $petition->translations()->create(['locale' => 'en', 'title' => 'English version', 'slug' => 'english-version', 'description' => 'Description.']);
+        $signature = $this->signature($petition);
+        $service = app(HomepageActivities::class);
+        $rows = $service->forLocale('pl');
+        $this->assertSame([$signature->id], $rows->pluck('id')->all());
+        $this->assertSame('es', $rows->first()->petition_locale);
+        Language::where('code', 'es')->update(['is_active' => false]);
+        cache()->forget('active_languages');
+        $this->assertSame('en', $service->forLocale('pl')->first()->petition_locale);
+        $petition->translations()->where('locale', 'en')->update(['slug' => '']);
+        $this->assertCount(0, $service->forLocale('pl'));
     }
 }
