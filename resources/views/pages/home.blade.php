@@ -80,7 +80,7 @@
                         </p>
                         <time class="text-brand shrink-0" datetime="{{ $signedAt->toIso8601String() }}" title="{{ $signedAt->isoFormat('LLL') }}">{{ $signedAt->diffForHumans() }}</time>
                     </div>
-                    <a class="block text-ink hover:text-brand hover:underline break-words" href="{{ lroute('petition.show', ['slug'=>$activity->petition_slug, 'id'=>$activity->petition_id]) }}">{{ $activity->petition_title }}</a>
+                    <a class="block text-ink hover:text-brand hover:underline break-words" lang="{{ $activity->petition_locale }}" hreflang="{{ $activity->petition_locale }}" href="{{ lroute('petition.show', ['locale'=>$activity->petition_locale, 'slug'=>$activity->petition_slug, 'id'=>$activity->petition_id]) }}"><span class="inline-flex text-xs border border-border rounded-sm px-2 py-0.5 mr-2 align-middle" lang="{{ app()->getLocale() }}" data-activity-language title="{{ class_exists(\Locale::class) ? \Locale::getDisplayLanguage($activity->petition_locale, app()->getLocale()) : strtoupper($activity->petition_locale) }}">{{ strtoupper($activity->petition_locale) }}</span>{{ $activity->petition_title }}</a>
                 </li>
             @empty
                 <li class="text-sm text-muted">{{ __('home.recent_empty') }}</li>
