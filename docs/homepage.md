@@ -92,3 +92,16 @@ unverified or banned accounts appear anonymously without a profile link;
 guest signatures retain their existing public signature name, or the anonymous
 label when empty. No email, address or consent metadata is selected or rendered.
 The independent WordPress magazine is unchanged.
+
+## Owner update — global activity feed
+
+The owner subsequently approved a global feed: only “Recent User Activities”
+now combines all supported petition languages, with the same newest-ten order
+in every interface. Campaign cards, goals and category listings keep their
+existing locale filtering. The activity title remains in its stored language;
+the link explicitly targets that version and carries its language code badge
+and `lang`/`hreflang`. For petitions with multiple translations, choose the
+earliest available supported translation consistently, returning one row per
+signature. Empty or inactive versions are excluded. Interface labels, dates and
+anonymous labels remain localized. The global v2 ID-only cache and all live
+identity/moderation rechecks retain the previous privacy guarantees.
