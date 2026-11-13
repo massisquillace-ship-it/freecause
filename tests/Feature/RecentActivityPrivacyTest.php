@@ -26,18 +26,18 @@ class RecentActivityPrivacyTest extends TestCase
             $user = User::factory()->create(['verified' => true, 'name' => 'Private Fullname', 'first_name' => 'Given', 'nickname' => 'publicnick'.($mode === 'nick' ? '' : $mode), 'identify_mode' => $mode]);
             Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => $user->id, 'name' => 'Old snapshot', 'confirmed' => true, 'is_spam' => false]);
             cache()->forget(CacheKeys::homeRecent('en'));
-            cache()->forget('homepage:activity-ids:v1:en');
+            cache()->forget('homepage:activity-ids:v2:global');
             $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
             $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
             $response = $this->get('/en')->assertOk()->assertSee($expected)->assertDontSee('Old snapshot');
             if ($mode !== 'full') {
                 $response->assertDontSee('Private Fullname');
             }
-            $this->assertTrue(collect(cache()->get('homepage:activity-ids:v1:en'))->every(fn ($id) => is_int($id)));
+            $this->assertTrue(collect(cache()->get('homepage:activity-ids:v2:global'))->every(fn ($id) => is_int($id)));
         }
         Signature::factory()->create(['petition_id' => $petition->id, 'user_id' => null, 'name' => 'Guest public name', 'confirmed' => true, 'is_spam' => false]);
         cache()->forget(CacheKeys::homeRecent('en'));
-        cache()->forget('homepage:activity-ids:v1:en');
+        cache()->forget('homepage:activity-ids:v2:global');
         $this->artisan('cache:warm', ['--locale' => 'en'])->assertSuccessful();
         $this->assertNull(cache()->get(CacheKeys::homeRecent('en')));
         $this->get('/en')->assertOk()->assertSee('Guest public name')->assertSee('publicnick');
